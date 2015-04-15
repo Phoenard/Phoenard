@@ -55,6 +55,8 @@ class PHN_Midi {
   void noteOn(byte channel, byte note, byte attack_velocity);
   /// turns a note off (release)
   void noteOff(byte channel, byte note, byte release_velocity);
+  /// Sets whether a note is pressed or released, similar to noteOn/noteOff
+  void note(byte channel, byte note, byte velocity, boolean pressed);
   /// Main MIDI command sending routine
   void talkMIDI(byte cmd, byte data1, byte data2);
   /// Plays a note at channel 0 and releases - useful for debugging

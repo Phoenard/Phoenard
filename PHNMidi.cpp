@@ -57,12 +57,23 @@ void PHN_Midi::setInstrument(byte instrument) {
 //Send a MIDI note-on message.  Like pressing a piano key
 //channel ranges from 0-15
 void PHN_Midi::noteOn(byte channel, byte note, byte attack_velocity) {
-  talkMIDI( (0x90 | channel), note, attack_velocity);
+  this->note(channel, note, attack_velocity, true);
 }
 
 //Send a MIDI note-off message.  Like releasing a piano key
 void PHN_Midi::noteOff(byte channel, byte note, byte release_velocity) {
-  talkMIDI( (0x80 | channel), note, release_velocity);
+  this->note(channel, note, release_velocity, false);
+}
+
+//Send a MIDI note message specifying whether the note is pressed or released
+void PHN_Midi::note(byte channel, byte note, byte velocity, boolean pressed) {
+  byte cmd = channel;
+  if (pressed) {
+    cmd |= 0x90;
+  } else {
+    cmd |= 0x80;
+  }
+  talkMIDI(cmd, note, velocity);
 }
 
 //Plays a MIDI note. Doesn't check to see that cmd is greater than 127, or that data values are less than 127

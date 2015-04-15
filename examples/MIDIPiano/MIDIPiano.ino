@@ -149,11 +149,7 @@ void setInstrument(int index) {
 /* Tells the MIDI component to press or release a key */
 void playKey(int key, boolean down) {
   char note = 60 + key; // Starting at note C4
-  if (down) {
-    midi.noteOn(midi_channel, note, midi_velocity);
-  } else {
-    midi.noteOff(midi_channel, note, midi_velocity);
-  }
+  midi.note(midi_channel, note, midi_velocity, down);
 }
 
 /*

@@ -1,0 +1,156 @@
+#######################################
+# Syntax Coloring Map for Phoenard
+# Note: library is huge, only included
+# a few important syntax colors
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+PHN_Settings	KEYWORD1
+Date	KEYWORD1
+BufferedReadStream	KEYWORD1
+DataCopyBuffer	KEYWORD1
+FlashMemoryStream	KEYWORD1
+MemoryStream	KEYWORD1
+color_t	KEYWORD1
+PressPoint	KEYWORD1
+PHN_Midi	KEYWORD1
+
+#######################################
+# Datatypes continued - widgets (KEYWORD1)
+#######################################
+
+PHN_Widget	KEYWORD1
+PHN_BarGraph	KEYWORD1
+PHN_Button	KEYWORD1
+PHN_ButtonGrid	KEYWORD1
+PHN_Gauge	KEYWORD1
+PHN_Label	KEYWORD1
+PHN_LineGraph	KEYWORD1
+PHN_Scrollbar	KEYWORD1
+PHN_TextBox	KEYWORD1
+
+#######################################
+# Namespaces (KEYWORD1)
+#######################################
+
+PHNDisplayHW	KEYWORD1
+PHNDisplay8Bit	KEYWORD1
+PHNDisplay16Bit	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+PHN_Settings_Load	KEYWORD2
+PHN_Settings_Save	KEYWORD2
+PHN_Settings_WriteCali	KEYWORD2
+PHN_Settings_ReadCali	KEYWORD2
+enableBluetooth	KEYWORD2
+enableWiFi	KEYWORD2
+disableBluetoothWiFi	KEYWORD2
+getFreeRAM	KEYWORD2
+allocateCopy	KEYWORD2
+bit_reverse	KEYWORD2
+flushRead	KEYWORD2
+waitAvailable	KEYWORD2
+flushTransfer	KEYWORD2
+addDateSeconds	KEYWORD2
+writeData	KEYWORD2
+writeCommand	KEYWORD2
+writeRegister	KEYWORD2
+readData	KEYWORD2
+readRegister	KEYWORD2
+setCursor	KEYWORD2
+setViewport	KEYWORD2
+readTouch	KEYWORD2
+writePixel	KEYWORD2
+writePixels	KEYWORD2
+writePixelLines	KEYWORD2
+drawRect	KEYWORD2
+fillRect	KEYWORD2
+drawTriangle	KEYWORD2
+fillTriangle	KEYWORD2
+drawCircle	KEYWORD2
+fillCircle	KEYWORD2
+drawRoundRect	KEYWORD2
+fillRoundRect	KEYWORD2
+fill	KEYWORD2
+drawLine	KEYWORD2
+drawPixel	KEYWORD2
+updateTouch	KEYWORD2
+setScreenRotation	KEYWORD2
+setWrapMode	KEYWORD2
+setViewport	KEYWORD2
+PressPoint getTouchLast	KEYWORD2
+PressPoint getTouch	KEYWORD2
+PressPoint getTouchStart	KEYWORD2
+isTouched	KEYWORD2
+isTouchDown	KEYWORD2
+isTouchUp	KEYWORD2
+isTouched	KEYWORD2
+isTouchEnter	KEYWORD2
+isTouchLeave	KEYWORD2
+isTouchClicked	KEYWORD2
+isTouchChange	KEYWORD2
+writeImage_1bit	KEYWORD2
+addWidget	KEYWORD2
+removeWidget	KEYWORD2
+setTextBackground	KEYWORD2
+setTextColor	KEYWORD2
+setTextSize	KEYWORD2
+setBounds	KEYWORD2
+setText	KEYWORD2
+setValue	KEYWORD2
+setRange	KEYWORD2
+setColor	KEYWORD2
+setLineCount	KEYWORD2
+setLineColor	KEYWORD2
+setAutoClear	KEYWORD2
+addValues	KEYWORD2
+isClicked	KEYWORD2
+isValueChanged	KEYWORD2
+note	KEYWORD2
+noteOn	KEYWORD2
+noteOff	KEYWORD2
+setInstrument	KEYWORD2
+setBank	KEYWORD2
+
+#######################################
+# Macro functions (LITERAL1)
+#######################################
+
+TEXT_Image	LITERAL1
+FLASH_Image	LITERAL1
+FLASH_MAPPED_Image	LITERAL1
+PALETTE	LITERAL1
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+sim	LITERAL1
+BLACK	LITERAL1
+WHITE	LITERAL1
+GRAY	LITERAL1
+GRAY_DARK	LITERAL1
+GRAY_LIGHT	LITERAL1
+BLUE	LITERAL1
+RED	LITERAL1
+GREEN	LITERAL1
+CYAN	LITERAL1
+MAGENTA	LITERAL1
+YELLOW	LITERAL1
+ORANGE	LITERAL1
+BLACK_8BIT	LITERAL1
+WHITE_8BIT	LITERAL1
+GRAY_8BIT	LITERAL1
+YELLOW_8BIT	LITERAL1
+ORANGE_8BIT	LITERAL1
+RED_8BIT	LITERAL1
+GREEN_8BIT	LITERAL1
+BLUE_8BIT	LITERAL1
+CYAN_8BIT	LITERAL1
+PURPLE_8BIT	LITERAL1
