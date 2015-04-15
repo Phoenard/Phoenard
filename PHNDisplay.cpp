@@ -635,6 +635,7 @@ void PHN_Display::setCursorDown(uint16_t x) {
 
 void PHN_Display::setCursor(uint16_t x, uint16_t y) {
   textOpt.cursor_x = x;
+  textOpt.cursor_x_start = x;
   textOpt.cursor_y = y;
 }
 
@@ -654,7 +655,7 @@ void PHN_Display::setTextBackground(color_t c, bool enable) {
 size_t PHN_Display::write(uint8_t c) {
   if (c == '\n') {
     textOpt.cursor_y += textOpt.textsize*8;
-    textOpt.cursor_x = 0;
+    textOpt.cursor_x = textOpt.cursor_x_start;
   } else if (c == '\r') {
     // skip em
   } else {
@@ -735,33 +736,33 @@ void PHN_Display::drawChar(uint16_t x, uint16_t y, char c,
 }
 
 void PHN_Display::drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, color_t color, uint8_t size) {
-  uint8_t cx, cy;
-  uint8_t line;
-  uint16_t pcount;
-
-  // Draw in vertical 'dot' chunks for each 5 columns
-  for (cx =0; cx<5; cx++) {
-    line = pgm_read_byte(font_char++);
-    cy = 0;
-    if (textOpt.text_hasbg) {
-      for (uint8_t i = 0; i < 7; i++) {
-        if (line & 0x1) {
-          fillRect(x+cx*size, y+cy*size, size, size, color);
-        } else {
-          fillRect(x+cx*size, y+cy*size, size, size, textOpt.textbg);
-        }
-        line >>= 1;
-        cy++;
-      }
-    } else {
+  // If transparent background, make use of a (slower) cube drawing algorithm
+  // For non-transparent backgrounds, make use of the faster 1-bit image drawing function
+  if (textOpt.text_hasbg) {
+    // Read character data into memory
+    uint8_t c[5];
+    for (char i = 0; i < 5; i++) {
+      c[i] = pgm_read_byte_far((void*) (font_char + i));
+    }
+    PHNDisplay16Bit::writeImage_1bit(x, y, 8, 5, size, c, DIR_DOWN, textOpt.textbg, color);
+  } else {
+    // Draw in vertical 'dot' chunks for each 5 columns
+    // Empty (0) data 'blocks' are skipped leaving them 'transparent'
+    uint8_t cx, cy;
+    uint8_t line;
+    uint16_t pcount;
+    for (cx =0; cx<5; cx++) {
+      line = pgm_read_byte(font_char++);
+      cy = 0;
       while (line) {
-        if (line & 0x1) {
-          for (pcount = 0; line & 0x1; pcount++)
-            line >>= 1;
+        if (line & 0x80) {
+          for (pcount = 0; line & 0x80; pcount++) {
+            line <<= 1;
+          }
           fillRect(x+cx*size, y+cy*size, size, size*pcount, color);
           cy += pcount;
         } else {
-          line >>= 1;
+          line <<= 1;
           cy++;
         }
       }

@@ -397,29 +397,10 @@ namespace PHNDisplay8Bit {
     writePixels(color, PHNDisplayHW::PIXELS);
   }
 
-  void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, uint8_t scale, uint8_t* data, uint8_t direction, uint8_t colorA, uint8_t colorB) {
-    uint8_t pix_dat, dy, si, dx, d;
-    for (dy = 0; dy < height; dy++) {
-      for (si = 0; si < scale; si++) {
-        PHNDisplayHW::setCursor(x, y, direction);
-        if (direction == DIR_DOWN) {
-          x++;
-        } else {
-          y++;
-        }
-
-        uint8_t* data_line = data;
-        for (dx = 0; dx < width; dx++) {
-          /* Refresh pixel data every 8 pixels */
-          if ((dx & 0x7) == 0) pix_dat = *data_line++;
-          /* Draw SCALE pixels for each pixel in a line */
-          writePixels((pix_dat & 0x80) ? colorA : colorB, scale);
-          /* Next pixel data bit */
-          pix_dat <<= 1;
-        }
-      }
-      data += width/8;
-    }
+  void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, uint8_t scale, uint8_t* data, uint8_t direction, uint8_t color0, uint8_t color1) {
+    // Slightly less efficient in drawing, but prevents duplicate code
+    // For line pixel drawing, an 8-bit verification check if performed using 8-bit mode there too
+    PHNDisplay16Bit::writeImage_1bit(x, y, width, height, scale, data, direction, color0 | (color0 << 8), color1 | (color1 << 8));
   }
 }
 
@@ -463,5 +444,30 @@ namespace PHNDisplay16Bit {
   void fill(uint16_t color) {
     PHNDisplayHW::setCursor(0, 0);
     writePixels(color, PHNDisplayHW::PIXELS);
+  }
+
+  void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, uint8_t scale, uint8_t* data, uint8_t direction, uint16_t color0, uint16_t color1) {
+    uint8_t pix_dat, dy, si, dx, d;
+    for (dy = 0; dy < height; dy++) {
+      for (si = 0; si < scale; si++) {
+        PHNDisplayHW::setCursor(x, y, direction);
+        if (direction == DIR_DOWN) {
+          x++;
+        } else {
+          y++;
+        }
+
+        uint8_t* data_line = data;
+        for (dx = 0; dx < width; dx++) {
+          /* Refresh pixel data every 8 pixels */
+          if ((dx & 0x7) == 0) pix_dat = *data_line++;
+          /* Draw SCALE pixels for each pixel in a line */
+          writePixels((pix_dat & 0x80) ? color1 : color0, scale);
+          /* Next pixel data bit */
+          pix_dat <<= 1;
+        }
+      }
+      data += width/8;
+    }
   }
 }

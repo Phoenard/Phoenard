@@ -70,6 +70,7 @@ typedef struct {
 typedef struct {
   uint8_t textsize;
   uint16_t cursor_x, cursor_y;
+  uint16_t cursor_x_start;
   color_t textcolor;
   color_t textbg;
   bool text_hasbg;

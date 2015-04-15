@@ -256,7 +256,7 @@ namespace PHNDisplay8Bit {
   
   /// Drawing 1-bit images stored in RAM (not FLASH!)
   void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, 
-                       uint8_t scale, uint8_t* data, uint8_t direction, uint8_t colorA, uint8_t colorB);
+                       uint8_t scale, uint8_t* data, uint8_t direction, uint8_t color0, uint8_t color1);
 }
 
 /// 16-bit display (drawing) logic for full color
@@ -269,6 +269,10 @@ namespace PHNDisplay16Bit {
   void drawLine(uint16_t x, uint16_t y, uint32_t length, uint8_t direction, uint16_t color);
   /// Fills the entire screen with 16-bit color
   void fill(uint16_t color);
+
+  /// Drawing 1-bit images stored in RAM (not FLASH!)
+  void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, 
+                       uint8_t scale, uint8_t* data, uint8_t direction, uint16_t color0, uint16_t color1);
 }
 
 /** @}*/

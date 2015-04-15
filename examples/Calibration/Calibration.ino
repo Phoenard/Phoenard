@@ -20,22 +20,28 @@ typedef struct TouchData {
 TouchData getData(int x, int y);
 
 void setup() {
+  // Always draw text with a black background
+  display.setTextBackground(BLACK);
+
   // Instruction text
-  LCD_write_string(36, 100, 2, "Press the middle", WHITE_8BIT, BLACK_8BIT);
-  LCD_write_string(36, 120, 2, "of each cube", WHITE_8BIT, BLACK_8BIT);
+  display.setCursor(71, 100);
+  display.setTextColor(WHITE);
+  display.setTextSize(2);
+  display.print("Press the middle\n"
+                "of each cube");
 
   // Read the four points on the screen
   TouchData data_tl = getData(BOX_EDGE - BOX_SIZE / 2, BOX_EDGE - BOX_SIZE / 2);
   TouchData data_tr = getData(PHNDisplayHW::WIDTH - BOX_EDGE - BOX_SIZE / 2, BOX_EDGE - BOX_SIZE / 2);
   TouchData data_bl = getData(BOX_EDGE - BOX_SIZE / 2, PHNDisplayHW::HEIGHT - BOX_EDGE - BOX_SIZE / 2);
   TouchData data_br = getData(PHNDisplayHW::WIDTH - BOX_EDGE - BOX_SIZE / 2, PHNDisplayHW::HEIGHT - BOX_EDGE - BOX_SIZE / 2);
-  
+
   // Convert the points into the offset values
   int hor_min = (data_tl.x + data_bl.x) >> 1;
   int hor_max = (data_tr.x + data_br.x) >> 1;
   int ver_min = (data_tl.y + data_tr.y) >> 1;
   int ver_max = (data_bl.y + data_br.y) >> 1;
-  
+
   // Apply transform logic to make these point to the boundaries of the screen
   int hor_off = (int) (((float) BOX_EDGE / (float) (PHNDisplayHW::WIDTH - (2 * BOX_EDGE))) * (float) (hor_max - hor_min));
   int ver_off = (int) (((float) BOX_EDGE / (float) (PHNDisplayHW::HEIGHT - (2 * BOX_EDGE))) * (float) (ver_max - ver_min));
@@ -58,15 +64,19 @@ void setup() {
   PHN_Settings_Save(settings);
 
   // All done, notify user
-  LCD_write_string(20, 80,  2, "Screen calibration", GREEN_8BIT, BLACK_8BIT);
-  LCD_write_string(20, 100, 2, "finished. Press the", GREEN_8BIT, BLACK_8BIT);
-  LCD_write_string(20, 120, 2, "screen to test the", GREEN_8BIT, BLACK_8BIT);
-  LCD_write_string(20, 140, 2, "performance. Press", GREEN_8BIT, BLACK_8BIT);
-  LCD_write_string(20, 160, 2, "RESET to go back.", GREEN_8BIT, BLACK_8BIT);
+  display.setCursor(47, 70);
+  display.setTextColor(GREEN);
+  display.setTextSize(2);
+  display.print("Screen calibration\n"
+                "finished. Press the\n"
+                "screen to test the\n"
+                "performance. Press\n"
+                "RESET to go back.");
 }
 
 void loop() {
   // Proceed to run a paint application using touch for debugging purposes
+  // Minimalistic, unfiltered touch input is used as opposed to the display library
   unsigned int x, y;
   float pressure;
   PHNDisplayHW::readTouch(&x, &y, &pressure);
