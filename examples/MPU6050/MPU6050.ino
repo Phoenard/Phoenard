@@ -1,5 +1,9 @@
 /*
  * Shows live results from the MPU6050 Accelerometer/Gyro
+ * in two line graphs.
+ *
+ * Makes use of the MPU6050 Arduino library found here:
+ * https://github.com/jrowberg/i2cdevlib/tree/master/Arduino/MPU6050
  */
 #include "Phoenard.h"
 #include <Wire.h>

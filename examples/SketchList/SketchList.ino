@@ -601,7 +601,7 @@ boolean askSketchName(char name[8]) {
   PHNDisplay8Bit::writePixelLines(GRAY_8BIT, KEYBOARD_HEIGHT);
   PHNDisplay8Bit::writePixelLines(BLACK_8BIT, PHNDisplayHW::HEIGHT - KEYBOARD_HEIGHT);
 
-  // But a filled square underneath the spacebar
+  // Put a filled square underneath the spacebar
   const uint16_t GREY_SPACE_X = 65;
   const uint16_t GREY_SPACE_H = 31;
   PHNDisplay8Bit::fillRect(GREY_SPACE_X, KEYBOARD_HEIGHT, PHNDisplayHW::WIDTH - GREY_SPACE_X * 2, GREY_SPACE_H, GRAY_8BIT);

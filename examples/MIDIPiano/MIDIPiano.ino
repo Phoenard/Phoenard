@@ -25,9 +25,6 @@ PHN_Midi midi;
 // Track the keys pressed down
 boolean keys_pressed[KEYS_COUNT];
 
-// Define the notes played for each key
-const char midi_notes[] = {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
-
 // Define midi constants
 char midi_channel    = 0;
 char midi_velocity   = 120;
@@ -78,9 +75,11 @@ void setup() {
   instrument_prev.setBounds(5, 5, 32, 32);
   instrument_prev.setText("<");
   display.addWidget(instrument_prev);
+
   instrument_next.setBounds(320-37, 5, 32, 32);
   instrument_next.setText(">");
   display.addWidget(instrument_next);
+
   instrument_name.setBounds(45, 5, 320-90, 32);
   instrument_name.setColor(CONTENT, GREEN);
   display.addWidget(instrument_name);

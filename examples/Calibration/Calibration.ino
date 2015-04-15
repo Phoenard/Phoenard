@@ -1,7 +1,9 @@
 /*
- * Calibrates the LCD touchscreen
+ * Calibrates the LCD touchscreen by allowing
+ * the user to press 4 white cubes. The raw analog
+ * input is used to store the calibration data in
+ * EEPROM for use by the library.
  */
-
 #include "Phoenard.h"
 
 typedef struct TouchData {
@@ -9,38 +11,24 @@ typedef struct TouchData {
   int y;
 };
 
-#define LCD_WIDTH   320
-#define LCD_HEIGHT  240
+#define BOX_COLOR_IDLE     WHITE_8BIT   // Color of selectable boxes when not pressed
+#define BOX_COLOR_ACTIVE   GREEN_8BIT   // Color of selectable boxes when pressed down
+#define BOX_SIZE           32           // Size (width and height) of selectable boxes
+#define BOX_EDGE           50           // Edge between each corner of the screen and the boxes
 
-#define LCD_MODE_HOR  0x8
-#define LCD_MODE_VER  0x0
-
-#define LCD_BLACK     0x00
-#define LCD_WHITE     0xFF
-#define LCD_YELLOW    0xEE
-#define LCD_RED       0xE0
-#define LCD_GREEN     0xC7
-#define LCD_BLUE      0x9E
-#define LCD_PURPLE    0xDC
-
-#define BOX_COLOR_IDLE    LCD_WHITE
-#define BOX_COLOR_ACTIVE  LCD_GREEN
-
-#define BOX_SIZE 32
-#define BOX_EDGE 50
-
+// Pre-defined: prevents compiler issues
 TouchData getData(int x, int y);
 
 void setup() {
   // Instruction text
-  LCD_write_string(36, 100, 2, "Press the middle", LCD_WHITE, LCD_BLACK);
-  LCD_write_string(36, 120, 2, "of each cube", LCD_WHITE, LCD_BLACK);
+  LCD_write_string(36, 100, 2, "Press the middle", WHITE_8BIT, BLACK_8BIT);
+  LCD_write_string(36, 120, 2, "of each cube", WHITE_8BIT, BLACK_8BIT);
 
   // Read the four points on the screen
   TouchData data_tl = getData(BOX_EDGE - BOX_SIZE / 2, BOX_EDGE - BOX_SIZE / 2);
-  TouchData data_tr = getData(LCD_WIDTH - BOX_EDGE - BOX_SIZE / 2, BOX_EDGE - BOX_SIZE / 2);
-  TouchData data_bl = getData(BOX_EDGE - BOX_SIZE / 2, LCD_HEIGHT - BOX_EDGE - BOX_SIZE / 2);
-  TouchData data_br = getData(LCD_WIDTH - BOX_EDGE - BOX_SIZE / 2, LCD_HEIGHT - BOX_EDGE - BOX_SIZE / 2);
+  TouchData data_tr = getData(PHNDisplayHW::WIDTH - BOX_EDGE - BOX_SIZE / 2, BOX_EDGE - BOX_SIZE / 2);
+  TouchData data_bl = getData(BOX_EDGE - BOX_SIZE / 2, PHNDisplayHW::HEIGHT - BOX_EDGE - BOX_SIZE / 2);
+  TouchData data_br = getData(PHNDisplayHW::WIDTH - BOX_EDGE - BOX_SIZE / 2, PHNDisplayHW::HEIGHT - BOX_EDGE - BOX_SIZE / 2);
   
   // Convert the points into the offset values
   int hor_min = (data_tl.x + data_bl.x) >> 1;
@@ -49,8 +37,8 @@ void setup() {
   int ver_max = (data_bl.y + data_br.y) >> 1;
   
   // Apply transform logic to make these point to the boundaries of the screen
-  int hor_off = (int) (((float) BOX_EDGE / (float) (LCD_WIDTH - (2 * BOX_EDGE))) * (float) (hor_max - hor_min));
-  int ver_off = (int) (((float) BOX_EDGE / (float) (LCD_HEIGHT - (2 * BOX_EDGE))) * (float) (ver_max - ver_min));
+  int hor_off = (int) (((float) BOX_EDGE / (float) (PHNDisplayHW::WIDTH - (2 * BOX_EDGE))) * (float) (hor_max - hor_min));
+  int ver_off = (int) (((float) BOX_EDGE / (float) (PHNDisplayHW::HEIGHT - (2 * BOX_EDGE))) * (float) (ver_max - ver_min));
   hor_min -= hor_off;
   hor_max += hor_off;
   ver_min -= ver_off;
@@ -70,11 +58,11 @@ void setup() {
   PHN_Settings_Save(settings);
 
   // All done, notify user
-  LCD_write_string(20, 80,  2, "Screen calibration", LCD_GREEN, LCD_BLACK);
-  LCD_write_string(20, 100, 2, "finished. Press the", LCD_GREEN, LCD_BLACK);
-  LCD_write_string(20, 120, 2, "screen to test the", LCD_GREEN, LCD_BLACK);
-  LCD_write_string(20, 140, 2, "performance. Press", LCD_GREEN, LCD_BLACK);
-  LCD_write_string(20, 160, 2, "RESET to go back.", LCD_GREEN, LCD_BLACK);
+  LCD_write_string(20, 80,  2, "Screen calibration", GREEN_8BIT, BLACK_8BIT);
+  LCD_write_string(20, 100, 2, "finished. Press the", GREEN_8BIT, BLACK_8BIT);
+  LCD_write_string(20, 120, 2, "screen to test the", GREEN_8BIT, BLACK_8BIT);
+  LCD_write_string(20, 140, 2, "performance. Press", GREEN_8BIT, BLACK_8BIT);
+  LCD_write_string(20, 160, 2, "RESET to go back.", GREEN_8BIT, BLACK_8BIT);
 }
 
 void loop() {
@@ -102,7 +90,7 @@ void drawCube(int x, int y, char color) {
 TouchData getData(int x, int y) {
   // Draw the white cube
   drawCube(x, y, BOX_COLOR_IDLE);
-  
+
   // Wait until the touchscreen is pressed down and up again
   boolean pressed = false;
   TouchData touch;
@@ -134,7 +122,7 @@ TouchData getData(int x, int y) {
   }
 
   // Hide the cube again
-  drawCube(x, y, LCD_BLACK);
+  drawCube(x, y, BLACK_8BIT);
 
   return touch;
 }
