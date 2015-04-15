@@ -10,26 +10,26 @@ uint8_t touch_downctr;
 uint8_t touch_waitup;
 uint16_t touch_hor_a, touch_hor_b, touch_ver_a, touch_ver_b;
 
-void LCD_write_font(uint16_t x, uint16_t y, uint8_t scale, unsigned char character, uint8_t colorA, uint8_t colorB) {
+void LCD_write_font(uint16_t x, uint16_t y, uint8_t scale, unsigned char character, uint8_t color0, uint8_t color1) {
   character -= 32;
-  PHNDisplay8Bit::writeImage_1bit(x, y, 8, 5, scale, font + (character * 5), DIR_DOWN, colorA, colorB);
+  PHNDisplay8Bit::writeImage_1bit(x, y, 8, 5, scale, font + (character * 5), DIR_DOWN, color0, color1);
 }
 
-void LCD_write_string(uint16_t x, uint16_t y, uint8_t scale, const char* text, uint8_t colorA, uint8_t colorB) {
+void LCD_write_string(uint16_t x, uint16_t y, uint8_t scale, const char* text, uint8_t color0, uint8_t color1) {
   while (*text) {
-    LCD_write_font(x, y, scale, *text, colorA, colorB);
+    LCD_write_font(x, y, scale, *text, color0, color1);
     x += 6 * scale;
     text++;
   }
 }
 
 void LCD_write_icon(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t* icon, const char* title, uint8_t colorA) {
-  LCD_write_icon(x, y, w, h, icon, title, colorA, BLACK_8BIT, colorA);
+  LCD_write_icon(x, y, w, h, icon, title, BLACK_8BIT, colorA, colorA);
 }
 
 void LCD_write_icon(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t* icon, const char* title, uint8_t colorA, uint8_t colorB, uint8_t colorC) {
   PHNDisplay8Bit::writeImage_1bit(x, y, w, h, 1, icon, DIR_RIGHT, colorA, colorB);
-  LCD_write_string(x + (w - strlen(title) * 6) / 2, y + h + 2, 1, title, colorC, BLACK_8BIT);
+  LCD_write_string(x + (w - strlen(title) * 6) / 2, y + h + 2, 1, title, BLACK_8BIT, colorC);
 }
 
 void LCD_updateTouch(void) {

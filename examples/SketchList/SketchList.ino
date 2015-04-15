@@ -69,8 +69,8 @@ extern uint8_t touch_waitup;
 #define MENU_OFF_Y   5
 
 /* The colors used when drawing UI */
-#define COLOR_C1      WHITE_8BIT
-#define COLOR_C2      BLACK_8BIT
+#define COLOR_C1      BLACK_8BIT
+#define COLOR_C2      WHITE_8BIT
 #define COLOR_C1_SEL  COLOR_C2
 #define COLOR_C2_SEL  COLOR_C1
 
@@ -177,7 +177,7 @@ void showSketches() {
 
             /* Draw the sketch icon */
             uint8_t* icon_data = file_open(sketch_name[i], "SKI", FILE_READ) ? volume_cacheCurrentBlock(0) : icon_sketch_default;
-            LCD_write_icon(px, py, SKETCHES_ICON_W, SKETCHES_ICON_H, icon_data, sketch_name[i], color1, color2, COLOR_C1);
+            LCD_write_icon(px, py, SKETCHES_ICON_W, SKETCHES_ICON_H, icon_data, sketch_name[i], color1, color2, COLOR_C2);
           }
         }
       }
@@ -401,7 +401,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
 
     /* Redraw text when changed */
     if (needsRedraw) {
-      LCD_write_string(EDIT_NAME_X, EDIT_NAME_Y + EDIT_NAME_YOFF, EDIT_NAME_SCALE, filename, COLOR_C1, BLACK_8BIT);
+      LCD_write_string(EDIT_NAME_X, EDIT_NAME_Y + EDIT_NAME_YOFF, EDIT_NAME_SCALE, filename, BLACK_8BIT, COLOR_C2);
     }
 
     /* Redraw icons when touched index changes */
@@ -467,9 +467,9 @@ void editSketch(char filename[9], boolean runWhenExit) {
               /* Print icons and text message to user for first draw */
               LCD_write_icon(cancel_x, cancel_y, 48, 48, edit_icon_cancel, "Cancel", RED_8BIT);
               LCD_write_icon(accept_x, accept_y, 48, 48, edit_icon_accept, "Delete", GREEN_8BIT);
-              LCD_write_string(text_off, text_off, 2,      "Are you sure you want", WHITE_8BIT, BLACK_8BIT);
-              LCD_write_string(text_off, text_off + 16, 2, "to permanently delete", WHITE_8BIT, BLACK_8BIT);
-              LCD_write_string(text_off, text_off + 32, 2, "the sketch?",           WHITE_8BIT, BLACK_8BIT);
+              LCD_write_string(text_off, text_off, 2,      "Are you sure you want", BLACK_8BIT, WHITE_8BIT);
+              LCD_write_string(text_off, text_off + 16, 2, "to permanently delete", BLACK_8BIT, WHITE_8BIT);
+              LCD_write_string(text_off, text_off + 32, 2, "the sketch?",           BLACK_8BIT, WHITE_8BIT);
               
               for (;;) {
                 LCD_updateTouch();
@@ -755,8 +755,8 @@ boolean askSketchName(char name[8]) {
         if (index == KEY_CANCEL_IDX) {
           // Draw cancel button
           uint8_t color = pressed ? WHITE_8BIT : RED_8BIT;
-          PHNDisplay8Bit::writeImage_1bit(x, y, w, h, 1, edit_icon_cancel, DIR_RIGHT, color, BLACK_8BIT);
-          LCD_write_string(x + 6, y + 50, 1, "Cancel", color, BLACK_8BIT);
+          PHNDisplay8Bit::writeImage_1bit(x, y, w, h, 1, edit_icon_cancel, DIR_RIGHT, BLACK_8BIT, color);
+          LCD_write_string(x + 6, y + 50, 1, "Cancel", BLACK_8BIT, color);
         } else if (index == KEY_ACCEPT_IDX) {
           // Draw accept button
           uint8_t color = pressed ? WHITE_8BIT : GREEN_8BIT;
@@ -767,7 +767,7 @@ boolean askSketchName(char name[8]) {
           uint8_t color = pressed ? BLUE_8BIT : WHITE_8BIT;
           PHNDisplay8Bit::fillRect(x, y, w, h, color);
           PHNDisplay8Bit::drawRect(x, y, w, h, BLACK_8BIT);
-          LCD_write_font(x + 4, y + 3, 3, NAME_MAP[index], BLACK_8BIT, color);
+          LCD_write_font(x + 4, y + 3, 3, NAME_MAP[index], color, BLACK_8BIT);
           if (index == KEY_BACKSPACE_IDX) {
             PHNDisplay8Bit::fillRect(x + 10, y + 12, w - 20, 3, BLACK_8BIT);
           }
@@ -809,7 +809,7 @@ boolean askSketchName(char name[8]) {
           color_a = BLUE_8BIT;
           color_b = BLACK_8BIT;
         }
-        LCD_write_font(x, y, 4, resultFilename[index], color_a, BLACK_8BIT);
+        LCD_write_font(x, y, 4, resultFilename[index], BLACK_8BIT, color_a);
         PHNDisplay8Bit::drawLine(x, y + h, w, DIR_RIGHT, color_b);
       }
     }
