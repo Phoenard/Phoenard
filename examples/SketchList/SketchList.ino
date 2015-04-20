@@ -327,13 +327,13 @@ void editSketch(char filename[9], boolean runWhenExit) {
   uint8_t touchedIndex = EDIT_IDX_NONE;
 
   /* Store old icon and filename data for restoring (cancel) */
-  uint8_t  data_original[512];
+  uint8_t data_original[512];
   char filename_original[8];
   memcpy(data_original, volume_cacheBuffer_.data, 512);
   memcpy(filename_original, filename, 8);
 
   boolean file_needs_saving = false;
-  uint8_t draw_color = COLOR_C1;
+  uint8_t draw_color = COLOR_C2;
   boolean edit_finish = false;
   long last_save = millis(); // Monitors the last time the icon data was saved
   long last_done_pressed = 0; // Monitors how long the 'done' button is pressed
@@ -357,7 +357,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
       uint16_t data_idx = (p_y * (SKETCHES_ICON_W / 8)) + (p_x / 8);
       uint8_t  data_msk = (1 << (0x7 - (p_x & 0x7)));
 
-      if (draw_color == COLOR_C1) {
+      if (draw_color == COLOR_C2) {
         *(volume_cacheBuffer_.data + data_idx) |= data_msk;
       } else {
         *(volume_cacheBuffer_.data + data_idx) &= ~data_msk;
@@ -433,11 +433,11 @@ void editSketch(char filename[9], boolean runWhenExit) {
         switch (oldTouchedIndex) {
           case EDIT_IDX_COLOR:
             {
-              if (draw_color == COLOR_C1) {
-                draw_color = COLOR_C2;
+              if (draw_color == COLOR_C2) {
+                draw_color = COLOR_C1;
                 button_icon[EDIT_IDX_COLOR] = edit_icon_changecolor_0;
               } else {
-                draw_color = COLOR_C1;
+                draw_color = COLOR_C2;
                 button_icon[EDIT_IDX_COLOR] = edit_icon_changecolor_1;
               }
             }

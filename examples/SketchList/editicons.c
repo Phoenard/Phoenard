@@ -1,5 +1,7 @@
+/*
+ * Stores icons for UI elements inside the Sketchlist menu
+ */
 #include <avr/io.h>
-#include <avr/pgmspace.h> 
  
 #ifndef EDITICONS_H
 #define EDITICONS_H
