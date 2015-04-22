@@ -825,7 +825,7 @@ boolean askSketchName(char name[8]) {
       
       PHNDisplay8Bit::fillRect(popup_x, popup_y, popup_w, popup_h, WHITE_8BIT);
       PHNDisplay8Bit::drawRect(popup_x, popup_y, popup_w, popup_h, RED_8BIT);
-      (popup_x + txt_xoff, popup_y + 10, 2, popupMessage, RED_8BIT, WHITE_8BIT);
+      PHNDisplay8Bit::writeString(popup_x + txt_xoff, popup_y + 10, 2, popupMessage, WHITE_8BIT, RED_8BIT);
       delay(800);
       PHNDisplay8Bit::fillRect(popup_x, popup_y, popup_w, popup_h, GRAY_8BIT);
       redrawAll = true;
