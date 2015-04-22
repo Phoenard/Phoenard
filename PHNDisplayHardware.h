@@ -191,6 +191,9 @@ typedef uint16_t color_t;
 #define DIR_UP               DIR_UP_WRAP_DOWN
 //@}
 
+/// Macro to turn 8-bit color into 16-bit color
+#define COLOR8TO16(color)    ((uint16_t) ((color & 0xFF) | ((color) << 8)))
+
 /// Main display hardware functions are contained here
 namespace PHNDisplayHW {
 
@@ -253,10 +256,18 @@ namespace PHNDisplay8Bit {
   void fillRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t color);
   /// Fills the entire screen with 8-bit color
   void fill(uint8_t color);
+
+  /// Draws a String to the screen using the standard font
+  void writeString(uint16_t x, uint16_t y, uint8_t scale, const char* text, uint8_t color0, uint8_t color1);
+  /// Draws a Character to the screen using the standard font
+  void writeChar(uint16_t x, uint16_t y, uint8_t scale, char c, uint8_t color0, uint8_t color1);
+
+  /// Draws a 5x7 1-bit font character, the font data must be stored in FLASH
+  void writeFont_1bit(uint16_t x, uint16_t y, uint8_t scale, const uint8_t* data, uint8_t color0, uint8_t color1);
   
   /// Drawing 1-bit images stored in RAM (not FLASH!)
   void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, 
-                       uint8_t scale, uint8_t* data, uint8_t direction, uint8_t color0, uint8_t color1);
+                       uint8_t scale, const uint8_t* data, uint8_t direction, uint8_t color0, uint8_t color1);
 }
 
 /// 16-bit display (drawing) logic for full color
@@ -270,9 +281,17 @@ namespace PHNDisplay16Bit {
   /// Fills the entire screen with 16-bit color
   void fill(uint16_t color);
 
+  /// Draws a String to the screen using the standard font
+  void writeString(uint16_t x, uint16_t y, uint8_t scale, const char* text, uint16_t color0, uint16_t color1);
+  /// Draws a Character to the screen using the standard font
+  void writeChar(uint16_t x, uint16_t y, uint8_t scale, char c, uint16_t color0, uint16_t color1);
+
+  /// Draws a 5x7 1-bit font character, the font data must be stored in FLASH
+  void writeFont_1bit(uint16_t x, uint16_t y, uint8_t scale, const uint8_t* data, uint16_t color0, uint16_t color1);
+
   /// Drawing 1-bit images stored in RAM (not FLASH!)
   void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, 
-                       uint8_t scale, uint8_t* data, uint8_t direction, uint16_t color0, uint16_t color1);
+                       uint8_t scale, const uint8_t* data, uint8_t direction, uint16_t color0, uint16_t color1);
 }
 
 /** @}*/

@@ -6,10 +6,6 @@
 #include  <avr/eeprom.h>
 #include "Phoenard.h"
 
-extern uint16_t touch_x, touch_y;
-extern uint8_t touch_downctr;
-extern uint8_t touch_waitup;
-
 /* General defines */
 #define LCD_RIGHT_BORDER    32
 #define HOLD_ACTIVATE_DELAY 1000
@@ -73,6 +69,10 @@ extern uint8_t touch_waitup;
 #define COLOR_C2      WHITE_8BIT
 #define COLOR_C1_SEL  COLOR_C2
 #define COLOR_C2_SEL  COLOR_C1
+
+/* LCD touch input variables */
+uint16_t touch_x, touch_y;
+boolean touch_waitup;
 
 void setLoadOptions(const char* sketchName, unsigned char options) {
   PHN_Settings settings;
@@ -401,7 +401,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
 
     /* Redraw text when changed */
     if (needsRedraw) {
-      LCD_write_string(EDIT_NAME_X, EDIT_NAME_Y + EDIT_NAME_YOFF, EDIT_NAME_SCALE, filename, BLACK_8BIT, COLOR_C2);
+      PHNDisplay8Bit::writeString(EDIT_NAME_X, EDIT_NAME_Y + EDIT_NAME_YOFF, EDIT_NAME_SCALE, filename, BLACK_8BIT, COLOR_C2);
     }
 
     /* Redraw icons when touched index changes */
@@ -467,10 +467,10 @@ void editSketch(char filename[9], boolean runWhenExit) {
               /* Print icons and text message to user for first draw */
               LCD_write_icon(cancel_x, cancel_y, 48, 48, edit_icon_cancel, "Cancel", RED_8BIT);
               LCD_write_icon(accept_x, accept_y, 48, 48, edit_icon_accept, "Delete", GREEN_8BIT);
-              LCD_write_string(text_off, text_off, 2,      "Are you sure you want", BLACK_8BIT, WHITE_8BIT);
-              LCD_write_string(text_off, text_off + 16, 2, "to permanently delete", BLACK_8BIT, WHITE_8BIT);
-              LCD_write_string(text_off, text_off + 32, 2, "the sketch?",           BLACK_8BIT, WHITE_8BIT);
-              
+              PHNDisplay8Bit::writeString(text_off, text_off, 2, "Are you sure you want\n"
+                                                                 "to permanently delete\n"
+                                                                 "this sketch?", BLACK_8BIT, WHITE_8BIT);
+
               for (;;) {
                 LCD_updateTouch();
                 
@@ -756,7 +756,7 @@ boolean askSketchName(char name[8]) {
           // Draw cancel button
           uint8_t color = pressed ? WHITE_8BIT : RED_8BIT;
           PHNDisplay8Bit::writeImage_1bit(x, y, w, h, 1, edit_icon_cancel, DIR_RIGHT, BLACK_8BIT, color);
-          LCD_write_string(x + 6, y + 50, 1, "Cancel", BLACK_8BIT, color);
+          PHNDisplay8Bit::writeString(x + 6, y + 50, 1, "Cancel", BLACK_8BIT, color);
         } else if (index == KEY_ACCEPT_IDX) {
           // Draw accept button
           uint8_t color = pressed ? WHITE_8BIT : GREEN_8BIT;
@@ -767,7 +767,7 @@ boolean askSketchName(char name[8]) {
           uint8_t color = pressed ? BLUE_8BIT : WHITE_8BIT;
           PHNDisplay8Bit::fillRect(x, y, w, h, color);
           PHNDisplay8Bit::drawRect(x, y, w, h, BLACK_8BIT);
-          LCD_write_font(x + 4, y + 3, 3, NAME_MAP[index], color, BLACK_8BIT);
+          PHNDisplay8Bit::writeChar(x + 4, y + 3, 3, NAME_MAP[index], color, BLACK_8BIT);
           if (index == KEY_BACKSPACE_IDX) {
             PHNDisplay8Bit::fillRect(x + 10, y + 12, w - 20, 3, BLACK_8BIT);
           }
@@ -809,7 +809,7 @@ boolean askSketchName(char name[8]) {
           color_a = BLUE_8BIT;
           color_b = BLACK_8BIT;
         }
-        LCD_write_font(x, y, 4, resultFilename[index], BLACK_8BIT, color_a);
+        PHNDisplay8Bit::writeChar(x, y, 4, resultFilename[index], BLACK_8BIT, color_a);
         PHNDisplay8Bit::drawLine(x, y + h, w, DIR_RIGHT, color_b);
       }
     }
@@ -825,11 +825,72 @@ boolean askSketchName(char name[8]) {
       
       PHNDisplay8Bit::fillRect(popup_x, popup_y, popup_w, popup_h, WHITE_8BIT);
       PHNDisplay8Bit::drawRect(popup_x, popup_y, popup_w, popup_h, RED_8BIT);
-      LCD_write_string(popup_x + txt_xoff, popup_y + 10, 2, popupMessage, RED_8BIT, WHITE_8BIT);
+      (popup_x + txt_xoff, popup_y + 10, 2, popupMessage, RED_8BIT, WHITE_8BIT);
       delay(800);
       PHNDisplay8Bit::fillRect(popup_x, popup_y, popup_w, popup_h, GRAY_8BIT);
       redrawAll = true;
       popupMessage = NULL;
     }
   }
+}
+
+/*
+ * Used to draw an icon with text underneath it in a portable, re-usable manner.
+ * x/y/w/h specifies the location and size of the icon drawn
+ * the icon data specifies the icon data used for the icon drawn
+ * the title specifies the title text drawn underneath the icon
+ * colorA and colorB specify the icon colors - 0/1
+ * colorC specifies the foreground color of the text
+ * A black background is assumed.
+ */
+void LCD_write_icon(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t* icon, const char* title, uint8_t colorA, uint8_t colorB, uint8_t colorC) {
+  PHNDisplay8Bit::writeImage_1bit(x, y, w, h, 1, icon, DIR_RIGHT, colorA, colorB);
+  PHNDisplay8Bit::writeString(x + (w - strlen(title) * 6) / 2, y + h + 2, 1, title, BLACK_8BIT, colorC);
+}
+
+/*
+ * Overload to make the icon drawing a little simpler to call, with the same color used for title and icon
+ */
+void LCD_write_icon(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t* icon, const char* title, uint8_t color) {
+  LCD_write_icon(x, y, w, h, icon, title, BLACK_8BIT, color, color);
+}
+
+void LCD_updateTouch(void) {
+  float f_pressure;
+
+  /* Store old x/y touched point for later */
+  uint16_t old_x = touch_x;
+  uint16_t old_y = touch_y;
+
+  /* Read the touch input */
+  PHNDisplayHW::readTouch(&touch_x, &touch_y, &f_pressure);
+
+  /* Not touched */
+  boolean isNotTouched = ((old_x == 0xFFFF && f_pressure <= 70.0F) || f_pressure == 0.0F);
+  if (isNotTouched || touch_waitup) {
+    /* Not touched or waiting for touch to engage */
+    if (!isNotTouched) {
+      touch_waitup = false;
+    }
+    touch_x = touch_y = 0xFFFF;
+  } else {
+    /* Apply a smoothing factor to make drawing easier */
+    if (old_x != 0xFFFF) {
+      touch_x += 0.80 * ((int) old_x - (int) touch_x);
+      touch_y += 0.80 * ((int) old_y - (int) touch_y);
+    }
+  }
+}
+
+void LCD_clearTouch(void) {
+  touch_x = touch_y = 0xFFFF;
+  touch_waitup = true;
+}
+
+uint8_t LCD_isTouchedAny(void) {
+  return touch_x != 0xFFFF && touch_y != 0xFFFF;
+}
+
+uint8_t LCD_isTouched(uint16_t x, uint16_t y, uint8_t w, uint8_t h) {
+  return touch_x >= x && touch_y >= y && touch_x < (x + w) && touch_y < (y + h);
 }

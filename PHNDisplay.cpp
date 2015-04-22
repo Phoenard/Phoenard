@@ -722,9 +722,16 @@ void PHN_Display::drawStringMiddle(uint16_t x, uint16_t y, uint16_t width, uint1
 }
 
 void PHN_Display::drawString(uint16_t x, uint16_t y, const char *c, color_t color, uint8_t size) {
-  while (c[0] != 0) {
-    drawChar(x, y, c[0], color, size);
-    x += size*6;
+  uint16_t c_x = x;
+  uint16_t c_y = y;
+  while (*c) {
+    if (*c == '\n') {
+      c_x = x;
+      c_y += size*8;
+    } else {
+      drawChar(c_x, c_y, *c, color, size);
+      c_x += size*6;
+    }
     c++;
   }
 }
@@ -732,19 +739,15 @@ void PHN_Display::drawString(uint16_t x, uint16_t y, const char *c, color_t colo
 // draw a character
 void PHN_Display::drawChar(uint16_t x, uint16_t y, char c, 
           color_t color, uint8_t size) {
-  drawCharMem(x, y, font+(c*5), color, size);
+  drawCharMem(x, y, font_5x7+(c*5), color, size);
 }
 
 void PHN_Display::drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, color_t color, uint8_t size) {
   // If transparent background, make use of a (slower) cube drawing algorithm
   // For non-transparent backgrounds, make use of the faster 1-bit image drawing function
   if (textOpt.text_hasbg) {
-    // Read character data into memory
-    uint8_t c[5];
-    for (char i = 0; i < 5; i++) {
-      c[i] = pgm_read_byte_far((void*) (font_char + i));
-    }
-    PHNDisplay16Bit::writeImage_1bit(x, y, 8, 5, size, c, DIR_DOWN, textOpt.textbg, color);
+    // Use standard internal minimal drawing function
+    PHNDisplay16Bit::writeFont_1bit(x, y, size, font_char, textOpt.textbg, color);
   } else {
     // Draw in vertical 'dot' chunks for each 5 columns
     // Empty (0) data 'blocks' are skipped leaving them 'transparent'

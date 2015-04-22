@@ -25,6 +25,7 @@ THE SOFTWARE.
 
 #include "PHNDisplayHardware.h"
 #include "PHNSettings.h"
+#include "PHNDisplayFont.c"
 
 /* Splits a 16-bit argument into two 8-bit bytes in memory */
 #define ARG(value)   ((value) & 0xFF), ((value) >> 8)
@@ -397,10 +398,26 @@ namespace PHNDisplay8Bit {
     writePixels(color, PHNDisplayHW::PIXELS);
   }
 
-  void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, uint8_t scale, uint8_t* data, uint8_t direction, uint8_t color0, uint8_t color1) {
-    // Slightly less efficient in drawing, but prevents duplicate code
-    // For line pixel drawing, an 8-bit verification check if performed using 8-bit mode there too
-    PHNDisplay16Bit::writeImage_1bit(x, y, width, height, scale, data, direction, color0 | (color0 << 8), color1 | (color1 << 8));
+  /*
+   * Slightly less efficient in drawing, but prevents duplicate code
+   * For line pixel drawing, an 8-bit verification check is performed using 8-bit mode there too
+   * This likely will not get optimized out, though.
+   */
+
+  void writeString(uint16_t x, uint16_t y, uint8_t scale, const char* text, uint8_t color0, uint8_t color1) {
+    PHNDisplay16Bit::writeString(x, y, scale, text, COLOR8TO16(color0), COLOR8TO16(color1));
+  }
+
+  void writeChar(uint16_t x, uint16_t y, uint8_t scale, char c, uint8_t color0, uint8_t color1) {
+    PHNDisplay16Bit::writeChar(x, y, scale, c, COLOR8TO16(color0), COLOR8TO16(color1));
+  }
+
+  void writeFont_1bit(uint16_t x, uint16_t y, uint8_t scale, const uint8_t* data, uint8_t color0, uint8_t color1) {
+    PHNDisplay16Bit::writeFont_1bit(x, y, scale, data, COLOR8TO16(color0), COLOR8TO16(color1));
+  }
+
+  void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, uint8_t scale, const uint8_t* data, uint8_t direction, uint8_t color0, uint8_t color1) {
+    PHNDisplay16Bit::writeImage_1bit(x, y, width, height, scale, data, direction, COLOR8TO16(color0), COLOR8TO16(color1));
   }
 }
 
@@ -446,7 +463,34 @@ namespace PHNDisplay16Bit {
     writePixels(color, PHNDisplayHW::PIXELS);
   }
 
-  void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, uint8_t scale, uint8_t* data, uint8_t direction, uint16_t color0, uint16_t color1) {
+  void writeString(uint16_t x, uint16_t y, uint8_t scale, const char* text, uint16_t color0, uint16_t color1) {
+    uint16_t c_x = x;
+    uint16_t c_y = y;
+    while (*text) {
+      if (*text == '\n') {
+        c_x = x;
+        c_y += 8*scale;
+      } else {
+        writeChar(c_x, c_y, scale, *text, color0, color1);
+        c_x += 6*scale;
+      }
+      text++;
+    }
+  }
+
+  void writeChar(uint16_t x, uint16_t y, uint8_t scale, char c, uint16_t color0, uint16_t color1) {
+    writeFont_1bit(x, y, scale, font_5x7+(c*5), color0, color1);
+  }
+
+  void writeFont_1bit(uint16_t x, uint16_t y, uint8_t scale, const uint8_t* data, uint16_t color0, uint16_t color1) {
+    // Read character data into memory
+    uint8_t c[5];
+    memcpy_P(c, (void*) data, 5);
+    // Use standard 1-bit drawing function and draw the character pixel data
+    writeImage_1bit(x, y, 8, 5, scale, c, DIR_DOWN, color0, color1);
+  }
+
+  void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, uint8_t scale, const uint8_t* data, uint8_t direction, uint16_t color0, uint16_t color1) {
     uint8_t pix_dat, dy, si, dx, d;
     for (dy = 0; dy < height; dy++) {
       for (si = 0; si < scale; si++) {
@@ -457,7 +501,7 @@ namespace PHNDisplay16Bit {
           y++;
         }
 
-        uint8_t* data_line = data;
+        const uint8_t* data_line = data;
         for (dx = 0; dx < width; dx++) {
           /* Refresh pixel data every 8 pixels */
           if ((dx & 0x7) == 0) pix_dat = *data_line++;

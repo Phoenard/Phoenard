@@ -1,5 +1,7 @@
 /*
  * Stores icons for UI elements inside the Sketchlist menu
+ * Note: stores them in RAM as well in FLASH to not require
+ *       flash reading functions.
  */
 #include <avr/io.h>
  

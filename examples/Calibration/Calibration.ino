@@ -20,15 +20,9 @@ typedef struct TouchData {
 TouchData getData(int x, int y);
 
 void setup() {
-  // Always draw text with a black background
-  display.setTextBackground(BLACK);
-
-  // Instruction text
-  display.setCursor(71, 100);
-  display.setTextColor(WHITE);
-  display.setTextSize(2);
-  display.print("Press the middle\n"
-                "of each cube");
+  // Draw some text
+  PHNDisplay8Bit::writeString(71, 100, 2, "Press the middle\n"
+                                          "of each cube",       BLACK_8BIT, WHITE_8BIT);
 
   // Read the four points on the screen
   TouchData data_tl = getData(BOX_EDGE - BOX_SIZE / 2, BOX_EDGE - BOX_SIZE / 2);
@@ -64,14 +58,11 @@ void setup() {
   PHN_Settings_Save(settings);
 
   // All done, notify user
-  display.setCursor(47, 70);
-  display.setTextColor(GREEN);
-  display.setTextSize(2);
-  display.print("Screen calibration\n"
-                "finished. Press the\n"
-                "screen to test the\n"
-                "performance. Press\n"
-                "RESET to go back.");
+  PHNDisplay8Bit::writeString(47, 70, 2, "Screen calibration\n"
+                                         "finished. Press the\n"
+                                         "screen to test the\n"
+                                         "performance. Press\n"
+                                         "RESET to go back."      , BLACK_8BIT, GREEN_8BIT);
 }
 
 void loop() {
