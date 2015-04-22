@@ -506,9 +506,9 @@ namespace PHNDisplay16Bit {
           /* Refresh pixel data every 8 pixels */
           if ((dx & 0x7) == 0) pix_dat = *data_line++;
           /* Draw SCALE pixels for each pixel in a line */
-          writePixels((pix_dat & 0x80) ? color1 : color0, scale);
+          writePixels((pix_dat & 0x1) ? color1 : color0, scale);
           /* Next pixel data bit */
-          pix_dat <<= 1;
+          pix_dat >>= 1;
         }
       }
       data += width/8;

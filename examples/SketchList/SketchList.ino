@@ -355,7 +355,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
       uint8_t p_x = (touch_x - EDIT_ICON_X) / EDIT_ICON_SCALE;
       uint8_t p_y = (touch_y - EDIT_ICON_Y) / EDIT_ICON_SCALE;
       uint16_t data_idx = (p_y * (SKETCHES_ICON_W / 8)) + (p_x / 8);
-      uint8_t  data_msk = (1 << (0x7 - (p_x & 0x7)));
+      uint8_t  data_msk = (1 << (p_x & 0x7));
 
       if (draw_color == COLOR_C2) {
         *(volume_cacheBuffer_.data + data_idx) |= data_msk;
@@ -869,7 +869,7 @@ void LCD_updateTouch(void) {
   boolean isNotTouched = ((old_x == 0xFFFF && f_pressure <= 70.0F) || f_pressure == 0.0F);
   if (isNotTouched || touch_waitup) {
     /* Not touched or waiting for touch to engage */
-    if (!isNotTouched) {
+    if (isNotTouched) {
       touch_waitup = false;
     }
     touch_x = touch_y = 0xFFFF;

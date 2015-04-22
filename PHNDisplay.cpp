@@ -758,14 +758,14 @@ void PHN_Display::drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, 
       line = pgm_read_byte(font_char++);
       cy = 0;
       while (line) {
-        if (line & 0x80) {
-          for (pcount = 0; line & 0x80; pcount++) {
-            line <<= 1;
+        if (line & 0x1) {
+          for (pcount = 0; line & 0x1; pcount++) {
+            line >>= 1;
           }
           fillRect(x+cx*size, y+cy*size, size, size*pcount, color);
           cy += pcount;
         } else {
-          line <<= 1;
+          line >>= 1;
           cy++;
         }
       }
@@ -960,16 +960,15 @@ void PHN_Display::drawImageMain(Stream &imageStream, int x, int y, void (*color)
         int tmpbuff = 0;
         int tmpbuff_len = 0;
         int pixelmask = (1 << header.bpp) - 1;
-        int dataIndex = 0;
         uint32_t i;
         for (i = 0; i < imagePixels; i++) {
           if (!tmpbuff_len) {
             tmpbuff = (imageStream.read() & 0xFF);
             tmpbuff_len = 8;
           }
-          tmpbuff <<= header.bpp;
+          PHNDisplay16Bit::writePixel(colorMap[tmpbuff & pixelmask]);
+          tmpbuff >>= header.bpp;
           tmpbuff_len -= header.bpp;
-          PHNDisplay16Bit::writePixel(colorMap[(tmpbuff >> 8) & pixelmask]);
         }
       }
     }
