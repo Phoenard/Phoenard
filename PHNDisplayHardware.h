@@ -257,6 +257,9 @@ namespace PHNDisplay8Bit {
   /// Fills the entire screen with 8-bit color
   void fill(uint8_t color);
 
+  /// Fills the screen with all possible 8-bit colors (256 of them)
+  void colorTest();
+  
   /// Draws a String to the screen using the standard font
   void writeString(uint16_t x, uint16_t y, uint8_t scale, const char* text, uint8_t color0, uint8_t color1);
   /// Draws a Character to the screen using the standard font
@@ -280,6 +283,9 @@ namespace PHNDisplay16Bit {
   void drawLine(uint16_t x, uint16_t y, uint32_t length, uint8_t direction, uint16_t color);
   /// Fills the entire screen with 16-bit color
   void fill(uint16_t color);
+
+  /// Fills the screen with all possible 16-bit colors (65536 of them)
+  void colorTest();
 
   /// Draws a String to the screen using the standard font
   void writeString(uint16_t x, uint16_t y, uint8_t scale, const char* text, uint16_t color0, uint16_t color1);

@@ -398,6 +398,26 @@ namespace PHNDisplay8Bit {
     writePixels(color, PHNDisplayHW::PIXELS);
   }
 
+  void colorTest() {
+    const uint8_t BLOCK = 16;
+    const uint8_t STEP_Y = 240/BLOCK;
+    const uint8_t STEP_X = 320/BLOCK;
+
+    // Draw all colors using 16x16 squares
+    uint16_t c_s;
+    for (uint16_t y = 0; y < (BLOCK * STEP_Y); y++) {
+      PHNDisplayHW::setCursor(0, y);
+
+      // Use Y to calculate top 4 bits of the 8-bit color
+      c_s = ((y/STEP_Y)<<4);
+
+      // Draw all blocks
+      for (int cx = 0; cx < BLOCK; cx++) {
+        writePixels(c_s + cx, STEP_X);
+      }
+    }
+  }
+
   /*
    * Slightly less efficient in drawing, but prevents duplicate code
    * For line pixel drawing, an 8-bit verification check is performed using 8-bit mode there too
@@ -461,6 +481,35 @@ namespace PHNDisplay16Bit {
   void fill(uint16_t color) {
     PHNDisplayHW::setCursor(0, 0);
     writePixels(color, PHNDisplayHW::PIXELS);
+  }
+
+  void colorTest() {
+    // There are 65536 colors to be placed in a 320x240 screen area
+    // In this area there can fit 76800 pixels, leaving 11264 remainder pixels
+    // This means every color requires 11264/65536 = 11/64 remainder pixel
+    // Using a counter this remainder can be filled without using slow floats
+    const uint8_t mod_div = 64;
+    const uint8_t mod_mul = 11;
+
+    PHNDisplayHW::setCursor(0, 0);
+    uint16_t c;
+    uint16_t p = 0;
+    uint32_t r = 0;
+    do {
+      // Convert the pixel index into a sorted color
+      //TODO: Make this show a nice gradient (?)
+      c = p;
+
+      // Write main ('1') pixel
+      writePixel(c);
+
+      // Remainder pixel
+      r += mod_mul;
+      if (r >= mod_div) {
+        r -= mod_div;
+        writePixel(c);
+      }
+    } while (p++ != 0xFFFF);
   }
 
   void writeString(uint16_t x, uint16_t y, uint8_t scale, const char* text, uint16_t color0, uint16_t color1) {
