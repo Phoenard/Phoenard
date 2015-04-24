@@ -63,6 +63,7 @@ PHN_Display display;
 PHN_Display::PHN_Display() {
   /* LCD Initialization for first-time use */
   screenRot = 0;
+  _scroll = 0;
   _width = PHNDisplayHW::WIDTH;
   _height = PHNDisplayHW::HEIGHT;
   _viewport.x = 0;
@@ -650,6 +651,15 @@ void PHN_Display::setTextColor(color_t c) {
 void PHN_Display::setTextBackground(color_t c, bool enable) {
   textOpt.textbg = c;
   textOpt.text_hasbg = enable;
+}
+
+void PHN_Display::setScroll(int value) {
+  value %= 320;
+  if (value < 0) {
+    value += 320;
+  }
+  _scroll = value;
+  PHNDisplayHW::writeRegister(LCD_CMD_GATE_SCAN_CTRL3, _scroll);
 }
 
 size_t PHN_Display::write(uint8_t c) {

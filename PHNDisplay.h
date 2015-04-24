@@ -281,6 +281,13 @@ class PHN_Display : public PHN_WidgetContainer {
   /// Sets the current text-drawing cursor one newline down at the x-coordinate specified
   void setCursorDown(uint16_t x);
 
+  /// Sets the absolute horizontal scrolling value
+  void setScroll(int value);
+  /// Gets the absolute horizontal scrolling value
+  uint16_t getScroll() const { return _scroll; }
+  /// Scrolls the screen horizontally by an offset
+  void scroll(int offset) { setScroll((int) _scroll + offset); }
+
   /* Options for printing text */
   /**@brief Sets the background used when drawing text
    *
@@ -404,6 +411,7 @@ class PHN_Display : public PHN_WidgetContainer {
   uint8_t screenRot;
   uint8_t wrapMode;
   uint16_t _width, _height;
+  uint16_t _scroll;
   Viewport _viewport;
   void (*cgramFunc)(uint16_t*, uint16_t*);
   void (*cgramFunc_inv)(uint16_t*, uint16_t*);
