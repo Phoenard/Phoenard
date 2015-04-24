@@ -47,6 +47,7 @@ THE SOFTWARE.
 #include "PHNBlueWiFi.h"
 #include "PHNMidi.h"
 #include "PHNSDMinimal.h"
+#include "PHNSRAM.h"
 
 // This includes <all> the widgets available in the Phoenard library
 #include "PHNWidgetAll.h"

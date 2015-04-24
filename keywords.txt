@@ -135,6 +135,7 @@ PALETTE	LITERAL1
 #######################################
 
 sim	LITERAL1
+sram	LITERAL1
 BLACK	LITERAL1
 WHITE	LITERAL1
 GRAY	LITERAL1

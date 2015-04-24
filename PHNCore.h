@@ -36,8 +36,37 @@ THE SOFTWARE.
 // Select button
 static const uint8_t SELECT_PIN = 47;
 
-// SD Chip select
+/* Masks for each individual SPI pin */
+#define SS_MASK 0x01
+#define MOSI_MASK 0x02
+#define MISO_MASK 0x04
+#define SCK_MASK 0x08
+
+/* Masks and PORT/DDR buses for the chip select pin */
+#define SD_CS_PORT  PORTB
+#define SD_CS_DDR   DDRB
+#define SD_CS_MASK  0x10
 static const uint8_t SD_CS_PIN = 10;
+
+/* The PORT and DDR buses for SPI, and the mask to access them */
+#define SPI_DDR DDRB
+#define SPI_PORT PORTB
+#define SPI_MASK (SS_MASK | MOSI_MASK | MISO_MASK | SCK_MASK)
+
+/*
+ * The initialization states of the SPI PORT/DDR
+ * 0x01 SS_PIN = OUTPUT, HIGH
+ * 0x02 SCK_PIN = OUTPUT, LOW
+ * 0x04 MOSI_PIN = OUTPUT, LOW
+ * 0x08 MISO_PIN = INPUT, LOW
+ */
+#define SPI_INIT_DDR  ((1 * SS_MASK) | (1 * MOSI_MASK) | (1 * MISO_MASK) | (0 * SCK_MASK))
+#define SPI_INIT_PORT ((1 * SS_MASK) | (0 * MOSI_MASK) | (0 * MISO_MASK) | (0 * SCK_MASK))
+
+// External RAM HOLD (CS) pin and port
+#define EXSRAM_HOLD_PORT  PORTK
+#define EXSRAM_HOLD_DDR   DDRK
+#define EXSRAM_HOLD_PIN   0
 
 // SIM908 pins
 static const uint8_t SIM_PIN_STATUS = 39;
