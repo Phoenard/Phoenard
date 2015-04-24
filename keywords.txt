@@ -41,6 +41,14 @@ PHNDisplay8Bit	KEYWORD1
 PHNDisplay16Bit	KEYWORD1
 
 #######################################
+# Global variables (KEYWORD3)
+#######################################
+
+sim	KEYWORD3
+sram	KEYWORD3
+display	KEYWORD3
+
+#######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
@@ -134,8 +142,6 @@ PALETTE	LITERAL1
 # Constants (LITERAL1)
 #######################################
 
-sim	LITERAL1
-sram	LITERAL1
 BLACK	LITERAL1
 WHITE	LITERAL1
 GRAY	LITERAL1
