@@ -34,7 +34,7 @@ THE SOFTWARE.
 #include <Arduino.h>
 
 // Select button
-static const uint8_t SELECT_PIN = 47;
+static const uint8_t SELECT_PIN = 38;
 
 /* Masks for each individual SPI pin */
 #define SS_MASK 0x01
