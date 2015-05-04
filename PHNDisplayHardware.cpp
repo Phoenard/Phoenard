@@ -31,18 +31,18 @@ THE SOFTWARE.
 #define ARG(value)   ((value) & 0xFF), ((value) >> 8)
 
 /* Initial port states */
-#define INIT_DDR_MASK   ((1 << TFTLCD_CS_PIN) | (1 << TFTLCD_RS_PIN) | (1 << TFTLCD_WR_PIN) | (1 << TFTLCD_RD_PIN) | (1 << TFTLCD_RESET_PIN))
-#define INIT_PORT_MASK  ((1 << TFTLCD_RS_PIN) | (1 << TFTLCD_WR_PIN) | (1 << TFTLCD_RD_PIN) | (1 << TFTLCD_RESET_PIN))
+#define INIT_DDR_MASK   (TFTLCD_CS_MASK | TFTLCD_RS_MASK | TFTLCD_WR_MASK | TFTLCD_RD_MASK | TFTLCD_RESET_MASK)
+#define INIT_PORT_MASK  (TFTLCD_RS_MASK | TFTLCD_WR_MASK | TFTLCD_RD_MASK | TFTLCD_RESET_MASK)
 
 /* Constants for fast reading/writing of data - not to be used for commands */
-#define WR_WRITE_A  (INIT_PORT_MASK & ~(1 << TFTLCD_WR_PIN))
-#define WR_WRITE_B  (INIT_PORT_MASK |  (1 << TFTLCD_WR_PIN))
-#define WR_READ_A  (INIT_PORT_MASK & ~(1 << TFTLCD_RD_PIN))
-#define WR_READ_B  (INIT_PORT_MASK |  (1 << TFTLCD_RD_PIN))
+#define WR_WRITE_A  (INIT_PORT_MASK & ~TFTLCD_WR_MASK)
+#define WR_WRITE_B  (INIT_PORT_MASK |  TFTLCD_WR_MASK)
+#define WR_READ_A   (INIT_PORT_MASK & ~TFTLCD_RD_MASK)
+#define WR_READ_B   (INIT_PORT_MASK |  TFTLCD_RD_MASK)
 
 /* Specific reading/writing constants for usage by commands */
-#define WR_COMMAND_WRITE_A  (WR_WRITE_A & ~(1 << TFTLCD_RS_PIN))
-#define WR_COMMAND_WRITE_B  (WR_WRITE_B & ~(1 << TFTLCD_RS_PIN))
+#define WR_COMMAND_WRITE_A  (WR_WRITE_A & ~TFTLCD_RS_MASK)
+#define WR_COMMAND_WRITE_B  (WR_WRITE_B & ~TFTLCD_RS_MASK)
 
 /* Stores 8-bit command and 16-bit argument all in one byte array */
 const unsigned char LCD_REG_DATA[] = {
@@ -94,20 +94,22 @@ const unsigned char LCD_REG_DATA[] = {
 namespace PHNDisplayHW {
 
   void init() {
-    /* Initialize backlight and data pin to output high */
-    TFTLCD_DATADDR = 0xFF;
-  /*TFTLCD_BL_DDR  = (1 << TFTLCD_BL_PIN);*/
-    DDRL           = (1 << TFTLCD_BL_PIN);
-    TFTLCD_BL_PORT = (1 << TFTLCD_BL_PIN);
+    /* 
+     * Initialize backlight and data pin to output high
+     * We can set the full port, since backlight is the only connected pin
+     */
+    TFTLCD_DATA_DDR = 0xFF;
+    TFTLCD_BL_DDR   = TFTLCD_BL_MASK;
+    TFTLCD_BL_PORT  = TFTLCD_BL_MASK;
 
     /* Initialize LCD port registers */
     DDRK  = INIT_DDR_MASK;
     PORTK = INIT_PORT_MASK;
 
     /* Reset, wait until LCD is reset (and initialized) */
-    TFTLCD_RESET_PORT &= ~(1 << TFTLCD_RESET_PIN);
+    TFTLCD_RESET_PORT &= ~TFTLCD_RESET_MASK;
     delay(2);
-    TFTLCD_RESET_PORT |=  (1 << TFTLCD_RESET_PIN);
+    TFTLCD_RESET_PORT |=  TFTLCD_RESET_MASK;
     delay(32);
 
     /* Initialize the LCD registers */
@@ -123,22 +125,22 @@ namespace PHNDisplayHW {
   void writeData(uint16_t data) {
     /* Write the first byte */
     TFTLCD_WR_PORT = WR_WRITE_A;
-    TFTLCD_DATAPORT = data >> 8;
+    TFTLCD_DATA_PORT = data >> 8;
     TFTLCD_WR_PORT = WR_WRITE_B;
 
     /* Write the second byte */
     TFTLCD_WR_PORT = WR_WRITE_A;
-    TFTLCD_DATAPORT = data & 0xFF;
+    TFTLCD_DATA_PORT = data & 0xFF;
     TFTLCD_WR_PORT = WR_WRITE_B;
   }
 
   void writeCommand(uint8_t cmd) {
     // Write the LOW byte as 0, only set HIGH byte as requested
     TFTLCD_WR_PORT = WR_COMMAND_WRITE_A;
-    TFTLCD_DATAPORT = 0;
+    TFTLCD_DATA_PORT = 0;
     TFTLCD_WR_PORT = WR_COMMAND_WRITE_B;
     TFTLCD_WR_PORT = WR_COMMAND_WRITE_A;
-    TFTLCD_DATAPORT = cmd;
+    TFTLCD_DATA_PORT = cmd;
     TFTLCD_WR_PORT = WR_COMMAND_WRITE_B;
   }
 
@@ -151,20 +153,20 @@ namespace PHNDisplayHW {
     uint16_t data;
 
     /* Set to READ mode */
-    TFTLCD_DATADDR = 0x00;
+    TFTLCD_DATA_DDR = 0x00;
 
     /* Read in both bytes to complete the data */
     TFTLCD_RD_PORT = WR_READ_A;
     delayMicroseconds(10);
-    data = TFTLCD_DATAPIN << 8;
+    data = TFTLCD_DATA_IN << 8;
     TFTLCD_RD_PORT = WR_READ_B;
     TFTLCD_RD_PORT = WR_READ_A;
     delayMicroseconds(10);
-    data |= TFTLCD_DATAPIN;
+    data |= TFTLCD_DATA_IN;
     TFTLCD_RD_PORT = WR_READ_B;
 
     // Revert back to WRITE mode, finished
-    TFTLCD_DATADDR = 0xFF;
+    TFTLCD_DATA_DDR = 0xFF;
     return data;
   }
 
@@ -257,19 +259,19 @@ namespace PHNDisplayHW {
 
   void readTouch(uint16_t *analogX, uint16_t *analogY, uint16_t *analogZ1, uint16_t *analogZ2) {
     // First turn the LCD off
-    TFTLCD_CS_PORT |= (1 << TFTLCD_CS_PIN);
+    TFTLCD_CS_PORT |= TFTLCD_CS_MASK;
 
     // First probe the pressure readout to check if there is a valid press
     // If there is not, skip the x/y readout and indicate no press
-    setTouchPins(TFTLCD_PIN_XP, TFTLCD_PIN_YM, TFTLCD_PIN_YP, TFTLCD_PIN_XM);
-    if (analogRead(TFTLCD_PIN_XM)) {
+    setTouchPins(TFTLCD_XP_PIN, TFTLCD_YM_PIN, TFTLCD_YP_PIN, TFTLCD_XM_PIN);
+    if (analogRead(TFTLCD_XM_PIN)) {
       // ========================================
       // Set X+ to Hi-Z
       // Set X- to Hi-Z
       // Set Y+ to HIGH
       // Set Y- to LOW
-      setTouchPins(TFTLCD_PIN_YM, TFTLCD_PIN_YP, TFTLCD_PIN_XM, TFTLCD_PIN_XP);
-      *analogX = analogRead(TFTLCD_PIN_XM);
+      setTouchPins(TFTLCD_YM_PIN, TFTLCD_YP_PIN, TFTLCD_XM_PIN, TFTLCD_XP_PIN);
+      *analogX = analogRead(TFTLCD_XM_PIN);
       // ========================================
 
       // ========================================
@@ -277,8 +279,8 @@ namespace PHNDisplayHW {
       // Set Y- to Hi-Z   
       // Set X+ to HIGH  
       // Set X- to LOW
-      setTouchPins(TFTLCD_PIN_XM, TFTLCD_PIN_XP, TFTLCD_PIN_YM, TFTLCD_PIN_YP);
-      *analogY = analogRead(TFTLCD_PIN_YP);
+      setTouchPins(TFTLCD_XM_PIN, TFTLCD_XP_PIN, TFTLCD_YM_PIN, TFTLCD_YP_PIN);
+      *analogY = analogRead(TFTLCD_YP_PIN);
       // ========================================
 
       // ========================================
@@ -286,9 +288,9 @@ namespace PHNDisplayHW {
       // Set Y- to HIGH
       // Set Y+ to Hi-Z
       // Set X- to Hi-Z
-      setTouchPins(TFTLCD_PIN_XP, TFTLCD_PIN_YM, TFTLCD_PIN_YP, TFTLCD_PIN_XM);
-      *analogZ1 = analogRead(TFTLCD_PIN_XM); 
-      *analogZ2 = analogRead(TFTLCD_PIN_YP);
+      setTouchPins(TFTLCD_XP_PIN, TFTLCD_YM_PIN, TFTLCD_YP_PIN, TFTLCD_XM_PIN);
+      *analogZ1 = analogRead(TFTLCD_XM_PIN); 
+      *analogZ2 = analogRead(TFTLCD_YP_PIN);
       // ========================================
     } else {
       // Set result to a default, no-press state
@@ -299,13 +301,13 @@ namespace PHNDisplayHW {
     }
 
     // Restore pins to outputs in the default HIGH state
-    pinMode(TFTLCD_PIN_XM, OUTPUT);
-    pinMode(TFTLCD_PIN_YP, OUTPUT);
-    digitalWrite(TFTLCD_PIN_XM, HIGH);
-    digitalWrite(TFTLCD_PIN_YP, HIGH);
+    pinMode(TFTLCD_XM_PIN, OUTPUT);
+    pinMode(TFTLCD_YP_PIN, OUTPUT);
+    digitalWrite(TFTLCD_XM_PIN, HIGH);
+    digitalWrite(TFTLCD_YP_PIN, HIGH);
 
     // All done, turn the chip back on
-    TFTLCD_CS_PORT &= ~(1 << TFTLCD_CS_PIN);
+    TFTLCD_CS_PORT &= ~TFTLCD_CS_MASK;
   }
   
   void readTouch(uint16_t *touch_x, uint16_t *touch_y, float *pressure) {
@@ -349,7 +351,7 @@ namespace PHNDisplay8Bit {
     /* Spam the write instruction 2x */
     /* Use NOPs to ensure 2 clock cycles between toggling */
     TFTLCD_WR_PORT = WR_WRITE_A;
-    TFTLCD_DATAPORT = color;
+    TFTLCD_DATA_PORT = color;
     TFTLCD_WR_PORT = WR_WRITE_B;
     TFTLCD_WR_PORT = WR_WRITE_A;
     asm volatile ("nop\n");
@@ -358,7 +360,7 @@ namespace PHNDisplay8Bit {
 
   void writePixels(uint8_t color, uint32_t length) {
     /* Write the data to the data port */
-    TFTLCD_DATAPORT = color;
+    TFTLCD_DATA_PORT = color;
 
     /* For each pixel, perform 2 8-bit writes */
     length <<= 1;
@@ -459,12 +461,12 @@ namespace PHNDisplay16Bit {
       while (length) {
         /* Write the first byte, subtract length within data write to add delay */
         TFTLCD_WR_PORT = WR_WRITE_A;
-        TFTLCD_DATAPORT = data_a;
+        TFTLCD_DATA_PORT = data_a;
         length--;
         TFTLCD_WR_PORT = WR_WRITE_B;
         /* Write the second byte, fill cycles with NOPs to add delay */
         TFTLCD_WR_PORT = WR_WRITE_A;
-        TFTLCD_DATAPORT = data_b;
+        TFTLCD_DATA_PORT = data_b;
         asm volatile ("nop\n");
         TFTLCD_WR_PORT = WR_WRITE_B;
       }

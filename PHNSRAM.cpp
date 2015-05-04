@@ -45,19 +45,19 @@ void PHN_SRAM::begin() {
   SPCR |= _BV(MSTR) | _BV(SPE);
 
   // Set External RAM HOLD pin to output
-  EXSRAM_HOLD_DDR |= (1<<EXSRAM_HOLD_PIN);
+  EXSRAM_HOLD_DDR |= EXSRAM_HOLD_MASK;
 
   // Set up status register to sequential mode
   // Both single-byte and block write functions use sequential mode
   // Page mode is never used and appears to be pointless
-  EXSRAM_HOLD_PORT &= ~(1<<EXSRAM_HOLD_PIN);
+  EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
   SRAM_Send(SRAM_CMD_STATUS_WRITE);
   SRAM_Send(64);
-  EXSRAM_HOLD_PORT |= (1<<EXSRAM_HOLD_PIN);
+  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
 }
 
 void PHN_SRAM::readBlock(uint16_t address, char* data, uint16_t length) {
-  EXSRAM_HOLD_PORT &= ~(1<<EXSRAM_HOLD_PIN);
+  EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
   SRAM_Send(SRAM_CMD_DATA_READ);
   SRAM_Send((address >> 8) & 0xFF);
   SRAM_Send(address & 0xFF);
@@ -65,18 +65,18 @@ void PHN_SRAM::readBlock(uint16_t address, char* data, uint16_t length) {
     SRAM_Send(0xFF);
     *(data++) = SPDR;
   }
-  EXSRAM_HOLD_PORT |= (1<<EXSRAM_HOLD_PIN);
+  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
 }
 
 void PHN_SRAM::writeBlock(uint16_t address, const char* data, uint16_t length) {
-  EXSRAM_HOLD_PORT &= ~(1<<EXSRAM_HOLD_PIN);
+  EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
   SRAM_Send(SRAM_CMD_DATA_WRITE);
   SRAM_Send((address >> 8) & 0xFF);
   SRAM_Send(address & 0xFF);
   while (length--) {
     SRAM_Send(*(data++));
   }
-  EXSRAM_HOLD_PORT |= (1<<EXSRAM_HOLD_PIN);
+  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
 }
 
 char PHN_SRAM::read(uint16_t address) {

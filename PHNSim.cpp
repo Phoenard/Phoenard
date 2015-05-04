@@ -35,7 +35,7 @@ void PHN_Sim::init() {
   }
   // Initialize the SIM fields
   Serial1.begin(SIM_BAUDRATE);
-  pinMode(SIM_PIN_PWRKEY, OUTPUT);
+  pinMode(SIM_PWRKEY_PIN, OUTPUT);
   this->callStatus = SIM_CALL_STATUS_NONE;
   this->latestInbox = -1;
   this->initialized = true;
@@ -62,14 +62,14 @@ void PHN_Sim::end() {
 }
 
 bool PHN_Sim::isOn() {
-  return digitalRead(SIM_PIN_DTRS);
+  return digitalRead(SIM_DTRS_PIN);
 }
 
 void PHN_Sim::togglePower() {
   init();
-  digitalWrite(SIM_PIN_PWRKEY,HIGH);
+  digitalWrite(SIM_PWRKEY_PIN,HIGH);
   delay(SIM_PWR_DELAY);
-  digitalWrite(SIM_PIN_PWRKEY,LOW);
+  digitalWrite(SIM_PWRKEY_PIN,LOW);
 }
 
 void PHN_Sim::update() {

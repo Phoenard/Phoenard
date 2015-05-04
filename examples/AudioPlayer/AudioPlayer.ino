@@ -13,9 +13,12 @@ PHN_Button playButton;
 PHN_Scrollbar volumeSlider;
 
 // Define the Adafruit VS1053 music player
-Adafruit_VS1053_FilePlayer musicPlayer(VS1053_PIN_RESET, VS1053_PIN_CS, VS1053_PIN_DCS, VS1053_PIN_DREQ, VS1053_PIN_CARDCS);
+Adafruit_VS1053_FilePlayer musicPlayer(VS1053_RESET_PIN, VS1053_CS_PIN, VS1053_DCS_PIN, VS1053_DREQ_PIN, VS1053_CARDCS_PIN);
 
 void setup() {
+  // Initialize Serial for debugging
+  Serial.begin(9600);
+
   // Setup the play button widget
   playButton.setBounds(50, 50, 150, 140);
   playButton.setText("Play!");
@@ -31,12 +34,12 @@ void setup() {
   display.debugPrint(230, 10, 2, "Volume");
 
   // Initialize the VS1053 digital pins
-  pinMode(VS1053_PIN_GPIO, OUTPUT);
-  pinMode(VS1053_PIN_PWR, OUTPUT);
-  pinMode(VS1053_PIN_DCS, OUTPUT);
-  digitalWrite(VS1053_PIN_PWR, HIGH);
-  digitalWrite(VS1053_PIN_GPIO, LOW);
-  digitalWrite(VS1053_PIN_DCS, LOW);
+  pinMode(VS1053_GPIO_PIN, OUTPUT);
+  pinMode(VS1053_PWR_PIN, OUTPUT);
+  pinMode(VS1053_DCS_PIN, OUTPUT);
+  digitalWrite(VS1053_PWR_PIN, HIGH);
+  digitalWrite(VS1053_GPIO_PIN, LOW);
+  digitalWrite(VS1053_DCS_PIN, LOW);
 
   // Initialize the VS1053 library
   musicPlayer.begin();
@@ -46,7 +49,7 @@ void setup() {
 
   // Initialize the SD library for file playback
   // [!] This has to be done AFTER the initialization of the VS1053 [!]
-  if (!SD.begin(VS1053_PIN_CARDCS)) {
+  if (!SD.begin(VS1053_CARDCS_PIN)) {
     Serial.println("Failed to initialize SD card");
   }
 }

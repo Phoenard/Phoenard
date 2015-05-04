@@ -32,6 +32,7 @@ THE SOFTWARE.
 #define _PHN_BLUETOOTH_WIFI_H_
 
 #include "PHNCore.h"
+#include <Arduino.h>
 
 /// Turns off WiFi and turns on Bluetooth
 void enableBluetooth();

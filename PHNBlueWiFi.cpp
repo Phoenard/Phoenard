@@ -26,20 +26,20 @@ THE SOFTWARE.
 #include "PHNBlueWiFi.h"
 
 void enableBluetooth() {
-  pinMode(BLUETOOTH_PIN_RESET, OUTPUT);
-  pinMode(WIFI_PIN_PWR, OUTPUT);
-  digitalWrite(BLUETOOTH_PIN_RESET, HIGH);
-  digitalWrite(WIFI_PIN_PWR, LOW);
+  pinMode(BLUETOOTH_RESET_PIN, OUTPUT);
+  pinMode(WIFI_PWR_PIN, OUTPUT);
+  digitalWrite(WIFI_PWR_PIN, LOW);
+  digitalWrite(BLUETOOTH_RESET_PIN, HIGH);
 }
 
 void enableWiFi() {
-  pinMode(BLUETOOTH_PIN_RESET, OUTPUT);
-  pinMode(WIFI_PIN_PWR, OUTPUT);
-  digitalWrite(BLUETOOTH_PIN_RESET, LOW);
-  digitalWrite(WIFI_PIN_PWR, HIGH);
+  pinMode(BLUETOOTH_RESET_PIN, OUTPUT);
+  pinMode(WIFI_PWR_PIN, OUTPUT);
+  digitalWrite(BLUETOOTH_RESET_PIN, LOW);
+  digitalWrite(WIFI_PWR_PIN, HIGH);
 }
 
 void disableBluetoothWiFi() {
-  digitalWrite(BLUETOOTH_PIN_RESET, LOW);
-  digitalWrite(WIFI_PIN_PWR, LOW);
+  digitalWrite(BLUETOOTH_RESET_PIN, LOW);
+  digitalWrite(WIFI_PWR_PIN, LOW);
 }

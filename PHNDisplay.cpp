@@ -80,14 +80,14 @@ PHN_Display::PHN_Display() {
 void PHN_Display::setSleeping(bool sleeping) {
   if (sleeping) {
     for (int i=255;i>-1;i--){
-      analogWrite(TFTLCD_PIN_BL,i);
+      analogWrite(TFTLCD_BL_PIN,i);
       delay(2);
     }
     PHNDisplayHW::writeRegister(LCD_CMD_POW_CTRL1,0x17b2);
   } else {
     PHNDisplayHW::writeRegister(LCD_CMD_POW_CTRL1,0x17b0);
     for (int i=-1;i<256;i++){
-      analogWrite(TFTLCD_PIN_BL,i);
+      analogWrite(TFTLCD_BL_PIN,i);
       delay(2);
     }
   }

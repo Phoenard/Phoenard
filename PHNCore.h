@@ -26,106 +26,119 @@ THE SOFTWARE.
 /**
  * @file
  * @brief Pinout information for the Phoenard hardware components
+ * 
+ * Constants use the following naming scheme:
+ * - All constants start with the name of the component controlled
+ * - If multiple functions exist, the function is appended
+ * - Constant type is then declared:
+ * |- PIN: Digital (Arduino) Pin
+ * |- DDR: Direction port register
+ * |- PORT: Output port register
+ * |- IN: Input port read register
+ * |- MASK: Mask to use with the port
+ * 
+ * For example: VS1053_RESET_PIN
  */
 
+#include <inttypes.h>
+ 
 #ifndef _PHN_CORE_
 #define _PHN_CORE_
 
-#include <Arduino.h>
-
-// Select button
+/* SELECT button */
 static const uint8_t SELECT_PIN = 38;
+#define SELECT_DDR    DDRD
+#define SELECT_PORT   PORTD
+#define SELECT_IN     PIND
+#define SELECT_MASK   (1 << 7)
 
-/* Masks for each individual SPI pin */
-#define SS_MASK 0x01
-#define MOSI_MASK 0x02
-#define MISO_MASK 0x04
-#define SCK_MASK 0x08
-
-/* Masks and PORT/DDR buses for the chip select pin */
-#define SD_CS_PORT  PORTB
-#define SD_CS_DDR   DDRB
-#define SD_CS_MASK  0x10
-static const uint8_t SD_CS_PIN = 10;
-
-/* The PORT and DDR buses for SPI, and the mask to access them */
-#define SPI_DDR DDRB
-#define SPI_PORT PORTB
-#define SPI_MASK (SS_MASK | MOSI_MASK | MISO_MASK | SCK_MASK)
+/* SPI SS/MOSI/MISO/SCK registers */
+#define SPI_DDR        DDRB
+#define SPI_PORT       PORTB
+#define SPI_SS_MASK    (1 << 0)
+#define SPI_MOSI_MASK  (1 << 1)
+#define SPI_MISO_MASK  (1 << 2)
+#define SPI_SCK_MASK   (1 << 3)
+#define SPI_MASK       (SPI_SS_MASK | SPI_MOSI_MASK | SPI_MISO_MASK | SPI_SCK_MASK)
 
 /*
  * The initialization states of the SPI PORT/DDR
- * 0x01 SS_PIN = OUTPUT, HIGH
- * 0x02 SCK_PIN = OUTPUT, LOW
- * 0x04 MOSI_PIN = OUTPUT, LOW
- * 0x08 MISO_PIN = INPUT, LOW
+ * SS_PIN   = OUTPUT, HIGH
+ * SCK_PIN  = OUTPUT, LOW
+ * MOSI_PIN = OUTPUT, LOW
+ * MISO_PIN = INPUT, LOW
  */
-#define SPI_INIT_DDR  ((1 * SS_MASK) | (1 * MOSI_MASK) | (1 * MISO_MASK) | (0 * SCK_MASK))
-#define SPI_INIT_PORT ((1 * SS_MASK) | (0 * MOSI_MASK) | (0 * MISO_MASK) | (0 * SCK_MASK))
+#define SPI_INIT_DDR   ((1 * SPI_SS_MASK) | (1 * SPI_MOSI_MASK) | (1 * SPI_MISO_MASK) | (0 * SPI_SCK_MASK))
+#define SPI_INIT_PORT  ((1 * SPI_SS_MASK) | (0 * SPI_MOSI_MASK) | (0 * SPI_MISO_MASK) | (0 * SPI_SCK_MASK))
 
-// External RAM HOLD (CS) pin and port
+/* Micro-SD chip select (CS) */
+static const uint8_t SD_CS_PIN = 10;
+#define SD_CS_PORT  PORTB
+#define SD_CS_DDR   DDRB
+#define SD_CS_MASK  (1 << 4)
+
+/* External RAM HOLD (CS) */
 #define EXSRAM_HOLD_PORT  PORTK
 #define EXSRAM_HOLD_DDR   DDRK
-#define EXSRAM_HOLD_PIN   0
+#define EXSRAM_HOLD_MASK  (1 << 0)
 
-// SIM908 pins
-static const uint8_t SIM_PIN_STATUS = 39;
-static const uint8_t SIM_PIN_PWRKEY = 40;
-static const uint8_t SIM_PIN_DTRS = 41;
-static const uint8_t SIM_PIN_RI = 3;
+/* SIM908 */
+static const uint8_t SIM_STATUS_PIN = 39;
+static const uint8_t SIM_PWRKEY_PIN = 40;
+static const uint8_t SIM_DTRS_PIN = 41;
+static const uint8_t SIM_RI_PIN = 3;
 
-// Bluetooth pins
-static const uint8_t BLUETOOTH_PIN_RESET = 47;
-static const uint8_t BLUETOOTH_PIN_KEY = 12;
+/* Bluetooth */
+static const uint8_t BLUETOOTH_RESET_PIN = 47;
+static const uint8_t BLUETOOTH_KEY_PIN = 12;
 
-// WiFi pins
-static const uint8_t WIFI_PIN_PWR = 49;
+/* WiFi */
+static const uint8_t WIFI_PWR_PIN = 49;
 
-// Audio decoder pins for VS1053 chip
-static const uint8_t VS1053_PIN_CARDCS = SD_CS_PIN;
-static const uint8_t VS1053_PIN_PWR = 43;
-static const uint8_t VS1053_PIN_CS = 45;
-static const uint8_t VS1053_PIN_RESET = 46;
-static const uint8_t VS1053_PIN_DCS = 8;
-static const uint8_t VS1053_PIN_DREQ = 2;
-static const uint8_t VS1053_PIN_GPIO = 11;
-static const uint8_t VS1053_PIN_IRX = 48;
-
-// Audio decoder MIDI TX port/pin
+/* VS1053 Audio Decoder */
+static const uint8_t VS1053_CARDCS_PIN = SD_CS_PIN;
+static const uint8_t VS1053_PWR_PIN = 43;
+static const uint8_t VS1053_CS_PIN = 45;
+static const uint8_t VS1053_RESET_PIN = 46;
+static const uint8_t VS1053_DCS_PIN = 8;
+static const uint8_t VS1053_DREQ_PIN = 2;
+static const uint8_t VS1053_GPIO_PIN = 11;
+static const uint8_t VS1053_IRX_PIN = 48;
 #define VS1053_IRX_PORT  PORTL
-#define VS1053_IRX_PIN   1
+#define VS1053_IRX_MASK  (1 << 0)
 
-// LCD pins
-static const uint8_t TFTLCD_PIN_BL = 44;
-static const uint8_t TFTLCD_PIN_CS = 69;
-static const uint8_t TFTLCD_PIN_RS = 68;
-static const uint8_t TFTLCD_PIN_WR = 67;
-static const uint8_t TFTLCD_PIN_RD = 66;
-static const uint8_t TFTLCD_PIN_RESET = 65;
+/* LCD Data control pins */
+static const uint8_t TFTLCD_BL_PIN = 44;
+static const uint8_t TFTLCD_CS_PIN = 69;
+static const uint8_t TFTLCD_RS_PIN = 68;
+static const uint8_t TFTLCD_WR_PIN = 67;
+static const uint8_t TFTLCD_RD_PIN = 66;
+static const uint8_t TFTLCD_RESET_PIN = 65;
 
-// Touch pins
-static const uint8_t TFTLCD_PIN_YP = 67;
-static const uint8_t TFTLCD_PIN_XM = 68;
-static const uint8_t TFTLCD_PIN_YM = 30;
-static const uint8_t TFTLCD_PIN_XP = 31;
+/* LCD Touchscreen pins */
+static const uint8_t TFTLCD_YP_PIN = 67;
+static const uint8_t TFTLCD_XM_PIN = 68;
+static const uint8_t TFTLCD_YM_PIN = 30;
+static const uint8_t TFTLCD_XP_PIN = 31;
 
-// Port + Mask constants for all LCD pins declared above
+/* LCD Data control registers */
 #define TFTLCD_BL_PORT     PORTL
-#define TFTLCD_BL_PIN      5
+#define TFTLCD_BL_DDR      DDRL
+#define TFTLCD_BL_MASK     (1 << 5)
 #define TFTLCD_CS_PORT     PORTK
-#define TFTLCD_CS_PIN      7
+#define TFTLCD_CS_MASK     (1 << 7)
 #define TFTLCD_RS_PORT     PORTK
-#define TFTLCD_RS_PIN      6
+#define TFTLCD_RS_MASK     (1 << 6)
 #define TFTLCD_WR_PORT     PORTK
-#define TFTLCD_WR_PIN      5
+#define TFTLCD_WR_MASK     (1 << 5)
 #define TFTLCD_RD_PORT     PORTK
-#define TFTLCD_RD_PIN      4
+#define TFTLCD_RD_MASK     (1 << 4)
 #define TFTLCD_RESET_PORT  PORTK
-#define TFTLCD_RESET_PIN   3
+#define TFTLCD_RESET_MASK  (1 << 3)
 
-// LCD data setting/getting
-#define TFTLCD_DATAPORT    PORTC
-#define TFTLCD_DATAPIN     PINC
-#define TFTLCD_DATADDR     DDRC
+/* LCD Data registers */
+#define TFTLCD_DATA_DDR    DDRC
+#define TFTLCD_DATA_PORT   PORTC
+#define TFTLCD_DATA_IN     PINC
 
 #endif

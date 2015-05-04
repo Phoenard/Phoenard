@@ -26,18 +26,18 @@ THE SOFTWARE.
 #include "PHNMidi.h"
 
 void PHN_Midi::begin() {
-  pinMode(VS1053_PIN_PWR, OUTPUT);
-  pinMode(VS1053_PIN_GPIO, OUTPUT);
-  digitalWrite(VS1053_PIN_PWR, HIGH);
-  digitalWrite(VS1053_PIN_GPIO, HIGH);
-  pinMode(VS1053_PIN_IRX, OUTPUT);
-  digitalWrite(VS1053_PIN_IRX, HIGH);
+  pinMode(VS1053_PWR_PIN, OUTPUT);
+  pinMode(VS1053_GPIO_PIN, OUTPUT);
+  digitalWrite(VS1053_PWR_PIN, HIGH);
+  digitalWrite(VS1053_GPIO_PIN, HIGH);
+  pinMode(VS1053_IRX_PIN, OUTPUT);
+  digitalWrite(VS1053_IRX_PIN, HIGH);
 
   // Reset the VS1053
-  pinMode(VS1053_PIN_RESET, OUTPUT);
-  digitalWrite(VS1053_PIN_RESET, LOW);
+  pinMode(VS1053_RESET_PIN, OUTPUT);
+  digitalWrite(VS1053_RESET_PIN, LOW);
   delay(100);
-  digitalWrite(VS1053_PIN_RESET, HIGH);
+  digitalWrite(VS1053_RESET_PIN, HIGH);
   delay(100);
 
   // Set default instrument bank and instrument ID
@@ -100,9 +100,9 @@ void PHN_Midi::write(uint8_t b) {
   data <<= 1;
   do {
     if (data & 0x1) {
-      VS1053_IRX_PORT |= (1 << VS1053_IRX_PIN);
+      VS1053_IRX_PORT |= VS1053_IRX_MASK;
     } else {
-      VS1053_IRX_PORT &= ~(1 << VS1053_IRX_PIN);
+      VS1053_IRX_PORT &= ~VS1053_IRX_MASK;
     }
     data >>= 1;
     delayMicroseconds(30);
