@@ -50,15 +50,15 @@ static const uint8_t SELECT_PIN = 38;
 #define SELECT_DDR    DDRD
 #define SELECT_PORT   PORTD
 #define SELECT_IN     PIND
-#define SELECT_MASK   (1 << 7)
+#define SELECT_MASK   _BV(PD7)
 
 /* SPI SS/MOSI/MISO/SCK registers */
 #define SPI_DDR        DDRB
 #define SPI_PORT       PORTB
-#define SPI_SS_MASK    (1 << 0)
-#define SPI_MOSI_MASK  (1 << 1)
-#define SPI_MISO_MASK  (1 << 2)
-#define SPI_SCK_MASK   (1 << 3)
+#define SPI_SS_MASK    _BV(PB0)
+#define SPI_MOSI_MASK  _BV(PB1)
+#define SPI_MISO_MASK  _BV(PB2)
+#define SPI_SCK_MASK   _BV(PB3)
 #define SPI_MASK       (SPI_SS_MASK | SPI_MOSI_MASK | SPI_MISO_MASK | SPI_SCK_MASK)
 
 /*
@@ -75,12 +75,12 @@ static const uint8_t SELECT_PIN = 38;
 static const uint8_t SD_CS_PIN = 10;
 #define SD_CS_PORT  PORTB
 #define SD_CS_DDR   DDRB
-#define SD_CS_MASK  (1 << 4)
+#define SD_CS_MASK  _BV(PB4)
 
 /* External RAM HOLD (CS) */
 #define EXSRAM_HOLD_PORT  PORTK
 #define EXSRAM_HOLD_DDR   DDRK
-#define EXSRAM_HOLD_MASK  (1 << 0)
+#define EXSRAM_HOLD_MASK  _BV(PK0)
 
 /* SIM908 */
 static const uint8_t SIM_STATUS_PIN = 39;
@@ -105,7 +105,7 @@ static const uint8_t VS1053_DREQ_PIN = 2;
 static const uint8_t VS1053_GPIO_PIN = 11;
 static const uint8_t VS1053_IRX_PIN = 48;
 #define VS1053_IRX_PORT  PORTL
-#define VS1053_IRX_MASK  (1 << 0)
+#define VS1053_IRX_MASK  _BV(PL0)
 
 /* LCD Data control pins */
 static const uint8_t TFTLCD_BL_PIN = 44;
@@ -124,17 +124,18 @@ static const uint8_t TFTLCD_XP_PIN = 31;
 /* LCD Data control registers */
 #define TFTLCD_BL_PORT     PORTL
 #define TFTLCD_BL_DDR      DDRL
-#define TFTLCD_BL_MASK     (1 << 5)
-#define TFTLCD_CS_PORT     PORTK
-#define TFTLCD_CS_MASK     (1 << 7)
-#define TFTLCD_RS_PORT     PORTK
-#define TFTLCD_RS_MASK     (1 << 6)
-#define TFTLCD_WR_PORT     PORTK
-#define TFTLCD_WR_MASK     (1 << 5)
-#define TFTLCD_RD_PORT     PORTK
-#define TFTLCD_RD_MASK     (1 << 4)
+#define TFTLCD_BL_MASK     _BV(PL5)
+
 #define TFTLCD_RESET_PORT  PORTK
-#define TFTLCD_RESET_MASK  (1 << 3)
+#define TFTLCD_RESET_MASK  _BV(PK3)
+#define TFTLCD_RD_PORT     PORTK
+#define TFTLCD_RD_MASK     _BV(PK4)
+#define TFTLCD_WR_PORT     PORTK
+#define TFTLCD_WR_MASK     _BV(PK5)
+#define TFTLCD_RS_PORT     PORTK
+#define TFTLCD_RS_MASK     _BV(PK6)
+#define TFTLCD_CS_PORT     PORTK
+#define TFTLCD_CS_MASK     _BV(PK7)
 
 /* LCD Data registers */
 #define TFTLCD_DATA_DDR    DDRC
