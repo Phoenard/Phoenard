@@ -105,7 +105,7 @@ static const uint8_t VS1053_DREQ_PIN = 2;
 static const uint8_t VS1053_GPIO_PIN = 11;
 static const uint8_t VS1053_IRX_PIN = 48;
 #define VS1053_IRX_PORT  PORTL
-#define VS1053_IRX_MASK  _BV(PL0)
+#define VS1053_IRX_MASK  _BV(PL1)
 
 /* LCD Data control pins */
 static const uint8_t TFTLCD_BL_PIN = 44;
