@@ -42,6 +42,10 @@ THE SOFTWARE.
  * To play a full note, first turn it on (press) and then off (release). For each note the
  * channel of the instrument, pitch and attach velocity can be specified. Multiple notes
  * can be turned on at the same time.
+ *
+ * For further implementation, the write() and talkMIDI() functions can be utilized.
+ * For a full list of commands, see the MIDI specification found here: 
+ * http://www.midi.org/techspecs/midimessages.php
  */
 class PHN_Midi {
  public:

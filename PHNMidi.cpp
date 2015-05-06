@@ -92,12 +92,11 @@ void PHN_Midi::write(uint8_t b) {
   uint8_t SREG_old = SREG;
   cli();
 
-  // Write out 10 bits in a single loop
+  // Write out 10 bits of data in a single loop
   // The first bit is 0, the last bit is 1
+  // The 8 bits in between contain the payload
   // A delay is used to write out at 31250 baud
-  uint16_t data = b;
-  data |= (uint16_t) 0x1 << 10;
-  data <<= 1;
+  uint16_t data = (0x0 << 0) | (b << 1) | (0x1 << 9);
   do {
     if (data & 0x1) {
       VS1053_IRX_PORT |= VS1053_IRX_MASK;
