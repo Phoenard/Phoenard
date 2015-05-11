@@ -27,7 +27,7 @@ THE SOFTWARE.
 
 PHN_Label::PHN_Label() {
   setColor(CONTENT, color(FOREGROUND));
-  drawFrame = true;
+  drawFrame = false;
 }
 
 void PHN_Label::setText(const char* text) {

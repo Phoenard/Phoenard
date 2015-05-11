@@ -82,6 +82,7 @@ void setup() {
 
   instrument_name.setBounds(45, 5, 320-90, 32);
   instrument_name.setColor(CONTENT, GREEN);
+  instrument_name.setDrawFrame(true);
   display.addWidget(instrument_name);
 
   // Setup initial instrument

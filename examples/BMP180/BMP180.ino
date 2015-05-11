@@ -1,9 +1,10 @@
 #include "Phoenard.h"
 #include <Wire.h>
-#include <BMP180.h>
+#include <BMP085.h>
 
 // Define the sensor
-BMP180 dps = BMP180();
+// Note: BMP085 library works for both BMP085 and BMP180
+BMP085 dps = BMP085();
 
 // Define the widgets used to display things
 PHN_Label tempLabel;
@@ -24,7 +25,6 @@ void setup(void) {
   
   // Add temperature label
   tempLabel.setBounds(40, 70, 80, 20);
-  tempLabel.setTextSize(1);
   tempLabel.setText("Temperature:");
   display.addWidget(tempLabel);
   
@@ -35,7 +35,6 @@ void setup(void) {
   
   // Add altitude label
   altLabel.setBounds(50, 150, 60, 20);
-  altLabel.setTextSize(1);
   altLabel.setText("Altitude:");
   display.addWidget(altLabel);
   
@@ -46,12 +45,10 @@ void setup(void) {
   
   // Add altitude value label
   altValueLabel.setBounds(240, 150, 60, 20);
-  altValueLabel.setTextSize(1);
   display.addWidget(altValueLabel);
   
   // Add pressure label
   pressureLabel.setBounds(50, 190, 60, 20);
-  pressureLabel.setTextSize(1);
   pressureLabel.setText("Pressure:");
   display.addWidget(pressureLabel);
   
@@ -62,7 +59,6 @@ void setup(void) {
   
   // Add pressure value label
   pressureValueLabel.setBounds(240, 190, 60, 20);
-  pressureValueLabel.setTextSize(1);
   display.addWidget(pressureValueLabel);
 }
 
