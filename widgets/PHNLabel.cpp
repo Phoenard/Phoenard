@@ -31,17 +31,34 @@ PHN_Label::PHN_Label() {
 }
 
 void PHN_Label::setText(const char* text) {
-  this->textBuff.set(text, strlen(text) + 1);
-  invalidate();
+  int txtLen = strlen(text);
+  bool lenChange = txtLen != strlen(this->text());
+  this->textBuff.set(text, txtLen + 1);
+  if (lenChange) {
+    invalidate();
+  } else {
+    quickDraw = true;
+  }
 }
 
 void PHN_Label::setText(String &text) {
+  bool lenChange = text.length() != strlen(this->text());
   this->textBuff.resize(text.length() + 1);
   text.toCharArray((char*) this->textBuff.data, this->textBuff.dataSize);
-  invalidate();
+  if (lenChange) {
+    invalidate();
+  } else {
+    quickDraw = true;
+  }
 }
 
 void PHN_Label::update() {
+  // If text was changed without impacting length, quickly redraw it
+  if (!invalidated && quickDraw) {
+    quickDraw = false;
+    display.setTextColor(color(CONTENT), color(BACKGROUND));
+    display.drawStringMiddle(x+1, y+1, width-2, height-2, (char*) textBuff.data);
+  }
 }
 
 void PHN_Label::draw() {
@@ -54,4 +71,5 @@ void PHN_Label::draw() {
   // Draw the text
   display.setTextColor(color(CONTENT));
   display.drawStringMiddle(x+1, y+1, width-2, height-2, (char*) textBuff.data);
+  quickDraw = false;
 }

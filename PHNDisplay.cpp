@@ -646,11 +646,13 @@ void PHN_Display::setTextSize(uint8_t s) {
 
 void PHN_Display::setTextColor(color_t c) {
   textOpt.textcolor = c;
+  textOpt.text_hasbg = false;
 }
 
-void PHN_Display::setTextBackground(color_t c, bool enable) {
-  textOpt.textbg = c;
-  textOpt.text_hasbg = enable;
+void PHN_Display::setTextColor(color_t c, color_t bg) {
+  textOpt.textcolor = c;
+  textOpt.textbg = bg;
+  textOpt.text_hasbg = true;
 }
 
 void PHN_Display::setScroll(int value) {
@@ -807,8 +809,7 @@ void PHN_Display::debugPrint(uint16_t x, uint16_t y, uint8_t size, const char* t
   // Set draw parameters
   setCursor(x, y);
   setTextSize(size);
-  setTextColor(WHITE);
-  setTextBackground(BLACK);
+  setTextColor(WHITE, BLACK);
 
   // Draw the text
   print(text);  

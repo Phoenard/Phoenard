@@ -68,17 +68,19 @@ void PHN_BarGraph::drawBar(float val_a, float val_b, color_t color) {
   val_a = (val_a - _minimum) / (_maximum - _minimum);
   val_b = (val_b - _minimum) / (_maximum - _minimum);
   // Calculate the bar area
-  int bar_w = width - 2;
-  int bar_h = height - 2;
   int bar_x1, bar_x2, bar_y1, bar_y2;
   // Horizontal or vertical mode?
-  if (bar_w > bar_h) {
-    bar_y1 = 1;
+  if (width > height) {
+    int bar_w = width - 2;
+    int bar_h = height - 4;
+    bar_y1 = 2;
     bar_y2 = bar_h + bar_y1;
     bar_x1 = 1 + val_a * bar_w;
     bar_x2 = 1 + val_b * bar_w;
   } else {
-    bar_x1 = 1;
+    int bar_w = width - 4;
+    int bar_h = height - 2;
+    bar_x1 = 2;
     bar_x2 = bar_w + bar_x1;
     bar_y1 = 1 + bar_h - val_b * bar_h;
     bar_y2 = 1 + bar_h - val_a * bar_h;

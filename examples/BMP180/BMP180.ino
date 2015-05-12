@@ -1,10 +1,9 @@
 #include "Phoenard.h"
 #include <Wire.h>
-#include <BMP085.h>
+#include <SFE_BMP180.h>
 
 // Define the sensor
-// Note: BMP085 library works for both BMP085 and BMP180
-BMP085 dps = BMP085();
+SFE_BMP180 barometer = SFE_BMP180();
 
 // Define the widgets used to display things
 PHN_Label tempLabel;
@@ -16,16 +15,24 @@ PHN_Label pressureLabel;
 PHN_BarGraph pressureBar;
 PHN_Label pressureValueLabel;
 
-// Used for filtering the altitude data
-float alt_filter = 500.0F;
+// Altitude at your current location (please set)
+double ALTITUDE_BASE = 0;
+
+// First measurement defines the base pressure for relative altitude
+double Pressure_relBase;
+boolean Pressure_relBase_calc = false;
+
+// Filtered relative altitude value
+double Altitude_relative_filt = 0.0;
 
 void setup(void) {
   Wire.begin();
-  dps.init(MODE_ULTRA_HIGHRES, 500, true);
+  barometer.begin();
+  Serial.begin(9600);
   
   // Add temperature label
-  tempLabel.setBounds(40, 70, 80, 20);
-  tempLabel.setText("Temperature:");
+  tempLabel.setBounds(32, 70, 80, 20);
+  tempLabel.setText("Temperature (C):");
   display.addWidget(tempLabel);
   
   // Add temperature gauge
@@ -40,11 +47,12 @@ void setup(void) {
   
   // Add altitude bar graph
   altBar.setBounds(130, 140, 100, 30);
-  altBar.setRange(0.0F, 1000.0F);
+  altBar.setRange(-10.0F, 10.0F);
+  altBar.setColor(CONTENT, BLUE);
   display.addWidget(altBar);
   
   // Add altitude value label
-  altValueLabel.setBounds(240, 150, 60, 20);
+  altValueLabel.setBounds(240, 140, 60, 30);
   display.addWidget(altValueLabel);
   
   // Add pressure label
@@ -54,33 +62,75 @@ void setup(void) {
   
   // Add pressure bar graph
   pressureBar.setBounds(130, 180, 100, 30);
-  pressureBar.setRange(90000.0F, 110000.0F);
+  pressureBar.setRange(0.0F, 2000.0F);
+  pressureBar.setColor(CONTENT, BLUE);
   display.addWidget(pressureBar);
   
   // Add pressure value label
-  pressureValueLabel.setBounds(240, 190, 60, 20);
+  pressureValueLabel.setBounds(240, 180, 60, 30);
   display.addWidget(pressureValueLabel);
+  
+  // Wait until initialized
+  delay(barometer.startTemperature());
 }
 
 void loop(void) {
-  long Temperature = 0, Pressure = 0, Altitude = 0;
-  dps.getTemperature(&Temperature); 
-  dps.getPressure(&Pressure);
-  dps.getAltitude(&Altitude);
-  alt_filter += 0.1 * ((float) Altitude - alt_filter);
+  double Temperature;
+  double Pressure;
+  double Pressure_seaLevel;
+  double Altitude;
+  double Altitude_relative;
 
-  tempGauge.setValue(0.1 * Temperature);
-  altBar.setValue(alt_filter);
+  /*
+   * Do the temperature measurement
+   * startTemperature() is 0 when an error occurs, otherwise is time to wait
+   */
+  delay(barometer.startTemperature());
+  barometer.getTemperature(Temperature);
+
+  /*
+   * Do the pressure measurement
+   * The parameter is the oversampling setting, from 0 to 3 (highest res, longest wait).
+   * startPressure() is 0 when an error occurs, otherwise is time to wait
+   */
+  delay(barometer.startPressure(3));
+  barometer.getPressure(Pressure, Temperature);
+  if (!Pressure_relBase_calc) {
+    Pressure_relBase_calc = true;
+    Pressure_relBase = Pressure;
+  }
+
+  /*
+   * Measure a rough relative altitude between different pressure values
+   * Because it fluctuates a lot, a filter is introduced
+   */
+  Altitude_relative = barometer.altitude(Pressure, Pressure_relBase);
+  Altitude_relative_filt += 0.02 * (Altitude_relative - Altitude_relative_filt);
+
+  /*
+   * Convert the pressure into an altitude estimate
+   * This is done by first converting to a sea level pressure
+   */
+  Pressure_seaLevel = barometer.sealevel(Pressure, ALTITUDE_BASE);
+  Altitude = barometer.altitude(Pressure, Pressure_seaLevel);
+
+  tempGauge.setValue(Temperature);
+  altBar.setValue(Altitude_relative_filt);
   pressureBar.setValue(Pressure);
-  
+
   String altText;
-  altText += (int) alt_filter;
-  altText += " cm";
+  altText += (int) Altitude;
+  altText += "m\n(";
+  if (Altitude_relative_filt >= 0.0) {
+    altText += "+";
+  }
+  altText += Altitude_relative_filt;
+  altText += "m)";
   altValueLabel.setText(altText);
-  
+
   String pressText;
   pressText += Pressure;
-  pressText += " Pa";
+  pressText += " mb";
   pressureValueLabel.setText(pressText);
 
   display.update();

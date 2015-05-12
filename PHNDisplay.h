@@ -289,14 +289,10 @@ class PHN_Display : public PHN_WidgetContainer {
   void scroll(int offset) { setScroll((int) _scroll + offset); }
 
   /* Options for printing text */
-  /**@brief Sets the background used when drawing text
-   *
-   * Set enable to false to (reset) to a transparent background.
-   * Otherwise a custom background color can be used when drawing text.
-   */
-  void setTextBackground(color_t c, bool enable = true);
-  /// Sets the text foreground color
+  /// Sets the text color to a color, with a transparent background
   void setTextColor(color_t c);
+  /// Sets the text color to a color, with a specified background color
+  void setTextColor(color_t c, color_t bg);
   /// Sets the text size ranging [1..20]
   void setTextSize(uint8_t s);
   /// Gets the current text background color set
@@ -305,6 +301,10 @@ class PHN_Display : public PHN_WidgetContainer {
   color_t getTextColor(void) {return textOpt.textcolor;}
   /// Gets the current text size set
   uint8_t getTextSize(void) {return textOpt.textsize;}
+  /// Gets all current text rendering options
+  TextOptions getTextOptions(void) { return textOpt; }
+  /// Sets all current text rendering options
+  void setTextOptions(TextOptions opt) { textOpt = opt; }
 
   /* Draw text at specific coordinates */
   /// Draws a single character at [x, y] of an optional size specified

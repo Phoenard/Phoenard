@@ -46,6 +46,8 @@ class PHN_Label : public PHN_Widget {
   void setText(const char* text);
   /// Sets the text to be displayed
   void setText(String &text);
+  /// Gets the text currently displayed
+  const char* text() { return (char*) this->textBuff.data; }
   /// Sets whether a frame border is drawn
   const void setDrawFrame(bool draw) { drawFrame = draw; }
   virtual void update(void);
@@ -53,6 +55,7 @@ class PHN_Label : public PHN_Widget {
  private:
   DataCopyBuffer textBuff;
   bool drawFrame;
+  bool quickDraw;
 };
 
 #endif
