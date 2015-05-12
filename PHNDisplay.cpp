@@ -714,16 +714,33 @@ void PHN_Display::printMem(const uint8_t* font_char) {
 
 void PHN_Display::drawStringMiddle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const char* text) {
 
+  // Calculate the total amount of rows and columns the text displays
+  int textCols = 0;
+  int textCols_tmp = 0;
+  int textRows = 1;
+  const char* text_p = text;
+  while (*text_p) {
+    if (*text_p == '\n') {
+      textRows++;
+      if (textCols_tmp > textCols) textCols = textCols_tmp;
+      textCols_tmp = 0;
+    } else {
+      textCols_tmp++;
+    }
+    text_p++;
+  }
+  if (textCols_tmp > textCols) textCols = textCols_tmp;
+
   // Draw text at an appropriate size to fit the rectangle
   int textLen = strlen(text);
   int textsize = 1;
-  while ((textLen * (textsize+1) * 6 + 2) < width && (1 * (textsize+1) * 8 + 2) < height) {
+  while ((textCols * (textsize+1) * 6 + 2) < width && (textRows * (textsize+1) * 8 + 2) < height) {
     textsize++;
   }
   
   // Find offset to use to draw in the middle
-  int textWidth = textLen * textsize * 6;
-  int textHeight = 1 * textsize * 8;
+  int textWidth = textCols * textsize * 6;
+  int textHeight = textRows * textsize * 8;
   int x_offset = (width - textWidth) >> 1;
   int y_offset = (height - textHeight) >> 1;
   setTextSize(textsize);
