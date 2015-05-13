@@ -1,3 +1,6 @@
+/*
+ * Displays the raw analog input values in 6 bar graph widgets
+ */
 #include "Phoenard.h"
 
 // Define six bar graphs
