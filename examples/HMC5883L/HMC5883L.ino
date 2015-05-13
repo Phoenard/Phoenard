@@ -23,7 +23,7 @@ void setup() {
   color_t bar_colors[3] = {RED, GREEN, BLUE};
   for (int i = 0; i < 3; i++) {
     bars[i].setBounds(10 + i * 25, 20, 23, 200);
-    bars[i].setRange(0.0F, 4096.0F);
+    bars[i].setRange(-4096.0F, 4096.0F);
     bars[i].setColor(CONTENT, bar_colors[i]);
     display.addWidget(bars[i]);
   }
@@ -38,9 +38,9 @@ void loop() {
   MagnetometerRaw raw = compass.ReadRawAxis();
 
   // Obtain the x/y/z values
-  float x = (float) abs(raw.ZAxis);
-  float y = (float) abs(raw.YAxis);
-  float z = (float) abs(raw.ZAxis);
+  float x = (float) raw.XAxis;
+  float y = (float) raw.YAxis;
+  float z = (float) raw.ZAxis;
   bars[0].setValue(x);
   bars[1].setValue(y);
   bars[2].setValue(z);
