@@ -15,6 +15,7 @@
 #include <Wire.h>
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
+#include "HMC5883L.h"
 #include <SPI.h>
 #include <SD.h>
 #include <Adafruit_VS1053.h>
@@ -110,13 +111,13 @@ void setup() {
   }
 
   doTest("Connector", testConnector);
-  doTest("Touchscreen", testTouchscreen);
-  doTest("MIDI", testMIDI);
-  doTest("MP3", testMP3);
   doTest("BMP180", testBMP180);
   doTest("MPU6050", testMPU6050);
   doTest("HMC5883L", testHMC5883L);
   doTest("SRAM", testRAM);
+  doTest("Touchscreen", testTouchscreen);
+  doTest("MIDI", testMIDI);
+  doTest("MP3", testMP3);
   doTest("Micro-SD", testSD);
   doTest("WiFi", testWiFi);
   doTest("Bluetooth", testBluetooth);

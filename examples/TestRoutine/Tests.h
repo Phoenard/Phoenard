@@ -53,6 +53,7 @@ typedef struct TestResult {
 } TestResult;
 
 TestResult SUCCESS_RESULT(true, "No problems found");
+TestResult NOCONN_RESULT(false, "No connection with device");
 
 boolean isStationConnected = false;
 
@@ -247,7 +248,7 @@ TestResult testConnector() {
 TestResult testBMP180() {
   SFE_BMP180 barometer;
   if (!barometer.begin()) {
-    return TestResult(false, "Failed to establish connection");
+    return NOCONN_RESULT;
   }
   char status;
   
@@ -314,7 +315,7 @@ TestResult testMPU6050() {
   Wire.begin();
   accelgyro.initialize();
   if (!accelgyro.testConnection()) {
-    return TestResult(false, "Failed to establish connection");
+    return NOCONN_RESULT;
   }
 
   // Generate 5 samples of accelerometer and gyro data
@@ -374,8 +375,51 @@ TestResult testMPU6050() {
 }
 
 TestResult testHMC5883L() {
-  //TODO:
-  return TestResult(false, "Not implemented!");
+  HMC5883L compass;
+  
+  // Initialize it
+  Wire.begin();
+  compass.initialize();
+  
+  // Make sure the sensor connection is working
+  if (!compass.testConnection()) {
+    return NOCONN_RESULT;
+  }
+
+  // Perform a series of measurements
+  const int MEAS_CNT = 10;
+  int16_t mag_x[MEAS_CNT];
+  int16_t mag_y[MEAS_CNT];
+  int16_t mag_z[MEAS_CNT];
+  for (int i = 0; i < MEAS_CNT; i++) {
+    compass.getHeading(&mag_x[i], &mag_y[i], &mag_z[i]);
+    delay(25);
+  }
+
+  // Perform magical statistics
+  int32_t mag_mean[3];
+  int32_t mag_dev[3];
+  calc_stats(mag_x, MEAS_CNT, &mag_mean[0], &mag_dev[0]);
+  calc_stats(mag_y, MEAS_CNT, &mag_mean[1], &mag_dev[1]);
+  calc_stats(mag_z, MEAS_CNT, &mag_mean[2], &mag_dev[2]);
+
+  // Print out the measurement data
+  Serial.println();
+  Serial.print("  MAGNETO: ");
+  print_sensor_info(mag_mean, mag_dev, 3);
+
+  // Perform a check to see if the measured data is within range
+  for (int i = 0; i < 3; i++) {
+    if (mag_dev[i] >= 100) {
+      return TestResult(false, "Readings are unstable");
+    }
+    if (mag_mean[i] >= 1000 || mag_mean[i] <= -1000) {
+      return TestResult(false, "Readings out of range/magnetic influence");
+    }
+  }
+
+  // All good
+  return SUCCESS_RESULT;
 }
 
 TestResult testRAM() {
@@ -530,9 +574,6 @@ TestResult testMIDI() {
 }
 
 TestResult testMP3() {
-  showMessage("Plug in headphones - hear beeps?\n"
-              "Press SELECT if you hear sound");
-
   // Define and initialize the VS1053 audio player here
   Adafruit_VS1053_FilePlayer musicPlayer(VS1053_RESET_PIN, VS1053_CS_PIN, VS1053_DCS_PIN, VS1053_DREQ_PIN, VS1053_CARDCS_PIN);
   
@@ -555,6 +596,14 @@ TestResult testMP3() {
   if (!SD.begin(VS1053_CARDCS_PIN)) {
     return TestResult(false, "Failed to initialize SD card");
   }
+
+  // Check if the test sound file exists
+  if (!SD.exists("Sounds/beep.mp3")) {
+    return TestResult(false, "Micro-SD has no Sounds/beep.mp3");
+  }
+
+  showMessage("Plug in headphones - hear beeps?\n"
+              "Press SELECT if you hear sound");
 
   // Play the test 'beep' file on repeat
   for (int i = 5; i >= 1; i--) {
