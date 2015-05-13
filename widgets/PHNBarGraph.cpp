@@ -26,6 +26,7 @@ THE SOFTWARE.
 void PHN_BarGraph::setRange(float minimum, float maximum) {
   _minimum = minimum;
   _maximum = maximum;
+  _baseVal = minimum;
   setValue(_valueReq);
   invalidate();
 }
@@ -39,16 +40,32 @@ void PHN_BarGraph::setValue(float value) {
     _valueReq = value;
   }
 }
-  
+
+void PHN_BarGraph::setBaseValue(float baseValue) {
+  _baseVal = baseValue;
+  invalidate();
+}
+
 void PHN_BarGraph::update() {
-  // Draw changes in the bar graph; invalidate() causes flickering
-  if (_valueReq > _value) {
-    // Value increased - bar increases
-    drawBar(_value, _valueReq, color(CONTENT));
-  } else if (_valueReq < _value) {
-    // Value decreased - bar decreases
-    drawBar(_valueReq, _value, color(FOREGROUND));
+  // If invalidated; ignore drawing updates
+  if (invalidated) return;
+
+  // If value flips around the base, make sure to clear properly
+  if ((_valueReq > _baseVal) != (_value > _baseVal)) {
+    drawBar(_value, _baseVal, color(FOREGROUND));
+    _value = _baseVal;
   }
+
+  // Draw changes in the bar graph; invalidate() causes flickering
+  if (_valueReq != _value) {
+    // Whether bar is increased or reduced depends on two factors
+    if ((_valueReq >= _baseVal) != (_valueReq > _value)) {
+      drawBar(_value, _valueReq, color(FOREGROUND));
+    } else {
+      drawBar(_value, _valueReq, color(CONTENT));
+    }
+  }
+
   _value = _valueReq;
 }
 
@@ -59,10 +76,16 @@ void PHN_BarGraph::draw() {
   
   // Draw the bar contents itself
   _value = _valueReq;
-  drawBar(_minimum, _value, color(CONTENT));
+  drawBar(_baseVal, _value, color(CONTENT));
 }
 
 void PHN_BarGraph::drawBar(float val_a, float val_b, color_t color) {
+  // Ensure val_a < val_b by swapping as needed
+  if (val_a > val_b) {
+    float f = val_b;
+    val_b = val_a;
+    val_a = f;
+  }
   // Fill the area between val_a and val_b with a bar
   // Start by converting the input parameters into 0-1 space
   val_a = (val_a - _minimum) / (_maximum - _minimum);

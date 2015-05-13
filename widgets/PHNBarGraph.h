@@ -38,6 +38,8 @@ class PHN_BarGraph : public PHN_Widget {
  public:
   /// Sets the minimum and maximum value of the gauge
   void setRange(float minimum, float maximum);
+  /// Sets the base value of the bar graph from which the bar is drawn
+  void setBaseValue(float baseValue);
   /// Sets the value displayed by the gauge
   void setValue(float value);
   /// Gets the value displayed by the gauge
@@ -47,7 +49,7 @@ class PHN_BarGraph : public PHN_Widget {
   virtual void draw(void);
  private:
   void drawBar(float val_a, float val_b, color_t color);
-  float _minimum, _maximum, _value, _valueReq;
+  float _minimum, _maximum, _value, _valueReq, _baseVal;
 };
 
 #endif

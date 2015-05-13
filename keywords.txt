@@ -115,6 +115,7 @@ setTextSize	KEYWORD2
 setBounds	KEYWORD2
 setText	KEYWORD2
 setValue	KEYWORD2
+setBaseValue	KEYWORD2
 setRange	KEYWORD2
 setColor	KEYWORD2
 setLineCount	KEYWORD2

@@ -24,6 +24,7 @@ void setup() {
   for (int i = 0; i < 3; i++) {
     bars[i].setBounds(10 + i * 25, 20, 23, 200);
     bars[i].setRange(-4096.0F, 4096.0F);
+    bars[i].setBaseValue(0.0F);
     bars[i].setColor(CONTENT, bar_colors[i]);
     display.addWidget(bars[i]);
   }
