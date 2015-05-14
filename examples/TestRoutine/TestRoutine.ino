@@ -23,6 +23,7 @@
 #include "Tests.h"
 
 int testIndex = 0;
+boolean has_errors = false;
 
 TestResult doTest(char* what, TestResult(*testFunc)(void)) {
   // Check if pressed - if pressed for longer than 1 second, show message
@@ -53,6 +54,11 @@ TestResult doTest(char* what, TestResult(*testFunc)(void)) {
   Serial.print(result.success ? " SUCCESS" : " FAILURE");
   Serial.print(" - ");
   Serial.println(result.status);
+
+  // If errors occurred, set the error flag
+  if (!result.success) {
+    has_errors = true;
+  }
 
   // Next test
   testIndex++;
@@ -132,7 +138,11 @@ void setup() {
   sim.end();
 
   // All done!
-  Serial.println("Testing completed.");
+  if (has_errors) {
+    Serial.println("Testing completed with errors.");
+  } else {
+    Serial.println("Testing completed: no problems found.");
+  }
 }
 
 void loop() {

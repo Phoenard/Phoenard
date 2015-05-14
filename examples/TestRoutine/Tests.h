@@ -1,7 +1,7 @@
 #include "Phoenard.h"
 
 /* All the BAUD rates to probe at */
-int baud_rates[] = {9600, 115200, 19200, 38400, 57600, 4800, 2400, 1200, 230400};
+long baud_rates[] = {9600, 115200, 19200, 38400, 57600, 4800, 2400, 1200, 230400};
 const int baud_rates_cnt = sizeof(baud_rates) / sizeof(int);
 
 void calc_stats(int16_t *values, int cnt, int32_t *mean, int32_t *variation) {
@@ -78,7 +78,13 @@ boolean writeATCommand(Stream &serial, char *command, char* response, long timeo
   return false;
 }
 
-#define DELIMITER  45
+void set_BlueWifi_baud(long baud) {
+  Serial.println();
+  Serial.print("  SETTING BAUD=");
+  Serial.print(baud);
+  Serial.print(" | ");
+  Serial2.begin(baud);
+}
 
 bool SpiRAMTest(uint16_t address, char data_byte) {
   sram.write(address, data_byte);
@@ -134,6 +140,7 @@ boolean isScreenTouched() {
 }
 
 boolean isSelectPressed() {
+  // return !(PIND & _BV(PD5));
   return !digitalRead(SELECT_PIN);
 }
 
@@ -198,9 +205,16 @@ TestResult testConnector() {
   // No fancy protocol; just raw communication
   char buff[200];
   int buff_idx = 0;
+  long timeout_start = millis();
   while (true) {
-    // Wait for data
-    while (!Serial.available());
+    // Wait for data with a timeout
+    while (!Serial.available()) {
+      if ((millis() - timeout_start) > 100) {
+        return TestResult(false, "Test station Serial timeout");
+      }
+    }
+    timeout_start = millis();
+    
     char c = Serial.read();
     
     // Process the message on every newline
@@ -463,15 +477,14 @@ TestResult testSIM() {
 }
 
 TestResult testWiFi() {
-  Serial2.begin(115200);
-
-  // Turn on WiFi module
-  enableWiFi();
-
   // Probe the AT Command and switch up the baud rate until it works
   boolean found_baud = false;
   for (int baud_idx = 0; baud_idx < baud_rates_cnt; baud_idx++) {
-    Serial2.begin(baud_rates[baud_idx]);
+    disableBluetoothWiFi();
+    delay(50);
+    enableWiFi();
+    set_BlueWifi_baud(baud_rates[baud_idx]);
+
     if (writeATCommand(Serial2, "AT\r\n", "OK", 250)) {
       found_baud = true;
       break;
@@ -484,8 +497,6 @@ TestResult testWiFi() {
 }
 
 TestResult testBluetooth() {
-  Serial2.begin(9600);
-
   // Turn on the bluetooth module
   enableBluetooth();
 
@@ -500,7 +511,11 @@ TestResult testBluetooth() {
     // Probe the AT Command and switch up the baud rate until it works
     boolean found_baud = false;
     for (int baud_idx = 0; baud_idx < baud_rates_cnt; baud_idx++) {
-      Serial2.begin(baud_rates[baud_idx]);
+      disableBluetoothWiFi();
+      delay(10);
+      enableBluetooth();
+      set_BlueWifi_baud(baud_rates[baud_idx]);
+      
       if (writeATCommand(Serial2, "AT", "OK", 500)) {
         found_baud = true;
         break;
