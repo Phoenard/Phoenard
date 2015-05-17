@@ -191,6 +191,12 @@ typedef uint16_t color_t;
 #define DIR_UP               DIR_UP_WRAP_DOWN
 //@}
 
+/**
+ * When set to 1, will output screen updates through Serial at BAUD 115200
+ * With the toolkit the screen output can then be monitored
+ */
+#define LCD_OUTPUT_SERIAL 0
+
 /// Macro to turn 8-bit color into 16-bit color
 #define COLOR8TO16(color)    ((uint16_t) ((color & 0xFF) | ((color) << 8)))
 
@@ -299,6 +305,15 @@ namespace PHNDisplay16Bit {
   void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, 
                        uint8_t scale, const uint8_t* data, uint8_t direction, uint16_t color0, uint16_t color1);
 }
+
+/// Display functions that write to the Serial port for display on the computer
+#if LCD_OUTPUT_SERIAL
+namespace PHNDisplaySerial {
+  void writeCommand(uint8_t cmd);
+  void writeData(uint16_t arg);
+  void writeData(uint16_t arg, uint32_t cnt);
+}
+#endif
 
 /** @}*/
 

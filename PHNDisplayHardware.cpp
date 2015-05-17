@@ -132,6 +132,10 @@ namespace PHNDisplayHW {
     TFTLCD_WR_PORT = WR_WRITE_A;
     TFTLCD_DATA_PORT = data & 0xFF;
     TFTLCD_WR_PORT = WR_WRITE_B;
+
+#if LCD_OUTPUT_SERIAL
+    PHNDisplaySerial::writeData(data);
+#endif
   }
 
   void writeCommand(uint8_t cmd) {
@@ -142,6 +146,11 @@ namespace PHNDisplayHW {
     TFTLCD_WR_PORT = WR_COMMAND_WRITE_A;
     TFTLCD_DATA_PORT = cmd;
     TFTLCD_WR_PORT = WR_COMMAND_WRITE_B;
+
+    // Also write to Serial if specified
+#if LCD_OUTPUT_SERIAL
+    PHNDisplaySerial::writeCommand(cmd);
+#endif
   }
 
   void writeRegister(uint8_t cmd, uint16_t arg) {
@@ -356,6 +365,11 @@ namespace PHNDisplay8Bit {
     TFTLCD_WR_PORT = WR_WRITE_A;
     asm volatile ("nop\n");
     TFTLCD_WR_PORT = WR_WRITE_B;
+
+    /* Construct 16-bit color and write it to Serial */
+#if LCD_OUTPUT_SERIAL
+    PHNDisplaySerial::writeData(COLOR8TO16(color));
+#endif
   }
 
   void writePixels(uint8_t color, uint32_t length) {
@@ -370,6 +384,11 @@ namespace PHNDisplay8Bit {
       length--;
       TFTLCD_WR_PORT = WR_WRITE_B;
     }
+
+    /* Construct 16-bit color and write it to Serial */
+#if LCD_OUTPUT_SERIAL
+    PHNDisplaySerial::writeData(COLOR8TO16(color), length);
+#endif
   }
 
   void writePixelLines(uint8_t color, uint8_t lines) {
@@ -470,6 +489,11 @@ namespace PHNDisplay16Bit {
         asm volatile ("nop\n");
         TFTLCD_WR_PORT = WR_WRITE_B;
       }
+
+      /* Write 16-bit color data to screen as needed */
+#if LCD_OUTPUT_SERIAL
+      PHNDisplaySerial::writeData(color, length);
+#endif
     }
   }
 
@@ -566,3 +590,32 @@ namespace PHNDisplay16Bit {
     }
   }
 }
+
+#if LCD_OUTPUT_SERIAL
+namespace PHNDisplaySerial {
+  // Variable keeps track of whether the Serial screen has 'initialized'
+  bool lcd_serial_init = false;
+
+  void writeCommand(uint8_t cmd) {
+    if (!lcd_serial_init) {
+      lcd_serial_init = true;
+      Serial.begin(115200);
+      Serial.write(0);
+      Serial.write(0);
+      Serial.write(0);
+    }
+    Serial.write(cmd);
+  }
+
+  void writeData(uint16_t arg) {
+    Serial.write(0xFF);
+    Serial.write((uint8_t*) &arg, 2);
+  }
+
+  void writeData(uint16_t arg, uint32_t cnt) {
+    Serial.write(0xFE);
+    Serial.write((uint8_t*) &arg, 2);
+    Serial.write((uint8_t*) &cnt, 4);
+  }
+}
+#endif
