@@ -22,8 +22,10 @@
 #include <SFE_BMP180.h>
 #include "Tests.h"
 
-int testIndex = 0;
-boolean has_errors = false;
+int testCnt = 0;
+
+// Create a test result buffer of sufficient size
+TestResult test_results[15];
 
 TestResult doTest(char* what, TestResult(*testFunc)(void)) {
   // Check if pressed - if pressed for longer than 1 second, show message
@@ -44,24 +46,21 @@ TestResult doTest(char* what, TestResult(*testFunc)(void)) {
   
   // Show testing state
   showMessage("");
-  showStatus(testIndex, YELLOW, what, "Testing...");
+  showStatus(testCnt, YELLOW, what, "Testing...");
 
   // Do the test
   TestResult result = testFunc();
+  strcpy(result.device, what);
+  test_results[testCnt] = result;
 
   // Show result
-  showStatus(testIndex, result.success ? GREEN : RED, what, result.status);
+  showStatus(testCnt, result.success ? GREEN : RED, what, result.status);
   Serial.print(result.success ? " SUCCESS" : " FAILURE");
   Serial.print(" - ");
   Serial.println(result.status);
 
-  // If errors occurred, set the error flag
-  if (!result.success) {
-    has_errors = true;
-  }
-
   // Next test
-  testIndex++;
+  testCnt++;
   
   return result;
 }
@@ -132,15 +131,32 @@ void setup() {
   while ((millis() - sim_on_time) < SIM_PWR_DELAY);
   digitalWrite(SIM_PWRKEY_PIN, LOW);
 
-  // Perform testing
+  // Perform testing of SIM908
   doTest("SIM908", testSIM);
-
   sim.end();
 
-  // All done!
-  if (has_errors) {
-    Serial.println("Testing completed with errors.");
-  } else {
+  // Newline for spacing
+  Serial.println();
+
+  // All done! Check for errors and the like
+  boolean test_success = true;
+  for (int i = 0; i < testCnt; i++) {
+    if (!test_results[i].success) {
+      // Indicate the test was not successful
+      if (test_success) {
+        test_success = false;
+        Serial.println("Testing completed with errors.");
+        Serial.println("Please check the following components:");
+      }
+      // Proceed to print all components that failed the test
+      Serial.print("- ");
+      Serial.print(test_results[i].device);
+      Serial.print(" (");
+      Serial.print(test_results[i].status);
+      Serial.println(")");
+    }
+  }
+  if (test_success) {
     Serial.println("Testing completed: no problems found.");
   }
 }
@@ -149,9 +165,17 @@ void loop() {
 }
 
 void startLCDTest() {
-  // Show the LCD Version in Serial for debugging purposes
+  // Show and verify the LCD Version in Serial for debugging purposes
+  uint16_t lcd_version = PHNDisplayHW::readRegister(0);
   Serial.print("LCD Version ID: ");
-  Serial.println(PHNDisplayHW::readRegister(0), HEX);
+  Serial.println(lcd_version, HEX);
+  if (lcd_version == 0x0000) {
+    Serial.println("Version could not be read - faulty hardware");
+  } else if (lcd_version == 0x9325 || lcd_version == 0x9328) {
+    Serial.println("Screen communication established.");
+  } else {
+    Serial.println("Version invalid: wrong screen or data pin not connected");
+  }
   Serial.println("Press SELECT to continue...");
 
   // As a first test, show RGB colors on the screen to verify readout works as expected

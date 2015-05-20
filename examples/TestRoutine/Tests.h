@@ -36,11 +36,16 @@ void print_sensor_info(int32_t *mean, int32_t *deviation, int count) {
 
 typedef struct TestResult {
   boolean success;
+  char device[20];
   char status[50];
   
+  TestResult() {
+    success = false;
+  }
   TestResult(const TestResult& result) {
     this->success = result.success;
     memcpy(this->status, result.status, sizeof(status));
+    memcpy(this->device, result.device, sizeof(device));
   }
   TestResult(boolean success, char* status) {
     this->success = success;
