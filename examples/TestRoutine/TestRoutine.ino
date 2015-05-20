@@ -55,7 +55,7 @@ TestResult doTest(char* what, TestResult(*testFunc)(void)) {
 
   // Show result
   showStatus(testCnt, result.success ? GREEN : RED, what, result.status);
-  Serial.print(result.success ? " SUCCESS" : " FAILURE");
+  Serial.print(result.success ? "  SUCCESS" : "  FAILURE");
   Serial.print(" - ");
   Serial.println(result.status);
 
@@ -116,6 +116,7 @@ void setup() {
   }
 
   doTest("Connector", testConnector);
+  doTest("LCD Screen", testScreen);
   doTest("BMP180", testBMP180);
   doTest("MPU6050", testMPU6050);
   doTest("HMC5883L", testHMC5883L);
@@ -165,17 +166,7 @@ void loop() {
 }
 
 void startLCDTest() {
-  // Show and verify the LCD Version in Serial for debugging purposes
-  uint16_t lcd_version = PHNDisplayHW::readRegister(0);
-  Serial.print("LCD Version ID: ");
-  Serial.println(lcd_version, HEX);
-  if (lcd_version == 0x0000) {
-    Serial.println("Version could not be read - faulty hardware");
-  } else if (lcd_version == 0x9325 || lcd_version == 0x9328) {
-    Serial.println("Screen communication established.");
-  } else {
-    Serial.println("Version invalid: wrong screen or data pin not connected");
-  }
+  // Show message to serial to indicate testing can be started
   Serial.println("Press SELECT to continue...");
 
   // As a first test, show RGB colors on the screen to verify readout works as expected

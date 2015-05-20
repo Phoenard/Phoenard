@@ -166,11 +166,13 @@ namespace PHNDisplayHW {
 
     /* Read in both bytes to complete the data */
     TFTLCD_RD_PORT = WR_READ_A;
-    delayMicroseconds(10);
+    asm volatile ("nop\n");
+    asm volatile ("nop\n");
     data = TFTLCD_DATA_IN << 8;
     TFTLCD_RD_PORT = WR_READ_B;
     TFTLCD_RD_PORT = WR_READ_A;
-    delayMicroseconds(10);
+    asm volatile ("nop\n");
+    asm volatile ("nop\n");
     data |= TFTLCD_DATA_IN;
     TFTLCD_RD_PORT = WR_READ_B;
 
@@ -466,6 +468,22 @@ namespace PHNDisplay16Bit {
 
   void writePixel(uint16_t color) {
     PHNDisplayHW::writeData(color);
+  }
+
+  uint16_t readPixel() {
+    /* 
+     * For CGRAM, two reads are (for some reason) needed
+     * We assume this has to do with the CGRAM command parity
+     */
+    TFTLCD_DATA_DDR = 0x00;
+    TFTLCD_RD_PORT = WR_READ_A;
+    TFTLCD_RD_PORT = WR_READ_B;
+    TFTLCD_RD_PORT = WR_READ_A;
+    TFTLCD_RD_PORT = WR_READ_B;
+    uint16_t data = PHNDisplayHW::readData();
+
+    /* For some reason 565 bit fields are used (color format?) */
+    return (data >> 11) | (data & 0x7E0) | ((data & 0x1F) << 11);
   }
 
   void writePixels(uint16_t color, uint32_t length) {

@@ -114,7 +114,14 @@ void showCounter(int ctr) {
 }
 
 // Show a message on the LCD screen
+boolean has_message = false;
 void showMessage(const char* message) {
+  if (!has_message && !*message) {
+    return;
+  }
+  has_message = *message;
+  
+  // Wipe the previous contents and draw the text
   const int msg_w = 320;
   const int msg_h = 30;
   const int msg_x = 0;
@@ -124,8 +131,9 @@ void showMessage(const char* message) {
   display.drawStringMiddle(msg_x, msg_y, msg_w, msg_h, message);
   
   // Also print to SERIAL
-  if (*message) {
-    Serial.print("[");
+  if (has_message) {
+    Serial.println();
+    Serial.print("  [");
     while (*message) {
       if (*message == '\n') {
         Serial.print(' ');
@@ -134,7 +142,7 @@ void showMessage(const char* message) {
       }
       message++;
     }
-    Serial.print("]");
+    Serial.println("]");
   }
 }
 
@@ -145,11 +153,66 @@ boolean isScreenTouched() {
 }
 
 boolean isSelectPressed() {
-  // return !(PIND & _BV(PD5));
+  //return !(PIND & _BV(PD5));
   return !digitalRead(SELECT_PIN);
 }
 
 /** ========================================================== **/
+
+TestResult testScreen() {
+  // First try to read the LCD version ID
+  // This provides a basic check for the RS/WR/data pins
+  uint16_t lcd_version = PHNDisplayHW::readRegister(0);
+  Serial.println();
+  Serial.print("  LCD Version ID: ");
+  Serial.println(lcd_version, HEX);
+  if (lcd_version == 0x0000) {
+    return NOCONN_RESULT;
+  }
+  if (lcd_version != 0x9325 && lcd_version != 0x9328) {
+    return TestResult(false, "Unsupported screen or data pin error");
+  }
+
+  // Perform pixel read/write testing on the top pixel line
+  const uint32_t total_lines = 300;
+  const uint32_t total_writes = PHNDisplayHW::WIDTH * total_lines;
+  uint16_t color_write;
+  uint16_t color_read;
+  uint32_t error_cnt = 0;
+  for (int line = 0; line < total_lines; line++) {
+    // Randomize start color
+    color_write = random(0xFFFF);
+
+    // Write the line
+    PHNDisplayHW::setCursor(0, 0, DIR_RIGHT);
+    for (uint16_t x = 0; x < PHNDisplayHW::WIDTH; x++) {
+      PHNDisplay16Bit::writePixel(color_write + x);
+    }
+
+    // Read the line
+    for (uint16_t x = 0; x < PHNDisplayHW::WIDTH; x++) {
+      PHNDisplayHW::setCursor(x, 0, DIR_RIGHT);
+      color_read = PHNDisplay16Bit::readPixel();
+      if (color_read != (color_write + x)) {
+        error_cnt++;
+      }
+    }
+  }
+
+  // Clear the top line again
+  PHNDisplay16Bit::drawLine(0, 0, PHNDisplayHW::WIDTH, DIR_RIGHT, BLACK);
+
+  // Log test information
+  Serial.print("  R/W Errors: ");
+  Serial.print(error_cnt);
+  Serial.print(" (");
+  Serial.print(total_writes);
+  Serial.println(" Writes)");
+  if (error_cnt) {
+    return TestResult(false, "Data read/write error");
+  }
+  return SUCCESS_RESULT;
+}
 
 TestResult testTouchscreen() {
   // First check that the touchscreen is NOT touched right now
@@ -181,7 +244,6 @@ TestResult testTouchscreen() {
         continue;
       }
 
-      Serial.println();
       Serial.print("  TOUCH: [");
       Serial.print(x); Serial.print(", ");
       Serial.print(y); Serial.print(", ");

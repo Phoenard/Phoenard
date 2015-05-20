@@ -283,6 +283,8 @@ namespace PHNDisplay8Bit {
 namespace PHNDisplay16Bit {
   /// Writes out a single 16-bit color pixel
   void writePixel(uint16_t color);
+  /// Reads a single 16-bit color pixel
+  uint16_t readPixel();
   /// Writes out many 16-bit color pixels in bulk, length is the amount of pixels to write out
   void writePixels(uint16_t color, uint32_t length);
   /// Drawing a line with 16-bit color
