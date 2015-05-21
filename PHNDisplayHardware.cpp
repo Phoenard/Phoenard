@@ -375,6 +375,11 @@ namespace PHNDisplay8Bit {
   }
 
   void writePixels(uint8_t color, uint32_t length) {
+    /* Construct 16-bit color and write it to Serial */
+#if LCD_OUTPUT_SERIAL
+    PHNDisplaySerial::writeData(COLOR8TO16(color), length);
+#endif
+
     /* Write the data to the data port */
     TFTLCD_DATA_PORT = color;
 
@@ -386,11 +391,6 @@ namespace PHNDisplay8Bit {
       length--;
       TFTLCD_WR_PORT = WR_WRITE_B;
     }
-
-    /* Construct 16-bit color and write it to Serial */
-#if LCD_OUTPUT_SERIAL
-    PHNDisplaySerial::writeData(COLOR8TO16(color), length);
-#endif
   }
 
   void writePixelLines(uint8_t color, uint8_t lines) {
@@ -494,6 +494,11 @@ namespace PHNDisplay16Bit {
        * use the 8-bit write function instead */
       PHNDisplay8Bit::writePixels(data_a, length);
     } else {
+      /* Write 16-bit color data to screen as needed */
+#if LCD_OUTPUT_SERIAL
+      PHNDisplaySerial::writeData(color, length);
+#endif
+
       /* First and second byte not equal - write each byte alternating */
       while (length) {
         /* Write the first byte, subtract length within data write to add delay */
@@ -507,11 +512,6 @@ namespace PHNDisplay16Bit {
         asm volatile ("nop\n");
         TFTLCD_WR_PORT = WR_WRITE_B;
       }
-
-      /* Write 16-bit color data to screen as needed */
-#if LCD_OUTPUT_SERIAL
-      PHNDisplaySerial::writeData(color, length);
-#endif
     }
   }
 
@@ -619,21 +619,22 @@ namespace PHNDisplaySerial {
       lcd_serial_init = true;
       Serial.begin(115200);
       Serial.write(0);
-      Serial.write(0);
-      Serial.write(0);
     }
     Serial.write(cmd);
+    Serial.flush();
   }
 
   void writeData(uint16_t arg) {
     Serial.write(0xFF);
     Serial.write((uint8_t*) &arg, 2);
+    Serial.flush();
   }
 
   void writeData(uint16_t arg, uint32_t cnt) {
     Serial.write(0xFE);
     Serial.write((uint8_t*) &arg, 2);
     Serial.write((uint8_t*) &cnt, 4);
+    Serial.flush();
   }
 }
 #endif

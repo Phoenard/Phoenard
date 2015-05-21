@@ -410,9 +410,24 @@ void PHN_Display::drawStraightLine(uint16_t x, uint16_t y, uint16_t length, uint
   PHNDisplay16Bit::writePixels(color, length);
 }
 
-// bresenham's algorithm - thx wikpedia
+// bresenham's algorithm with optimizations
 void PHN_Display::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, color_t color) {
-  // if you're in rotation 1 or 3, we need to swap the X and Y's
+  if (x0 == x1) {
+    if (y1 > y0) {
+      drawVerticalLine(x0, y0, (y1 - y0), color);
+    } else {
+      drawVerticalLine(x0, y1, (y0 - y1), color);
+    }
+    return;
+  }
+  if (y0 == y1) {
+    if (x1 > x0) {
+      drawHorizontalLine(x0, y0, (x1 - x0), color);
+    } else {
+      drawHorizontalLine(x1, y0, (x0 - x1), color);
+    }
+    return;
+  }
 
   int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
