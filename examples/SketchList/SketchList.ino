@@ -97,7 +97,7 @@ long pressed_time_start;
 void setup() {
   /* Initialize SRAM for buffering sketches */
   sram.begin();
-  use_sram = sram.testConnection();
+  use_sram = false; //sram.testConnection();
   
   /* Set pin 13 (LED) to output */
   pinMode(13, OUTPUT);
