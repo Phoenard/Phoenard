@@ -584,27 +584,30 @@ namespace PHNDisplay16Bit {
   }
 
   void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, uint8_t scale, const uint8_t* data, uint8_t direction, uint16_t color0, uint16_t color1) {
-    uint8_t pix_dat, dy, si, dx, d;
-    for (dy = 0; dy < height; dy++) {
-      for (si = 0; si < scale; si++) {
-        PHNDisplayHW::setCursor(x, y, direction);
-        if (direction == DIR_DOWN) {
-          x++;
-        } else {
-          y++;
-        }
-
-        const uint8_t* data_line = data;
-        for (dx = 0; dx < width; dx++) {
-          /* Refresh pixel data every 8 pixels */
-          if ((dx & 0x7) == 0) pix_dat = *data_line++;
-          /* Draw SCALE pixels for each pixel in a line */
-          writePixels((pix_dat & 0x1) ? color1 : color0, scale);
-          /* Next pixel data bit */
-          pix_dat >>= 1;
-        }
+    uint8_t pix_dat, dy, dx, si = 0, d = 0;
+    uint8_t l = height * scale;
+    for (dy = 0; dy < l; dy++) {
+      PHNDisplayHW::setCursor(x, y, direction);
+      if (direction == DIR_DOWN) {
+        x++;
+      } else {
+        y++;
       }
-      data += width/8;
+
+      const uint8_t* data_line = data;
+      for (dx = 0; dx < width; dx++) {
+        /* Refresh pixel data every 8 pixels */
+        if (!d) pix_dat = *data_line++;
+        d += 256/8;
+        /* Draw SCALE pixels for each pixel in a line */
+        writePixels((pix_dat & 0x1) ? color1 : color0, scale);
+        /* Next pixel data bit */
+        pix_dat >>= 1;
+      }
+      if (++si >= scale) {
+        si = 0;
+        data += width/8;
+      }
     }
   }
 }

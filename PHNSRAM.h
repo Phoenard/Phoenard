@@ -55,6 +55,9 @@ class PHN_SRAM {
   char read(uint16_t address);
   /// Writes a byte of data at an address specified
   void write(uint16_t address, char dataByte);
+  
+  /// Tests whether the SRAM memory is working properly
+  bool testConnection();
 };
 
 /// Global variable from which the SRAM functions can be accessed

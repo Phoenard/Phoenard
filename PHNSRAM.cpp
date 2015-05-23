@@ -54,6 +54,9 @@ void PHN_SRAM::begin() {
   SRAM_Send(SRAM_CMD_STATUS_WRITE);
   SRAM_Send(64);
   EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
+  // This Flush is needed to ensure proper operation
+  EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
+  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
 }
 
 void PHN_SRAM::readBlock(uint16_t address, char* data, uint16_t length) {
@@ -83,6 +86,24 @@ char PHN_SRAM::read(uint16_t address) {
   char dataByte;
   readBlock(address, &dataByte, 1);
   return dataByte;
+}
+
+bool PHN_SRAM::testConnection() {
+  /* 
+   * For several addresses, invert bits and write and check whether it works
+   * After each test byte, restore it back to the original value
+   */
+  for (uint16_t addr = 0; addr < 32768; addr += 4096) {
+    char byte = read(addr);
+    byte ^= 0xFF;
+    write(addr, byte);
+    if (read(addr) != byte) {
+      return false;
+    }
+    byte ^= 0xFF;
+    write(addr, byte);
+  }
+  return true;
 }
 
 void PHN_SRAM::write(uint16_t address, char dataByte) {

@@ -74,191 +74,280 @@
 uint16_t touch_x, touch_y;
 boolean touch_waitup;
 
-void setLoadOptions(const char* sketchName, unsigned char options) {
-  PHN_Settings settings;
-  PHN_Settings_Load(settings);
-  if (sketchName) {
-    memcpy(settings.sketch_toload, sketchName, 8);
-  } else {
-    memcpy(settings.sketch_toload, settings.sketch_current, 8);
-  }
-  settings.flags &= ~(SETTINGS_LOAD | SETTINGS_LOADWIPE);
-  settings.flags |= options;
-  PHN_Settings_Save(settings);
-}
+/* Sketch information buffer */
+typedef struct {
+  char name[8];
+  uint32_t icon;
+} SketchInfo;
 
-void loadSketchReset(char* filename) {
-  /* Clicked a sketch, load it */
-  setLoadOptions(filename, SETTINGS_LOAD);
+SketchInfo sketches_buff[100];
+int sketches_cnt = 0;
+boolean sketches_reachedEnd = false;
+boolean use_sram;
 
-  /* Software reset using watchdog */
-  WDTCSR=(1<<WDE) | (1<<WDCE);
-  WDTCSR= (1<<WDE);
-  for(;;);
-}
+/* Variables used by the main sketch list showing logic */
+char sketch_icon_text[SKETCHES_CNT][9];
+char sketch_icon_dirty[IDX_NONE+1];
+uint16_t sketch_offset = 0;
+boolean reloadAll = true;
+boolean redrawIcons;
+uint8_t touchedIndex;
+long pressed_time_start;
 
 void setup() {
-  showSketches();
+  /* Initialize SRAM for buffering sketches */
+  sram.begin();
+  use_sram = sram.testConnection();
+  
+  /* Set pin 13 (LED) to output */
+  pinMode(13, OUTPUT);
+  
+  Serial.begin(9600);
 }
 
 void loop() {
-}
+  /* When reloading, initialize all fields to the defaults */
+  if (reloadAll) {
+    digitalWrite(13, LOW);
+    reloadAll = false;
+    redrawIcons = true;
 
-void showSketches() {
-  /* First fill the screen with BLACK */
-  PHNDisplay8Bit::fill(BLACK_8BIT);
-  
-  uint16_t sketch_offset = 0;
-  boolean redrawAll = true;
-  for (;;) {
-    unsigned char sketch_count;
-    char sketch_name[SKETCHES_CNT][9];
-    char sketch_icon_dirty[IDX_NONE+1];
-    for (uint8_t i = 0; i < sizeof(sketch_icon_dirty); i++) {
-      sketch_icon_dirty[i] = 1;
-    }
+    touchedIndex = IDX_NONE;
     
-    if (redrawAll) {
-      redrawAll = false;
-      PHNDisplay8Bit::fill(BLACK_8BIT);
+    LCD_clearTouch();
+    PHNDisplay8Bit::fill(BLACK_8BIT);
+    sketches_reachedEnd = false;
+    sketches_cnt = 0;
+    volume_init();
+    digitalWrite(13, HIGH);
+  }
+  /* Clear the sketch icon area and redraw all icons */
+  if (redrawIcons) {
+    redrawIcons = false;
+    PHNDisplay8Bit::fillRect(SKETCHES_OFF_X, SKETCHES_OFF_Y, SKETCHES_FULLW, SKETCHES_FULLH, BLACK_8BIT);
+    memset(sketch_icon_dirty, 1, sizeof(sketch_icon_dirty));
+  }
+
+  /* Routinely buffer in sketch information from the Micro-SD in the background */
+  for (uint8_t i = 0; i < 16 && !sketches_reachedEnd; i++) {
+    /* Read next directory entry */
+    uint32_t old_pos = file_position;
+    uint32_t old_clust = file_curCluster_;
+    SDMINFAT::dir_t* p = (SDMINFAT::dir_t*) file_read(32);
+    /* If reading fails, re-initialize and try again */
+    if (!volume.isInitialized) {
+      volume_init();
+      file_position = old_pos;
+      file_curCluster_ = old_clust;
+      continue;
     }
 
-    /* First wipe the sketches list from any contents */
-    PHNDisplay8Bit::fillRect(SKETCHES_OFF_X, SKETCHES_OFF_Y, SKETCHES_FULLW, SKETCHES_FULLH, BLACK_8BIT);
+    /* Reached the end of the root directory? */
+    if (p->name[0] == SDMINFAT::DIR_NAME_FREE) {
+      sketches_reachedEnd = true;
+      break;
+    }
+        
+    /* Check if not deleted / main sketch */
+    if (p->name[0] == SDMINFAT::DIR_NAME_DELETED) continue;
+    if (!memcmp("SKETCHES", p->name, 8)) continue;
+        
+    /* Check file extension for SKI/HEX */
+    boolean is_ski = !memcmp("SKI", p->name+8, 3);
+    if (!is_ski && memcmp("HEX", p->name+8, 3)) continue;
 
-    /* Clear touch input */
-    LCD_clearTouch();
+    /* Turn off SD-card shortly */
+    card_setEnabled(false);
 
-    /* List all available sketches */
-    sketch_count = file_list_sketches(sketch_offset, SKETCHES_CNT, sketch_name);
-
-    /* Proceed to draw all sketches, handle update logic */
-    uint8_t oldTouchedIndex;
-    uint8_t touchedIndex = IDX_NONE;
-    long pressed_time_start;
-    for (;;) {
-      /* Update touch input */
-      LCD_updateTouch();
-
-      /* Draw/update UI */
-      uint8_t i = -1;
-      oldTouchedIndex = touchedIndex;
-      touchedIndex = IDX_NONE;
-      for (uint16_t y = 0; y < SKETCHES_CNT_Y; y++) {
-        for (uint16_t x = 0; x < SKETCHES_CNT_X; x++) {
-          i++;
-          
-          /* Slot out of range */
-          if (i >= sketch_count) {
-            continue;
-          }
-
-          unsigned int px = SKETCHES_OFF_X + x * SKETCHES_STP_X;
-          unsigned int py = SKETCHES_OFF_Y + y * SKETCHES_STP_Y;
-
-          /* Handle touch input */
-          if (LCD_isTouched(px, py, SKETCHES_ICON_W, SKETCHES_ICON_H)) {
-            touchedIndex = i;
-          }
-
-          /* Redraw the sketch if needed */
-          if (sketch_icon_dirty[i]) {
-            sketch_icon_dirty[i] = 0;
-
-            /* Pressed? */
-            uint8_t color1, color2;
-            if (touchedIndex == i) {
-              color1 = COLOR_C1_SEL;
-              color2 = COLOR_C2_SEL;
-            } else {
-              color1 = COLOR_C1;
-              color2 = COLOR_C2;
-            }
-
-            /* Draw the sketch icon */
-            uint8_t* icon_data = file_open(sketch_name[i], "SKI", FILE_READ) ? volume_cacheCurrentBlock(0) : icon_sketch_default;
-            LCD_write_icon(px, py, SKETCHES_ICON_W, SKETCHES_ICON_H, icon_data, sketch_name[i], color1, color2, COLOR_C2);
-          }
-        }
-      }
-
-      /* Draw and update all the other icons */
-      uint8_t* menu_icons[] = {icon_up, icon_add, icon_down};
-      for (i = IDX_MENU_START; i < IDX_NONE; i++) {
-        unsigned int px = MENU_OFF_X;
-        unsigned int py = MENU_OFF_Y + (MENU_STP_Y*(i-IDX_MENU_START));
-
-        if (LCD_isTouched(px, py, MENU_ICON_W + LCD_RIGHT_BORDER, MENU_ICON_H)) {
-          touchedIndex = i;
-        }
-
-        if (sketch_icon_dirty[i]) {
-          sketch_icon_dirty[i] = 0;
-
-          /* Pressed? */
-          uint8_t color1, color2;
-          if (touchedIndex == i) {
-            color1 = COLOR_C1_SEL;
-            color2 = COLOR_C2_SEL;
-          } else {
-            color1 = COLOR_C1;
-            color2 = COLOR_C2;
-          }
-
-          /* Draw the sketch icon */
-          uint8_t* icon_data = menu_icons[i-IDX_MENU_START];
-          PHNDisplay8Bit::writeImage_1bit(px, py, MENU_ICON_W, MENU_ICON_H, 1, icon_data, DIR_RIGHT, color1, color2);
-        }
-      }
-
-      /* Redraw icons when touched index changes */
-      if (oldTouchedIndex != touchedIndex) {
-        sketch_icon_dirty[oldTouchedIndex] = 1;
-        sketch_icon_dirty[touchedIndex] = 1;
-        pressed_time_start = millis();
-      }
-
-      if (touchedIndex == IDX_NONE) {
-        /* Released the touchscreen? */
-        if (!LCD_isTouchedAny() && oldTouchedIndex != IDX_NONE) {
-          if (oldTouchedIndex >= IDX_MENU_START) {
-            if (oldTouchedIndex == IDX_UP) {
-              /* Move sketch list one page up, ignore if impossible */
-              if (!sketch_offset) {
-                continue;
-              }
-              sketch_offset -=  SKETCHES_PGINCR;
-            } else if (oldTouchedIndex == IDX_DOWN) {
-              /* Move sketch list one page down, ignore if impossible */
-              if (sketch_count != SKETCHES_CNT) {
-                continue;
-              }
-              sketch_offset += SKETCHES_PGINCR;
-            } else if (oldTouchedIndex == IDX_ADD) {
-              /* Ask for the file name, if successful, edit the icon */
-              char name[8];
-              memset(name, ' ' , 8);
-              if (askSketchName(name)) {
-                editSketch(name, true);
-              } else {
-                redrawAll = true;
-              }
-            }
-
-            /* In menu, break out and re-initialize the sketches */
+    /* Locate this sketch name in the memory buffer */
+    uint16_t sketch_index = 0;
+    uint16_t sketch_addr = 0;
+    boolean create_new = true;
+    while (sketch_index < sketches_cnt) {
+      if (use_sram) {
+        /* Probe one char at a time for faster lookup */
+        create_new = false;
+        for (uint8_t i = 0; i < 8; i++) {
+          if (sram.read(sketch_addr + i) != p->name[i]) {
+            create_new = true;
             break;
-          } else {
-            /* Clicked a sketch, load it */
-            loadSketchReset(sketch_name[oldTouchedIndex]);
           }
         }
-      } else if (touchedIndex < IDX_MENU_START && ((millis() - pressed_time_start) > HOLD_ACTIVATE_DELAY)) {
-        /* Edit the selected sketch */
-        editSketch(sketch_name[touchedIndex], false);
-
-        /* In menu, break out and re-initialize the sketches */
+      } else if (!memcmp(sketches_buff[sketch_index].name, p->name, 8)) {
+        create_new = false;
+      }
+      if (!create_new) {
         break;
       }
+      sketch_index++;
+      sketch_addr += sizeof(SketchInfo);
+    }
+    
+    /* Create new entry if not found */
+    if (create_new) {
+      sketches_cnt++;
+      SketchInfo info;
+      memcpy(info.name, p->name, 8);
+      info.icon = 0;
+      if (use_sram) {
+        sram.writeBlock(sketch_addr, (char*) &info, sizeof(SketchInfo));
+      } else {
+        sketches_buff[sketch_index] = info;
+      }
+    }
+    /* If SKI file, set icon location info */
+    if (is_ski) {
+      uint32_t icon_cluster = ((uint32_t) p->firstClusterHigh << 16) | p->firstClusterLow;
+      uint32_t icon_block = volume.dataStartBlock + ((icon_cluster - 2) * volume.blocksPerCluster);
+      if (use_sram) {
+        sram.writeBlock(sketch_addr + 8, (char*) &icon_block, sizeof(uint32_t));
+      } else {
+        sketches_buff[sketch_index].icon = icon_block;
+      }
+    }
+    /* If required, mark this sketch dirty for rendering */
+    uint16_t sketch_icon_idx = (sketch_index - sketch_offset);
+    if ((create_new || is_ski) && (sketch_index >= sketch_offset) && (sketch_icon_idx < SKETCHES_CNT)) {
+      sketch_icon_dirty[sketch_icon_idx] = 1;
+    }
+    
+    /* Turn SD-card shortly back on */
+    card_setEnabled(true);
+  }
+
+  /* Update touch input */
+  LCD_updateTouch();
+
+  /* Draw and update touch input for sketch icons */
+  uint8_t i = -1; // Makes use of overflow logic
+  uint8_t oldTouchedIndex = touchedIndex;
+  touchedIndex = IDX_NONE;
+  for (uint16_t y = 0; y < SKETCHES_CNT_Y; y++) {
+    for (uint16_t x = 0; x < SKETCHES_CNT_X; x++) {
+      i++;
+      uint16_t sketch_index = (i+sketch_offset);
+          
+      /* Slot out of range */
+      if (sketch_index >= sketches_cnt) {
+        continue;
+      }
+
+      unsigned int px = SKETCHES_OFF_X + x * SKETCHES_STP_X;
+      unsigned int py = SKETCHES_OFF_Y + y * SKETCHES_STP_Y;
+
+      /* Handle touch input */
+      if (LCD_isTouched(px, py, SKETCHES_ICON_W, SKETCHES_ICON_H)) {
+        touchedIndex = i;
+      }
+
+      /* Redraw the sketch if needed */
+      if (sketch_icon_dirty[i]) {
+        sketch_icon_dirty[i] = 0;
+
+        /* Pressed? */
+        uint8_t color1, color2;
+        if (touchedIndex == i) {
+          color1 = COLOR_C1_SEL;
+          color2 = COLOR_C2_SEL;
+        } else {
+          color1 = COLOR_C1;
+          color2 = COLOR_C2;
+        }
+
+        /* Refresh name */
+        SketchInfo info;
+        if (use_sram) {
+          card_setEnabled(false);
+          sram.readBlock(sketch_index * sizeof(SketchInfo), (char*) &info, sizeof(SketchInfo));
+          card_setEnabled(true);
+        } else {
+          info = sketches_buff[sketch_index];
+        }
+
+        memcpy(sketch_icon_text[i], info.name, 8);
+        sketch_icon_text[i][8] = 0;
+
+        /* Load icon data into memory if available */
+        uint8_t* icon_data = icon_sketch_default;
+        if (info.icon) {
+          volume_readCache(info.icon);
+          icon_data = volume_cacheBuffer_.data;
+        }
+
+        /* Draw the sketch icon */
+        LCD_write_icon(px, py, SKETCHES_ICON_W, SKETCHES_ICON_H, icon_data, sketch_icon_text[i], color1, color2, COLOR_C2);
+      }
+    }
+  }
+
+  /* Draw and update all the other icons */
+  uint8_t* menu_icons[] = {icon_up, icon_add, icon_down};
+  for (i = IDX_MENU_START; i < IDX_NONE; i++) {
+    unsigned int px = MENU_OFF_X;
+    unsigned int py = MENU_OFF_Y + (MENU_STP_Y*(i-IDX_MENU_START));
+
+    if (LCD_isTouched(px, py, MENU_ICON_W + LCD_RIGHT_BORDER, MENU_ICON_H)) {
+      touchedIndex = i;
+    }
+
+    if (sketch_icon_dirty[i]) {
+      sketch_icon_dirty[i] = 0;
+
+      /* Pressed? */
+      uint8_t color1, color2;
+      if (touchedIndex == i) {
+        color1 = COLOR_C1_SEL;
+        color2 = COLOR_C2_SEL;
+      } else {
+        color1 = COLOR_C1;
+        color2 = COLOR_C2;
+      }
+
+      /* Draw the sketch icon */
+      uint8_t* icon_data = menu_icons[i-IDX_MENU_START];
+      PHNDisplay8Bit::writeImage_1bit(px, py, MENU_ICON_W, MENU_ICON_H, 1, icon_data, DIR_RIGHT, color1, color2);
+    }
+  }
+
+  /* Redraw icons when touched index changes */
+  if (oldTouchedIndex != touchedIndex) {
+    sketch_icon_dirty[oldTouchedIndex] = 1;
+    sketch_icon_dirty[touchedIndex] = 1;
+    pressed_time_start = millis();
+  }
+
+  /* Pressing and holding down on a sketch icon? Edit then. */
+  if (touchedIndex < IDX_MENU_START && ((millis() - pressed_time_start) > HOLD_ACTIVATE_DELAY)) {
+    editSketch(sketch_icon_text[touchedIndex], false);
+    reloadAll = true;
+  }
+  
+  /* Released a button? Handle logic for the button released. */
+  if (touchedIndex == IDX_NONE && oldTouchedIndex != IDX_NONE && !LCD_isTouchedAny()) {
+    
+    if (oldTouchedIndex == IDX_UP) {
+      /* Move sketch list one page up, ignore if impossible */
+      if (sketch_offset) {
+        sketch_offset -=  SKETCHES_PGINCR;
+        redrawIcons = true;
+      }
+    } else if (oldTouchedIndex == IDX_DOWN) {
+      /* Move sketch list one page down, ignore if impossible */
+      if ((sketch_offset + SKETCHES_PGINCR) < sketches_cnt) {
+        sketch_offset += SKETCHES_PGINCR;
+        redrawIcons = true;
+      }
+    } else if (oldTouchedIndex == IDX_ADD) {
+      /* Ask for the new file name, if successful, edit the icon */
+      char name[8];
+      memset(name, ' ' , 8);
+      if (askSketchName(name)) {
+        editSketch(name, true);
+      }
+      reloadAll = true;
+    } else {
+      /* Clicked a sketch, load it */
+      loadSketchReset(sketch_icon_text[oldTouchedIndex]);
     }
   }
 }
@@ -579,9 +668,6 @@ void editSketch(char filename[9], boolean runWhenExit) {
     /* We ended up here, undo the setting of loading the sketch */
     setLoadOptions(NULL, 0);
   }
-
-  /* Wipe the area next to the sketchlist */
-  PHNDisplay8Bit::fillRect(SKETCHES_OFF_X, SKETCHES_OFF_Y, PHNDisplayHW::WIDTH - SKETCHES_OFF_X, SKETCHES_FULLH, BLACK_8BIT);
 }
 
 /* Shows a dialog allowing the user to enter a (new) file name */
@@ -832,6 +918,29 @@ boolean askSketchName(char name[8]) {
       popupMessage = NULL;
     }
   }
+}
+
+void setLoadOptions(const char* sketchName, unsigned char options) {
+  PHN_Settings settings;
+  PHN_Settings_Load(settings);
+  if (sketchName) {
+    memcpy(settings.sketch_toload, sketchName, 8);
+  } else {
+    memcpy(settings.sketch_toload, settings.sketch_current, 8);
+  }
+  settings.flags &= ~(SETTINGS_LOAD | SETTINGS_LOADWIPE);
+  settings.flags |= options;
+  PHN_Settings_Save(settings);
+}
+
+void loadSketchReset(char* filename) {
+  /* Clicked a sketch, load it */
+  setLoadOptions(filename, SETTINGS_LOAD);
+
+  /* Software reset using watchdog */
+  WDTCSR=(1<<WDE) | (1<<WDCE);
+  WDTCSR= (1<<WDE);
+  for(;;);
 }
 
 /*

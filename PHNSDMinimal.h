@@ -117,6 +117,8 @@ extern uint32_t  file_available;               /* available size when reading, t
 uint8_t card_command(uint8_t cmd, uint32_t arg, uint8_t crc);
 /// Waits to receive a given token from the card
 uint8_t card_waitForData(uint8_t data_state);
+/// Turns the card chip-select on or off
+void card_setEnabled(bool enabled);
 
 /// Writes out the current cached block
 void volume_writeCache(void);
@@ -130,6 +132,8 @@ void volume_readCache(uint32_t blockNumber);
 uint8_t volume_fatGet(uint32_t cluster, uint32_t* value);
 /// Puts the next cluster in the FAT cluster chain
 void volume_fatPut(uint32_t cluster, uint32_t value);
+/// Initializes the volume
+uint8_t volume_init();
 
 /**
  * @brief Initializes the card, then attempts to find and open the file

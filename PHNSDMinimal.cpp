@@ -104,6 +104,15 @@ uint8_t card_waitForData(uint8_t data_state) {
   return 0;
 }
 
+/* Turns chip-select on/off, needed when communicating with other SPI devices */
+void card_setEnabled(bool enabled) {
+  if (enabled) {
+    SD_CS_PORT &= ~SD_CS_MASK;
+  } else {
+    SD_CS_PORT |= SD_CS_MASK;
+  }
+}
+
 /* cache a file's directory entry
  * return pointer to cached entry */
 SDMINFAT::dir_t* file_readCacheDir(void) {
@@ -270,32 +279,29 @@ void volume_fatPut(uint32_t cluster, uint32_t value) {
   volume_cacheDirty_ = 1;
 }
 
-uint8_t file_list_sketches(uint16_t offset, uint8_t count, char filenames[][9]) {
-  /* Ensure card is initialized by opening an arbitrary (non-existent) file */
+/* Ensure card is initialized by opening an arbitrary (non-existent) file */
+uint8_t volume_init() {
   const char name_none[1] = {0};
   file_open(name_none, name_none, FILE_READ);
-
-  /* If volume initialization failed, abort */
   if (!volume.isInitialized) return 0;
-
-  /* set to start of file */
+  
+  /* Prepare for reading the root directory entries */
   file_position = 0;
-
-  /* Go to first directory cluster on volume */
   file_curCluster_ = volume.rootCluster;
   file_isroot16dir = volume.isfat16;
+  return 1;
+}
+
+uint8_t file_list_sketches(uint16_t offset, uint8_t count, char filenames[][9]) {
+  /* Initialize first */
+  if (!volume_init()) return 0;
 
   /* Locate this file on the root volume */
   SDMINFAT::dir_t* p;
 
   /* search for file */
-  uint8_t index = 0xF;
   uint8_t foundCount = 0;
   while (volume.isInitialized) {
-    /* Read sectors of 32 bytes, when it reaches the final sector (16) go to the next block */
-    index++;
-    index &= 0xF;
-
     /* Move the reader to the next 32 bytes, once it reaches 512 the next block is read */
     p = (SDMINFAT::dir_t*) file_read(32);
 
