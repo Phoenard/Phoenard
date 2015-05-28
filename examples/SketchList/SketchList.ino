@@ -80,10 +80,10 @@ typedef struct {
   uint32_t icon;
 } SketchInfo;
 
-SketchInfo sketches_buff[100];
+SketchInfo sketches_buff[6];
 int sketches_cnt = 0;
+const int16_t sketches_sram_start = -sizeof(sketches_buff);
 boolean sketches_reachedEnd = false;
-boolean use_sram;
 
 /* Variables used by the main sketch list showing logic */
 char sketch_icon_text[SKETCHES_CNT][9];
@@ -95,14 +95,15 @@ uint8_t touchedIndex;
 long pressed_time_start;
 
 void setup() {
-  /* Initialize SRAM for buffering sketches */
-  sram.begin();
-  use_sram = false; //sram.testConnection();
-  
+  Serial.begin(9600);
+
+  /* Initialize SRAM for buffering >100 sketches */
+  if (!sram.begin()) {
+    Serial.println("SRAM Failure");
+  }
+
   /* Set pin 13 (LED) to output */
   pinMode(13, OUTPUT);
-  
-  Serial.begin(9600);
 }
 
 void loop() {
@@ -161,20 +162,13 @@ void loop() {
 
     /* Locate this sketch name in the memory buffer */
     uint16_t sketch_index = 0;
-    uint16_t sketch_addr = 0;
+    int16_t sketch_addr = sketches_sram_start;
     boolean create_new = true;
     while (sketch_index < sketches_cnt) {
-      if (use_sram) {
-        /* Probe one char at a time for faster lookup */
-        create_new = false;
-        for (uint8_t i = 0; i < 8; i++) {
-          if (sram.read(sketch_addr + i) != p->name[i]) {
-            create_new = true;
-            break;
-          }
-        }
-      } else if (!memcmp(sketches_buff[sketch_index].name, p->name, 8)) {
-        create_new = false;
+      if (sketch_addr >= 0) {
+        create_new = !sram.verifyBlock(sketch_addr, (char*) p->name, 8);
+      } else {
+        create_new = memcmp(sketches_buff[sketch_index].name, p->name, 8);
       }
       if (!create_new) {
         break;
@@ -182,14 +176,14 @@ void loop() {
       sketch_index++;
       sketch_addr += sizeof(SketchInfo);
     }
-    
+
     /* Create new entry if not found */
     if (create_new) {
       sketches_cnt++;
       SketchInfo info;
       memcpy(info.name, p->name, 8);
       info.icon = 0;
-      if (use_sram) {
+      if (sketch_addr >= 0) {
         sram.writeBlock(sketch_addr, (char*) &info, sizeof(SketchInfo));
       } else {
         sketches_buff[sketch_index] = info;
@@ -199,7 +193,7 @@ void loop() {
     if (is_ski) {
       uint32_t icon_cluster = ((uint32_t) p->firstClusterHigh << 16) | p->firstClusterLow;
       uint32_t icon_block = volume.dataStartBlock + ((icon_cluster - 2) * volume.blocksPerCluster);
-      if (use_sram) {
+      if (sketch_addr >= 0) {
         sram.writeBlock(sketch_addr + 8, (char*) &icon_block, sizeof(uint32_t));
       } else {
         sketches_buff[sketch_index].icon = icon_block;
@@ -253,12 +247,13 @@ void loop() {
           color1 = COLOR_C1;
           color2 = COLOR_C2;
         }
+        int16_t sketch_addr = sketches_sram_start + sketch_index * sizeof(SketchInfo);
 
         /* Refresh name */
         SketchInfo info;
-        if (use_sram) {
+        if (sketch_addr >= 0) {
           card_setEnabled(false);
-          sram.readBlock(sketch_index * sizeof(SketchInfo), (char*) &info, sizeof(SketchInfo));
+          sram.readBlock(sketch_addr, (char*) &info, sizeof(SketchInfo));
           card_setEnabled(true);
         } else {
           info = sketches_buff[sketch_index];

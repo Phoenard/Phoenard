@@ -44,20 +44,26 @@ THE SOFTWARE.
 class PHN_SRAM {
  public:
   /// Initializes SPI and sets the chip up for first use
-  void begin();
+  uint8_t begin();
 
   /// Reads a block of data
   void readBlock(uint16_t address, char* data, uint16_t length);
   /// Writes a block of data
   void writeBlock(uint16_t address, const char* data, uint16_t length);
-
   /// Reads the byte of data stored at an address specified
   char read(uint16_t address);
   /// Writes a byte of data at an address specified
   void write(uint16_t address, char dataByte);
   
-  /// Tests whether the SRAM memory is working properly
-  bool testConnection();
+  /// Writes a block of data and then verifies the contents by reading
+  uint8_t writeBlockVerify(uint16_t address, const char* data, uint16_t length);
+  
+  /// Reads in a block of data and verifies the contents
+  uint8_t verifyBlock(uint16_t address, const char* data, uint16_t length);
+
+ private:
+  /// Updates the address
+  void setAddress(uint8_t mode, uint16_t address);
 };
 
 /// Global variable from which the SRAM functions can be accessed

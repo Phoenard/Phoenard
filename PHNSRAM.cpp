@@ -28,8 +28,22 @@ THE SOFTWARE.
 /* Global instance */
 PHN_SRAM sram;
 
+/* 
+ * Macros to enable or disable the SRAM chip functions
+ * When enabling, a WAKE is performed by rapidly toggling the hold pin
+ */
+#define SRAM_EN()       EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
+#define SRAM_Disable()  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
+#define SRAM_Enable()   SRAM_EN(); SRAM_Disable(); SRAM_EN();
 /* Macro to send a byte to SPI */
-#define SRAM_Send(b)  SPDR = b; while (!(SPSR & (1 << SPIF)));
+#define SRAM_Wait()   while (!(SPSR & (1 << SPIF)));
+#define SRAM_Send(b)  SPDR = b; SRAM_Wait();
+/* Macro to change the address pointed to */
+#define SRAM_Addr(mode, addr) { \
+  SRAM_Send(mode); \
+  SRAM_Send((addr >> 8) & 0xFF); \
+  SRAM_Send(addr & 0xFF); \
+}
 
 /* Command codes */
 #define SRAM_CMD_STATUS_WRITE 0x1
@@ -37,7 +51,7 @@ PHN_SRAM sram;
 #define SRAM_CMD_DATA_READ    0x3
 #define SRAM_CMD_STATUS_READ  0x5
 
-void PHN_SRAM::begin() {
+uint8_t PHN_SRAM::begin() {
   // Initialize SPI I/O
   SPI_DDR = (SPI_DDR & ~SPI_MASK) | SPI_INIT_DDR;
   SPI_PORT = (SPI_PORT & ~SPI_MASK) | SPI_INIT_PORT;
@@ -50,36 +64,72 @@ void PHN_SRAM::begin() {
   // Set up status register to sequential mode
   // Both single-byte and block write functions use sequential mode
   // Page mode is never used and appears to be pointless
-  EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
+  SRAM_Enable();
   SRAM_Send(SRAM_CMD_STATUS_WRITE);
   SRAM_Send(64);
-  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
-  // This Flush is needed to ensure proper operation
-  EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
-  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
+  SRAM_Disable();
+
+  // test connection with the device by reading/writing the first bytes
+  char data[20];
+  uint8_t i;
+  uint8_t c = 2;
+  uint8_t success = 1;
+  // Read data, then write-verify the bit-inverted data twice
+  // By doing so, the original data stored is not altered
+  readBlock(0, data, sizeof(data));
+  do {
+    for (i = 0; i < sizeof(data); i++) data[i] ^= 0xFF;
+    success &= writeBlockVerify(0, data, sizeof(data));
+  } while (--c);
+
+  return success;
 }
 
 void PHN_SRAM::readBlock(uint16_t address, char* data, uint16_t length) {
-  EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
-  SRAM_Send(SRAM_CMD_DATA_READ);
-  SRAM_Send((address >> 8) & 0xFF);
-  SRAM_Send(address & 0xFF);
-  while (length--) {
-    SRAM_Send(0xFF);
-    *(data++) = SPDR;
+  SRAM_Enable();
+  SRAM_Addr(SRAM_CMD_DATA_READ, address);
+  data--;
+  while (length) {
+    SPDR = 0xFF;
+    data++;
+    length--;
+    SRAM_Wait();
+    *data = SPDR;
   }
-  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
+  SRAM_Disable();
 }
 
 void PHN_SRAM::writeBlock(uint16_t address, const char* data, uint16_t length) {
-  EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
-  SRAM_Send(SRAM_CMD_DATA_WRITE);
-  SRAM_Send((address >> 8) & 0xFF);
-  SRAM_Send(address & 0xFF);
-  while (length--) {
-    SRAM_Send(*(data++));
+  SRAM_Enable();
+  SRAM_Addr(SRAM_CMD_DATA_WRITE, address);
+  while (length) {
+    SPDR = *data;
+    data++;
+    length--;
+    SRAM_Wait();
   }
-  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
+  SRAM_Disable();
+}
+
+uint8_t PHN_SRAM::writeBlockVerify(uint16_t address, const char* data, uint16_t length) {
+  writeBlock(address, data, length);
+  return verifyBlock(address, data, length);
+}
+
+uint8_t PHN_SRAM::verifyBlock(uint16_t address, const char* data, uint16_t length) {
+  uint8_t success = 1;
+  SRAM_Enable();
+  SRAM_Addr(SRAM_CMD_DATA_READ, address);
+  data--;
+  while (length && success) {
+    SPDR = 0xFF;
+    data++;
+    length--;
+    SRAM_Wait();
+    success &= (*data == (char) SPDR);
+  }
+  SRAM_Disable();
+  return success;
 }
 
 char PHN_SRAM::read(uint16_t address) {
@@ -88,24 +138,12 @@ char PHN_SRAM::read(uint16_t address) {
   return dataByte;
 }
 
-bool PHN_SRAM::testConnection() {
-  /* 
-   * For several addresses, invert bits and write and check whether it works
-   * After each test byte, restore it back to the original value
-   */
-  for (uint16_t addr = 0; addr < 32768; addr += 4096) {
-    char byte = read(addr);
-    byte ^= 0xFF;
-    write(addr, byte);
-    if (read(addr) != byte) {
-      return false;
-    }
-    byte ^= 0xFF;
-    write(addr, byte);
-  }
-  return true;
-}
-
 void PHN_SRAM::write(uint16_t address, char dataByte) {
   writeBlock(address, &dataByte, 1);
+}
+
+void PHN_SRAM::setAddress(uint8_t mode, uint16_t address) {
+  SRAM_Send(mode);
+  SRAM_Send((address >> 8) & 0xFF);
+  SRAM_Send(address & 0xFF);
 }
