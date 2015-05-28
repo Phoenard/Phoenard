@@ -29,21 +29,14 @@ THE SOFTWARE.
 PHN_SRAM sram;
 
 /* 
- * Macros to enable or disable the SRAM chip functions
+ * Macros to enable, disable or use the SRAM chip functions
  * When enabling, a WAKE is performed by rapidly toggling the hold pin
  */
 #define SRAM_EN()       EXSRAM_HOLD_PORT &= ~EXSRAM_HOLD_MASK;
 #define SRAM_Disable()  EXSRAM_HOLD_PORT |= EXSRAM_HOLD_MASK;
 #define SRAM_Enable()   SRAM_EN(); SRAM_Disable(); SRAM_EN();
-/* Macro to send a byte to SPI */
-#define SRAM_Wait()   while (!(SPSR & (1 << SPIF)));
-#define SRAM_Send(b)  SPDR = b; SRAM_Wait();
-/* Macro to change the address pointed to */
-#define SRAM_Addr(mode, addr) { \
-  SRAM_Send(mode); \
-  SRAM_Send((addr >> 8) & 0xFF); \
-  SRAM_Send(addr & 0xFF); \
-}
+#define SRAM_Wait()     while (!(SPSR & (1 << SPIF)));
+#define SRAM_Send(b)    SPDR = b; SRAM_Wait();
 
 /* Command codes */
 #define SRAM_CMD_STATUS_WRITE 0x1
@@ -87,7 +80,7 @@ uint8_t PHN_SRAM::begin() {
 
 void PHN_SRAM::readBlock(uint16_t address, char* data, uint16_t length) {
   SRAM_Enable();
-  SRAM_Addr(SRAM_CMD_DATA_READ, address);
+  setAddress(SRAM_CMD_DATA_READ, address);
   data--;
   while (length) {
     SPDR = 0xFF;
@@ -101,7 +94,7 @@ void PHN_SRAM::readBlock(uint16_t address, char* data, uint16_t length) {
 
 void PHN_SRAM::writeBlock(uint16_t address, const char* data, uint16_t length) {
   SRAM_Enable();
-  SRAM_Addr(SRAM_CMD_DATA_WRITE, address);
+  setAddress(SRAM_CMD_DATA_WRITE, address);
   while (length) {
     SPDR = *data;
     data++;
@@ -119,7 +112,7 @@ uint8_t PHN_SRAM::writeBlockVerify(uint16_t address, const char* data, uint16_t 
 uint8_t PHN_SRAM::verifyBlock(uint16_t address, const char* data, uint16_t length) {
   uint8_t success = 1;
   SRAM_Enable();
-  SRAM_Addr(SRAM_CMD_DATA_READ, address);
+  setAddress(SRAM_CMD_DATA_READ, address);
   data--;
   while (length && success) {
     SPDR = 0xFF;
