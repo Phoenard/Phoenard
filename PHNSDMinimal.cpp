@@ -105,11 +105,19 @@ uint8_t card_waitForData(uint8_t data_state) {
 }
 
 /* Turns chip-select on/off, needed when communicating with other SPI devices */
-void card_setEnabled(bool enabled) {
+void card_setEnabled(uint8_t enabled) {
+  /* Don't do anything if already enabled */
+  if (!(SD_CS_PORT & SD_CS_MASK) && enabled) {
+    return;
+  }
+
+  /* Disable the chip-select */
+  SD_CS_PORT |= SD_CS_MASK;
+
+  /* Wait for ~74 clock cycles, then set chip-select back LOW */
   if (enabled) {
+    spiSkip(10);
     SD_CS_PORT &= ~SD_CS_MASK;
-  } else {
-    SD_CS_PORT |= SD_CS_MASK;
   }
 }
 
@@ -280,15 +288,17 @@ void volume_fatPut(uint32_t cluster, uint32_t value) {
 }
 
 /* Ensure card is initialized by opening an arbitrary (non-existent) file */
-uint8_t volume_init() {
+uint8_t volume_init(uint8_t resetPosition) {
   const char name_none[1] = {0};
   file_open(name_none, name_none, FILE_READ);
   if (!volume.isInitialized) return 0;
   
   /* Prepare for reading the root directory entries */
-  file_position = 0;
-  file_curCluster_ = volume.rootCluster;
-  file_isroot16dir = volume.isfat16;
+  if (resetPosition) {
+    file_position = 0;
+    file_curCluster_ = volume.rootCluster;
+    file_isroot16dir = volume.isfat16;
+  }
   return 1;
 }
 

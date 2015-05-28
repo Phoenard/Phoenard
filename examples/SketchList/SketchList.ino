@@ -80,7 +80,11 @@ typedef struct {
   uint32_t icon;
 } SketchInfo;
 
-SketchInfo sketches_buff[6];
+/*
+ * The first 100 sketch entries (1.2kb) are stored in internal RAM
+ * The remaining ~2730 entries are stored on the External SRAM chip
+ */
+SketchInfo sketches_buff[100];
 int sketches_cnt = 0;
 const int16_t sketches_sram_start = -sizeof(sketches_buff);
 boolean sketches_reachedEnd = false;
@@ -95,12 +99,8 @@ uint8_t touchedIndex;
 long pressed_time_start;
 
 void setup() {
-  Serial.begin(9600);
-
   /* Initialize SRAM for buffering >100 sketches */
-  if (!sram.begin()) {
-    Serial.println("SRAM Failure");
-  }
+  sram.begin();
 
   /* Set pin 13 (LED) to output */
   pinMode(13, OUTPUT);
@@ -110,18 +110,45 @@ void loop() {
   /* When reloading, initialize all fields to the defaults */
   if (reloadAll) {
     digitalWrite(13, LOW);
-    reloadAll = false;
     redrawIcons = true;
-
     touchedIndex = IDX_NONE;
     
     LCD_clearTouch();
     PHNDisplay8Bit::fill(BLACK_8BIT);
-    sketches_reachedEnd = false;
     sketches_cnt = 0;
+    sketches_reachedEnd = false;
     volume_init();
     digitalWrite(13, HIGH);
+    
+    /* Display a message to the user that no SD-card is inserted */
+    if (!volume.isInitialized) {
+      PHNDisplay8Bit::writeString(30, 30, 2, "Micro-SD card was not\n"
+                                             "detected or is corrupt", BLACK_8BIT, RED_8BIT);
+      uint8_t is_touched = 0;
+      uint8_t is_dirty = 1;
+      for (;;) {
+        LCD_updateTouch();
+
+        if (is_touched != LCD_isTouchedAny()) {
+          is_touched = !is_touched;
+          is_dirty = 1;
+          if (!is_touched) {
+            return;
+          }
+        }
+        
+        if (is_dirty) {
+          is_dirty = 0;
+          uint8_t color = is_touched ? WHITE_8BIT : GREEN_8BIT;
+          LCD_write_icon(136, 96, 48, 48, edit_icon_reset, "Refresh", color);
+        }
+      }
+    } else {
+      /* Reload successful; display contents and continue */
+      reloadAll = false;
+    }
   }
+
   /* Clear the sketch icon area and redraw all icons */
   if (redrawIcons) {
     redrawIcons = false;
@@ -129,19 +156,20 @@ void loop() {
     memset(sketch_icon_dirty, 1, sizeof(sketch_icon_dirty));
   }
 
+  /* Pre-load the next block of file listing */
+  if (!sketches_reachedEnd) {
+    volume_cacheCurrentBlock(0);
+  }
+
+  /* In case the Micro-SD library fails, attempt to re-initialize */
+  if (!volume.isInitialized) {
+    volume_init(0);
+  }
+
   /* Routinely buffer in sketch information from the Micro-SD in the background */
   for (uint8_t i = 0; i < 16 && !sketches_reachedEnd; i++) {
     /* Read next directory entry */
-    uint32_t old_pos = file_position;
-    uint32_t old_clust = file_curCluster_;
     SDMINFAT::dir_t* p = (SDMINFAT::dir_t*) file_read(32);
-    /* If reading fails, re-initialize and try again */
-    if (!volume.isInitialized) {
-      volume_init();
-      file_position = old_pos;
-      file_curCluster_ = old_clust;
-      continue;
-    }
 
     /* Reached the end of the root directory? */
     if (p->name[0] == SDMINFAT::DIR_NAME_FREE) {
@@ -157,15 +185,14 @@ void loop() {
     boolean is_ski = !memcmp("SKI", p->name+8, 3);
     if (!is_ski && memcmp("HEX", p->name+8, 3)) continue;
 
-    /* Turn off SD-card shortly */
-    card_setEnabled(false);
-
     /* Locate this sketch name in the memory buffer */
     uint16_t sketch_index = 0;
     int16_t sketch_addr = sketches_sram_start;
     boolean create_new = true;
     while (sketch_index < sketches_cnt) {
       if (sketch_addr >= 0) {
+        /* Reading SRAM space - turn the SD-card off */
+        card_setEnabled(false);
         create_new = !sram.verifyBlock(sketch_addr, (char*) p->name, 8);
       } else {
         create_new = memcmp(sketches_buff[sketch_index].name, p->name, 8);
@@ -204,10 +231,10 @@ void loop() {
     if ((create_new || is_ski) && (sketch_index >= sketch_offset) && (sketch_icon_idx < SKETCHES_CNT)) {
       sketch_icon_dirty[sketch_icon_idx] = 1;
     }
-    
-    /* Turn SD-card shortly back on */
-    card_setEnabled(true);
   }
+
+  /* Ensure SD-card is active at all times */
+  card_setEnabled(true);
 
   /* Update touch input */
   LCD_updateTouch();
@@ -219,9 +246,9 @@ void loop() {
   for (uint16_t y = 0; y < SKETCHES_CNT_Y; y++) {
     for (uint16_t x = 0; x < SKETCHES_CNT_X; x++) {
       i++;
+
+      /* Get the index where sketch information is stored at */
       uint16_t sketch_index = (i+sketch_offset);
-          
-      /* Slot out of range */
       if (sketch_index >= sketches_cnt) {
         continue;
       }
@@ -247,10 +274,10 @@ void loop() {
           color1 = COLOR_C1;
           color2 = COLOR_C2;
         }
-        int16_t sketch_addr = sketches_sram_start + sketch_index * sizeof(SketchInfo);
 
-        /* Refresh name */
+        /* Read in sketch information */
         SketchInfo info;
+        int16_t sketch_addr = sketches_sram_start + sketch_index * sizeof(SketchInfo);
         if (sketch_addr >= 0) {
           card_setEnabled(false);
           sram.readBlock(sketch_addr, (char*) &info, sizeof(SketchInfo));
@@ -259,6 +286,7 @@ void loop() {
           info = sketches_buff[sketch_index];
         }
 
+        /* Refresh the sketch name */
         memcpy(sketch_icon_text[i], info.name, 8);
         sketch_icon_text[i][8] = 0;
 
@@ -334,8 +362,9 @@ void loop() {
       }
     } else if (oldTouchedIndex == IDX_ADD) {
       /* Ask for the new file name, if successful, edit the icon */
-      char name[8];
+      char name[9];
       memset(name, ' ' , 8);
+      name[8] = 0;
       if (askSketchName(name)) {
         editSketch(name, true);
       }
@@ -360,14 +389,6 @@ void editSketch(char filename[9], boolean runWhenExit) {
   FilePtr ski_file;
   FilePtr hex_file;
 
-  /* Open or create the .HEX file, store pointer to file directory */
-  if (!file_open(filename, "HEX", FILE_READ)) {
-    file_open(filename, "HEX", FILE_WRITE);
-    file_flush();
-  }
-  hex_file = file_dir_;
-  hex_file_length = file_available;
-
   /* Load icon data, otherwise create a new default icon */
   if (file_open(filename, "SKI", FILE_READ) && file_available) {
     /* Load the icon from SD */
@@ -386,6 +407,14 @@ void editSketch(char filename[9], boolean runWhenExit) {
     file_flush();
   }
   ski_file = file_dir_;
+
+  /* Open or create the .HEX file, store pointer to file directory */
+  if (!file_open(filename, "HEX", FILE_READ)) {
+    file_open(filename, "HEX", FILE_WRITE);
+    file_flush();
+  }
+  hex_file = file_dir_;
+  hex_file_length = file_available;
 
   /* Make sure the icon is cached */
   volume_readCache(ski_data_block);
