@@ -64,11 +64,19 @@
 #define MENU_OFF_X   (PHNDisplayHW::WIDTH-MENU_ICON_W)
 #define MENU_OFF_Y   5
 
-/* The colors used when drawing UI */
-#define COLOR_C1      BLACK_8BIT
+/* Background color for the menus */
+#define COLOR_BG      BLACK_8BIT
+
+/* The colors used when drawing sketch icons */
+#define COLOR_C1      COLOR_BG
 #define COLOR_C2      WHITE_8BIT
-#define COLOR_C1_SEL  COLOR_C2
-#define COLOR_C2_SEL  COLOR_C1
+#define COLOR_C1_SEL  WHITE_8BIT
+#define COLOR_C2_SEL  BLACK_8BIT
+
+/* The colors used when drawing the right navigation bar */
+#define COLOR_MENU_SEL WHITE_8BIT
+#define COLOR_MENU_ADD GREEN_8BIT
+#define COLOR_MENU_NAV BLUE_8BIT
 
 /* LCD touch input variables */
 uint16_t touch_x, touch_y;
@@ -112,41 +120,13 @@ void loop() {
     digitalWrite(13, LOW);
     redrawIcons = true;
     touchedIndex = IDX_NONE;
-    
     LCD_clearTouch();
-    PHNDisplay8Bit::fill(BLACK_8BIT);
     sketches_cnt = 0;
     sketches_reachedEnd = false;
-    volume_init();
+    updateVolume();
+    PHNDisplay8Bit::fill(BLACK_8BIT);
     digitalWrite(13, HIGH);
-    
-    /* Display a message to the user that no SD-card is inserted */
-    if (!volume.isInitialized) {
-      PHNDisplay8Bit::writeString(30, 30, 2, "Micro-SD card was not\n"
-                                             "detected or is corrupt", BLACK_8BIT, RED_8BIT);
-      uint8_t is_touched = 0;
-      uint8_t is_dirty = 1;
-      for (;;) {
-        LCD_updateTouch();
-
-        if (is_touched != LCD_isTouchedAny()) {
-          is_touched = !is_touched;
-          is_dirty = 1;
-          if (!is_touched) {
-            return;
-          }
-        }
-        
-        if (is_dirty) {
-          is_dirty = 0;
-          uint8_t color = is_touched ? WHITE_8BIT : GREEN_8BIT;
-          LCD_write_icon(136, 96, 48, 48, edit_icon_reset, "Refresh", color);
-        }
-      }
-    } else {
-      /* Reload successful; display contents and continue */
-      reloadAll = false;
-    }
+    reloadAll = false;
   }
 
   /* Clear the sketch icon area and redraw all icons */
@@ -167,7 +147,8 @@ void loop() {
   }
 
   /* Routinely buffer in sketch information from the Micro-SD in the background */
-  for (uint8_t i = 0; i < 16 && !sketches_reachedEnd; i++) {
+  uint8_t i;
+  for (i = 0; i < 16 && !sketches_reachedEnd; i++) {
     /* Read next directory entry */
     SDMINFAT::dir_t* p = (SDMINFAT::dir_t*) file_read(32);
 
@@ -176,11 +157,11 @@ void loop() {
       sketches_reachedEnd = true;
       break;
     }
-        
+
     /* Check if not deleted / main sketch */
     if (p->name[0] == SDMINFAT::DIR_NAME_DELETED) continue;
     if (!memcmp("SKETCHES", p->name, 8)) continue;
-        
+
     /* Check file extension for SKI/HEX */
     boolean is_ski = !memcmp("SKI", p->name+8, 3);
     if (!is_ski && memcmp("HEX", p->name+8, 3)) continue;
@@ -238,11 +219,41 @@ void loop() {
 
   /* Update touch input */
   LCD_updateTouch();
-
-  /* Draw and update touch input for sketch icons */
-  uint8_t i = -1; // Makes use of overflow logic
   uint8_t oldTouchedIndex = touchedIndex;
   touchedIndex = IDX_NONE;
+
+  /* Draw and update the menu navigation icons */
+  uint8_t* menu_icons[] = {icon_up, icon_add, icon_down};
+  for (i = IDX_MENU_START; i < IDX_NONE; i++) {
+    unsigned int px = MENU_OFF_X;
+    unsigned int py = MENU_OFF_Y + (MENU_STP_Y*(i-IDX_MENU_START));
+
+    if (LCD_isTouched(px, py, MENU_ICON_W + LCD_RIGHT_BORDER, MENU_ICON_H)) {
+      touchedIndex = i;
+    }
+
+    if (sketch_icon_dirty[i]) {
+      sketch_icon_dirty[i] = 0;
+
+      /* Pressed? */
+      uint8_t color;
+      color = COLOR_BG;
+      if (touchedIndex == i) {
+        color = COLOR_MENU_SEL;
+      } else if (i == IDX_ADD) {
+        color = COLOR_MENU_ADD;
+      } else {
+        color = COLOR_MENU_NAV;
+      }
+
+      /* Draw the sketch icon */
+      uint8_t* icon_data = menu_icons[i-IDX_MENU_START];
+      PHNDisplay8Bit::writeImage_1bit(px, py, MENU_ICON_W, MENU_ICON_H, 1, icon_data, DIR_RIGHT, color, COLOR_BG);
+    }
+  }
+
+  /* Draw and update touch input for sketch icons */
+  i = -1; // Makes use of overflow logic
   for (uint16_t y = 0; y < SKETCHES_CNT_Y; y++) {
     for (uint16_t x = 0; x < SKETCHES_CNT_X; x++) {
       i++;
@@ -303,35 +314,6 @@ void loop() {
     }
   }
 
-  /* Draw and update all the other icons */
-  uint8_t* menu_icons[] = {icon_up, icon_add, icon_down};
-  for (i = IDX_MENU_START; i < IDX_NONE; i++) {
-    unsigned int px = MENU_OFF_X;
-    unsigned int py = MENU_OFF_Y + (MENU_STP_Y*(i-IDX_MENU_START));
-
-    if (LCD_isTouched(px, py, MENU_ICON_W + LCD_RIGHT_BORDER, MENU_ICON_H)) {
-      touchedIndex = i;
-    }
-
-    if (sketch_icon_dirty[i]) {
-      sketch_icon_dirty[i] = 0;
-
-      /* Pressed? */
-      uint8_t color1, color2;
-      if (touchedIndex == i) {
-        color1 = COLOR_C1_SEL;
-        color2 = COLOR_C2_SEL;
-      } else {
-        color1 = COLOR_C1;
-        color2 = COLOR_C2;
-      }
-
-      /* Draw the sketch icon */
-      uint8_t* icon_data = menu_icons[i-IDX_MENU_START];
-      PHNDisplay8Bit::writeImage_1bit(px, py, MENU_ICON_W, MENU_ICON_H, 1, icon_data, DIR_RIGHT, color1, color2);
-    }
-  }
-
   /* Redraw icons when touched index changes */
   if (oldTouchedIndex != touchedIndex) {
     sketch_icon_dirty[oldTouchedIndex] = 1;
@@ -377,47 +359,40 @@ void loop() {
 }
 
 void editSketch(char filename[9], boolean runWhenExit) {
+  /* Make sure to re-initialize the SD volume to prevent corruption */
+  updateVolume();
+
   /* Mark sketch for loading */
   setLoadOptions(filename, SETTINGS_LOAD | SETTINGS_LOADWIPE);
 
-  /* First fill the screen with BLACK */
-  PHNDisplay8Bit::fill(BLACK_8BIT);
-
   /* Open or create the .SKI file, store the FAT clusters where the (file) data resides in */
   uint32_t ski_data_block = 0;
+  uint32_t ski_file_length;
   uint32_t hex_file_length;
   FilePtr ski_file;
   FilePtr hex_file;
 
-  /* Load icon data, otherwise create a new default icon */
-  if (file_open(filename, "SKI", FILE_READ) && file_available) {
-    /* Load the icon from SD */
+  /* Open or create the .SKI file */
+  if (file_open(filename, "SKI", FILE_CREATE)) {
+    ski_file = file_dir_;
+    file_position = 0;
+    if (!file_available) {
+      volume_cacheCurrentBlock(1);
+      memcpy(volume_cacheBuffer_.data, icon_sketch_default, 512);
+      file_available = 512;
+      volume_cacheDirty_ = 1;
+      file_flush();
+    }
     volume_cacheCurrentBlock(0);
     ski_data_block = volume_cacheBlockNumber_;
-  } else {
-    /* Set to the default icon */
-    file_open(filename, "SKI", FILE_WRITE);
-    volume_cacheCurrentBlock(1);
-    memcpy(volume_cacheBuffer_.data, icon_sketch_default, 512);
-    ski_data_block = volume_cacheBlockNumber_;
-    file_available = 512;
-    volume_cacheDirty_ = 1;
-
-    /* Flush data to the SKI file, updating the available length */
-    file_flush();
+    ski_file_length = file_available;
   }
-  ski_file = file_dir_;
 
   /* Open or create the .HEX file, store pointer to file directory */
-  if (!file_open(filename, "HEX", FILE_READ)) {
-    file_open(filename, "HEX", FILE_WRITE);
-    file_flush();
+  if (file_open(filename, "HEX", FILE_CREATE)) {
+    hex_file = file_dir_;
+    hex_file_length = file_available;
   }
-  hex_file = file_dir_;
-  hex_file_length = file_available;
-
-  /* Make sure the icon is cached */
-  volume_readCache(ski_data_block);
 
   /* Wait for touch to be released */
   LCD_clearTouch();
@@ -427,7 +402,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
     edit_icon_changecolor_1, edit_icon_reset,  edit_icon_cancel,
     edit_icon_delete,        edit_icon_charup, edit_icon_accept
   };
-  unsigned char button_dirty[EDIT_IDX_NONE + 1] = {1, 1, 1, 1, 1, 1 ,1};
+  unsigned char button_dirty[EDIT_IDX_NONE + 1];
   const char* button_title[EDIT_IDX_NONE] = {
     "Color",  "Reset",  "Cancel",
     "Delete", "Rename", "Done"
@@ -440,17 +415,20 @@ void editSketch(char filename[9], boolean runWhenExit) {
   uint8_t touchedIndex = EDIT_IDX_NONE;
 
   /* Store old icon and filename data for restoring (cancel) */
-  uint8_t data_original[512];
+  volume_readCache(ski_data_block);
+  uint8_t icon_original[512];
   char filename_original[8];
-  memcpy(data_original, volume_cacheBuffer_.data, 512);
+  memcpy(icon_original, volume_cacheBuffer_.data, 512);
   memcpy(filename_original, filename, 8);
 
-  boolean file_needs_saving = false;
   uint8_t draw_color = COLOR_C2;
   boolean edit_finish = false;
   long last_save = millis(); // Monitors the last time the icon data was saved
   long last_done_pressed = 0; // Monitors how long the 'done' button is pressed
   boolean needsRedraw = true;
+  boolean needsIconRedraw = true;
+  boolean needsEntryUpdate = false; // Whether file entry needs to be updated
+  boolean iconDirty = false; // Whether icon is dirty and needs to be re-saved at some point
   while (!edit_finish) {
     /* Update touch input */
     LCD_updateTouch();
@@ -458,8 +436,16 @@ void editSketch(char filename[9], boolean runWhenExit) {
     /* At all times ensure the icon data is the one in cache */
     volume_readCache(ski_data_block);
 
-    /* If main icon needs to be redrawn, do so */
+    /* Redraw static content when changed */
     if (needsRedraw) {
+      needsRedraw = false;
+      PHNDisplay8Bit::fill(BLACK_8BIT);
+      PHNDisplay8Bit::writeString(EDIT_NAME_X, EDIT_NAME_Y + EDIT_NAME_YOFF, EDIT_NAME_SCALE, filename, BLACK_8BIT, COLOR_C2);
+      memset(button_dirty, 1, sizeof(button_dirty));
+      needsIconRedraw = true;
+    }
+    if (needsIconRedraw) {
+      needsIconRedraw = false;
       PHNDisplay8Bit::writeImage_1bit(EDIT_ICON_X, EDIT_ICON_Y, SKETCHES_ICON_W, SKETCHES_ICON_H, EDIT_ICON_SCALE, volume_cacheBuffer_.data, DIR_RIGHT, COLOR_C1, COLOR_C2);
     }
 
@@ -495,7 +481,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
         if (LCD_isTouched(px, py, 48, 48)) {
           touchedIndex = i;
         }
-        if (button_dirty[i] || needsRedraw) {
+        if (button_dirty[i]) {
           button_dirty[i] = 0;
           
           /* Pressed? */
@@ -512,19 +498,11 @@ void editSketch(char filename[9], boolean runWhenExit) {
       }
     }
 
-    /* Redraw text when changed */
-    if (needsRedraw) {
-      PHNDisplay8Bit::writeString(EDIT_NAME_X, EDIT_NAME_Y + EDIT_NAME_YOFF, EDIT_NAME_SCALE, filename, BLACK_8BIT, COLOR_C2);
-    }
-
     /* Redraw icons when touched index changes */
     if (oldTouchedIndex != touchedIndex) {
       button_dirty[oldTouchedIndex] = 1;
       button_dirty[touchedIndex] = 1;
     }
-
-    /* No longer needs to be redrawn */
-    needsRedraw = false;
 
     /* Handle accept button pressed for some time */
     if (touchedIndex == EDIT_IDX_ACCEPT) {
@@ -561,7 +539,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
               /* Resets the icon to the default icon */
               memcpy(volume_cacheBuffer_.data, icon_sketch_default, 512);
               volume_cacheDirty_ = 1;
-              needsRedraw = true;
+              needsIconRedraw = true;
             }
             break;
             
@@ -618,43 +596,27 @@ void editSketch(char filename[9], boolean runWhenExit) {
                   }
                 }
               }
-              PHNDisplay8Bit::fill(BLACK_8BIT);
+              needsRedraw = true;
             }
             break;
             
           case EDIT_IDX_RENAME:
             {
               if (askSketchName(filename)) {
-                /* Rename the SKI file */
-                file_dir_ = ski_file;
-                file_save(filename);
-
-                /* Rename the HEX file */
-                file_dir_ = hex_file;
-                file_available = hex_file_length;
-                file_save(filename);
+                needsEntryUpdate = true;
               }
               needsRedraw = true;
-              PHNDisplay8Bit::fill(BLACK_8BIT);
             }
             break;
             
           case EDIT_IDX_CANCEL:
             {
               /* Restore icon and filename */
-              memcpy(volume_cacheBuffer_.data, data_original, 512);
+              memcpy(volume_cacheBuffer_.data, icon_original, 512);
               memcpy(filename, filename_original, 8);
               volume_cacheDirty_ = 1;
+              needsEntryUpdate = true;
 
-              /* Rename the SKI file */
-              file_dir_ = ski_file;
-              file_save(filename);
-
-              /* Rename the HEX file */
-              file_dir_ = hex_file;
-              file_available = hex_file_length;
-              file_save(filename);
-              
               /* Don't load anything */
               runWhenExit = false;
 
@@ -671,15 +633,30 @@ void editSketch(char filename[9], boolean runWhenExit) {
       }
     }
 
+    /* Write file entry if needed */
+    if (needsEntryUpdate) {
+      needsEntryUpdate = false;
+
+      /* Save the SKI file */
+      file_dir_ = ski_file;
+      file_available = ski_file_length;
+      file_save(filename);
+
+      /* Save the HEX file */
+      file_dir_ = hex_file;
+      file_available = hex_file_length;
+      file_save(filename);
+    }
+
     /* Reset save counter when data changes */
     if (!volume_cacheDirty_) {
-       file_needs_saving = 0;
-    } else if (!file_needs_saving) {
-       file_needs_saving = 1;
+       iconDirty = false;
+    } else if (!iconDirty) {
+       iconDirty = true;
        last_save = millis();
     }
 
-    /* Write to SD every 1 second */
+    /* Write icon data to SD every 1 second */
     if (volume_cacheDirty_ && (((millis() - last_save) >= EDIT_SAVEINTER) || edit_finish)) {
       volume_writeCache();
     }
@@ -689,7 +666,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
     /* Request to load the sketch - do so */
     loadSketchReset(filename);
   } else {
-    /* We ended up here, undo the setting of loading the sketch */
+    /* Undo the setting of loading the sketch */
     setLoadOptions(NULL, 0);
   }
 }
@@ -940,6 +917,41 @@ boolean askSketchName(char name[8]) {
       PHNDisplay8Bit::fillRect(popup_x, popup_y, popup_w, popup_h, GRAY_8BIT);
       redrawAll = true;
       popupMessage = NULL;
+    }
+  }
+}
+
+/* Updates the Micro-SD volume, notifying the user if this fails */
+void updateVolume() {
+  /* Force-initialize the first time */
+  volume.isInitialized = 0;
+
+  /* Display a message to the user that no SD-card is inserted */
+  for (;;) {
+    volume_init();
+    if (volume.isInitialized) {
+      return;
+    }
+
+    PHNDisplay8Bit::writeString(30, 30, 2, "Micro-SD card was not\n"
+                                             "detected or is corrupt", BLACK_8BIT, RED_8BIT);
+    uint8_t is_touched = 0;
+    uint8_t is_dirty = 1;
+    for (;;) {
+      LCD_updateTouch();
+
+      /* Run until screen is pressed and released */
+      if (is_touched != LCD_isTouchedAny()) {
+        is_touched = !is_touched;
+        is_dirty = 1;
+        if (!is_touched) break;
+      }
+
+      if (is_dirty) {
+        is_dirty = 0;
+        uint8_t color = is_touched ? WHITE_8BIT : GREEN_8BIT;
+        LCD_write_icon(136, 96, 48, 48, edit_icon_reset, "Refresh", color);
+      }
     }
   }
 }

@@ -153,6 +153,8 @@ uint8_t file_read_hex_line(uint8_t* buff);
 void file_write_hex_line(uint8_t* buff, uint8_t len, uint32_t address, unsigned char recordType);
 /// Reads a next block of data, size being fixed increments of 1/2/4/8/16/32/64/128/256/512
 char* file_read(uint16_t nByteIncrement);
+/// Writes a new block of data, size being fixed increments of 1/2/4/8/16/32/64/128/256/512
+void file_write(const char* data, uint16_t nBytes);
 /// Reads a single byte
 char file_read_byte(void);
 /// Writes a single byte

@@ -754,6 +754,17 @@ char* file_read(uint16_t nbyteIncrement) {
   return read;
 }
 
+void file_write(const char* data, uint16_t nBytes) {
+  memcpy(volume_cacheCurrentBlock(1), data, nBytes);
+  volume_cacheDirty_ = 1;
+
+  /* Increment position read */
+  file_position += nBytes;
+  if (file_position > file_available) {
+    file_available = file_position;
+  }
+}
+
 /* 
  * Read a single byte and increment the read position by one
  * It is not recommended to use file_read_byte() and file_read() interchangeably.
