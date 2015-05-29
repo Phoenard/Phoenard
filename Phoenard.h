@@ -28,18 +28,6 @@ THE SOFTWARE.
  * @brief Main include file for the Phoenard library
  */
 
-/**
- * @mainpage The Phoenard Arduino Library
- * 
- * The Phoenard Arduino library contains many utility classes to communicate
- * and work with the components on-board. It features a rich display library,
- * widgets, control libraries for SIM/MIDI/Micro-SD/bootloader and plenty of
- * other tools to use in your Arduino sketches.
- *
- * For much more information and tutorials, please visit http://www.phoenard.com
- *
-*/
-
 #include "PHNSettings.h"
 #include "PHNDisplayHardware.h"
 #include "PHNDisplay.h"
