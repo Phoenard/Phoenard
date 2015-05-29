@@ -620,7 +620,7 @@ TestResult testSD() {
   }
 
   // Make sure to de-initialize the Micro-SD CS pin
-  SD_CS_PORT |= SD_CS_MASK;
+  card_setEnabled(false);
 
   // All good
   return TestResult(true, "Accessible; No problem found");
