@@ -72,6 +72,13 @@ and spam machines, since this may be illegal (local law), cause extra charges (t
 or otherwise get you in trouble. This can happen accidentally as well, so when writing
 software, always make sure your code won't loop rapidly (use delays) or provide a kill-switch.
 
+## Links
+
+* [View our website](http://phoenard.com)
+* [GitHub repository](https://github.com/Phoenard/Phoenard)
+* [View Doxygen documentation](http://docs.phoenard.com)
+* [Download Doxygen documentation (zip-file)](http://phoenard.com/phoenard_docs_doxygen.zip)
+
 ## License
 
 The MIT License (MIT)
