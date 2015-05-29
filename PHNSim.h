@@ -166,16 +166,7 @@ public:
   bool sendATCommand(const char* command, char* respBuffer, uint16_t respBufferLength, long timeout);
   /// Writes the command, handling non-responsiveness and retries
   bool writeATCommand(const char* command);
- private:
-  int latestInbox;
-  int callStatus;
-  char incomingNumber[20];
-  bool initialized;
 
-  /// Waits until reading is possible with the default timeout
-  bool waitRead();
-  /// Reads up until a String token is read
-  bool readToken(char *token, long timeoutMS);
   /** @brief Reads the arguments sent in a sim text response message
    * 
    * The command repeat in front has to be removed by the caller
@@ -186,6 +177,16 @@ public:
   int getSimTextArgs(char *text, char **args, int argCount);
   /// Reads a DATE argument from received response
   Date readDate(char *text);
+ private:
+  int latestInbox;
+  int callStatus;
+  char incomingNumber[20];
+  bool initialized;
+
+  /// Waits until reading is possible with the default timeout
+  bool waitRead();
+  /// Reads up until a String token is read
+  bool readToken(char *token, long timeoutMS);
 };
 
 extern PHN_Sim sim;
