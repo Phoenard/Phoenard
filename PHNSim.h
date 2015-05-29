@@ -90,6 +90,15 @@ typedef struct SimMessage {
   }
 } SimMessage;
 
+/**
+ * @brief Simplistic library to make use of the SIM908 (phone) controller
+ *
+ * Make or receive calls, send or receive text messages and generally operate
+ * the SIM908. Some of the basic AT-Commands are implemented with an easy API.
+ * You can make use of the AT-Command sending routines to extend the library.
+ * This function automatically parses the response into an array of arguments,
+ * with retries and basic text parsing taken care of.
+ */
 class PHN_Sim {
 public:
   /// Ensures the SIM logic is initalized
