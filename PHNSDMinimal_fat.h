@@ -312,6 +312,19 @@ uint32_t const FAT32MASK = 0X0FFFFFFF;
 /** Type name for fat32BootSector */
 typedef struct fat32BootSector fbs_t;
 
+/** name[0] value for entry that is free after being "deleted" */
+uint8_t const DIR_NAME_DELETED = 0XE5;
+/** name[0] value for entry that is free and no allocated entries follow */
+uint8_t const DIR_NAME_FREE = 0X00;
+/** file is read-only */
+uint8_t const DIR_ATT_READ_ONLY = 0X01;
+/** Directory entry contains the volume label */
+uint8_t const DIR_ATT_VOLUME_ID = 0X08;
+/** Entry is for a directory */
+uint8_t const DIR_ATT_DIRECTORY = 0X10;
+/** Mask to check whether an entry is NOT a file */
+uint8_t const DIR_ATT_NOT_FILE_MASK = (DIR_ATT_VOLUME_ID | DIR_ATT_DIRECTORY);
+
 /**
  * \struct directoryEntry
  * \brief FAT short directory entry
@@ -390,6 +403,20 @@ struct directoryEntry {
   uint16_t firstClusterLow;
            /** 32-bit unsigned holding this file's size in bytes. */
   uint32_t fileSize;
+  
+  /** Combines the low and high part of the first cluster fields */
+  uint32_t firstCluster() {
+    return (uint32_t) firstClusterHigh << 16 | (uint32_t) firstClusterLow;
+  }
+  /** Sets the low and high part of the first cluster fields */
+  void setFirstCluster(uint32_t firstCluster) {
+    firstClusterLow = firstCluster & 0XFFFF;
+    firstClusterHigh = firstCluster >> 16;
+  }
+  /** Checks the attributes field to see if this is a file */
+  uint8_t isFile() { return !(attributes & DIR_ATT_NOT_FILE_MASK); }
+  /** Checks the attributes field to see if the entry is readonly */
+  uint8_t isReadOnly() { return (attributes & DIR_ATT_READ_ONLY); }
 };
 
 /** Type name for directoryEntry */
@@ -404,19 +431,6 @@ union cache_t {
   mbr_t    mbr;        /* Used to access a cached MasterBoot Record. */
   fbs_t    fbs;        /* Used to access to a cached FAT boot sector. */
 };
-
-/** name[0] value for entry that is free after being "deleted" */
-uint8_t const DIR_NAME_DELETED = 0XE5;
-/** name[0] value for entry that is free and no allocated entries follow */
-uint8_t const DIR_NAME_FREE = 0X00;
-/** file is read-only */
-uint8_t const DIR_ATT_READ_ONLY = 0X01;
-/** Directory entry contains the volume label */
-uint8_t const DIR_ATT_VOLUME_ID = 0X08;
-/** Entry is for a directory */
-uint8_t const DIR_ATT_DIRECTORY = 0X10;
-/** Mask for file/subdirectory tests */
-uint8_t const DIR_ATT_FILE_TYPE_MASK = (DIR_ATT_VOLUME_ID | DIR_ATT_DIRECTORY);
 
 /* 
  * Based on the document:

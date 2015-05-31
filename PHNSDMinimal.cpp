@@ -360,172 +360,167 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
   const int filename_83fmt_len = 11;
   unsigned char filename_83fmt[filename_83fmt_len];
   uint16_t timeout_cycle_ctr = 0;
-  uint32_t arg;
+  uint32_t capacity_arg;
   uint8_t fi;
 
   /* Copy filename and file extension to the combined 83format filename */
   memcpy(filename_83fmt, filename, 8);
   memcpy(filename_83fmt + 8, ext, 3);
 
-  /* If card/volume is initialized, skip the initialization process */
-  if (volume.isInitialized) goto openfile;
+  /* If card/volume is not initialized, initialize it */
+  if (!volume.isInitialized) {
 
-  /* Initialize SPI port */
-  SPI_DDR = (SPI_DDR & ~SPI_MASK) | SPI_INIT_DDR;
-  SPI_PORT = (SPI_PORT & ~SPI_MASK) | SPI_INIT_PORT;
+    /* Initialize SPI port */
+    SPI_DDR = (SPI_DDR & ~SPI_MASK) | SPI_INIT_DDR;
+    SPI_PORT = (SPI_PORT & ~SPI_MASK) | SPI_INIT_PORT;
 
-  /* Initialize chip select port */
-  SD_CS_DDR |= SD_CS_MASK;
-  SD_CS_PORT |= SD_CS_MASK;
+    /* Initialize chip select port */
+    SD_CS_DDR |= SD_CS_MASK;
+    SD_CS_PORT |= SD_CS_MASK;
 
-  /* Enable SPI, Master, clock rate f_osc/128 */
-  SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR1) | (1 << SPR0);
+    /* Enable SPI, Master, clock rate f_osc/128 */
+    SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR1) | (1 << SPR0);
 
-  /* Set Sck Rate to half */
-  SPSR &= ~((1 << SPI2X) | (1 <<SPR1) | (1 << SPR0));
+    /* Set Sck Rate to half */
+    SPSR &= ~((1 << SPI2X) | (1 <<SPR1) | (1 << SPR0));
 
-  /* must supply min of 74 clock cycles with CS high. */
-  spiSkip(10);
+    /* must supply min of 74 clock cycles with CS high. */
+    spiSkip(10);
 
-  /* CHIP SELECT of the card LOW indefinitely */
-  SD_CS_PORT &= ~SD_CS_MASK;
+    /* CHIP SELECT of the card LOW indefinitely */
+    SD_CS_PORT &= ~SD_CS_MASK;
 
-  /* command to go idle in SPI mode */
-  while (card_command(SDMINFAT::CMD0, 0, 0X95) != SDMINFAT::R1_IDLE_STATE) {
+    /* command to go idle in SPI mode */
+    while (card_command(SDMINFAT::CMD0, 0, 0X95) != SDMINFAT::R1_IDLE_STATE) {
 
-    /* check for timeout */
-    if (timeout_cycle_ctr++ & 128) return 0;  
-  }
+      /* check for timeout */
+      if (timeout_cycle_ctr++ & 128) return 0;  
+    }
 
-  /* check SD version */
-  if ((card_command(SDMINFAT::CMD8, 0x1AA, 0X87) & SDMINFAT::R1_ILLEGAL_COMMAND)) {
-    /* Card type: SD1 */
-    arg = 0X00000000;
-    card_notSDHCBlockShift = 9; /* SD1 Is never a SDHC card */
-  } else {
-    /* Card type: SD2
-     * only need last byte of r7 response
-     * Skip first 3 bytes */
-    spiSkip(3);
-    if (spiRec() != 0XAA) return 0;
-    arg = 0X40000000;
-    card_notSDHCBlockShift = 0; /* SD2 CAN be a SDHC card */
-  }
+    /* check SD version */
+    if ((card_command(SDMINFAT::CMD8, 0x1AA, 0X87) & SDMINFAT::R1_ILLEGAL_COMMAND)) {
+      /* Card type: SD1 */
+      capacity_arg = 0X00000000;
+      card_notSDHCBlockShift = 9; /* SD1 Is never a SDHC card */
+    } else {
+      /* Card type: SD2
+       * only need last byte of r7 response
+       * Skip first 3 bytes */
+      spiSkip(3);
+      if (spiRec() != 0XAA) return 0;
+      capacity_arg = 0X40000000;
+      card_notSDHCBlockShift = 0; /* SD2 CAN be a SDHC card */
+    }
 
-  /* Execute CMD55/ACMD41 command until ready state is achieved */
-  for (;;) {
-    card_command(SDMINFAT::CMD55, 0, 0XFF);
-    if (card_command(SDMINFAT::ACMD41, arg, 0XFF) == SDMINFAT::R1_READY_STATE) break;
+    /* Execute CMD55/ACMD41 command until ready state is achieved */
+    for (;;) {
+      card_command(SDMINFAT::CMD55, 0, 0XFF);
+      if (card_command(SDMINFAT::ACMD41, capacity_arg, 0XFF) == SDMINFAT::R1_READY_STATE) break;
     
-    /* check for timeout */
-    if (timeout_cycle_ctr++ & 128) return 0;  
-  }
+      /* check for timeout */
+      if (timeout_cycle_ctr++ & 128) return 0;  
+    }
 
-  /* if SD2 (and NOT SDHC is 0) read OCR register to check for SDHC card */
-  if (!card_notSDHCBlockShift) {
-    if (card_command(SDMINFAT::CMD58, 0, 0XFF)) return 0;
-    if ((spiRec() & 0XC0) != 0XC0) card_notSDHCBlockShift = 9;
+    /* if SD2 (and NOT SDHC is 0) read OCR register to check for SDHC card */
+    if (!card_notSDHCBlockShift) {
+      if (card_command(SDMINFAT::CMD58, 0, 0XFF)) return 0;
+      if ((spiRec() & 0XC0) != 0XC0) card_notSDHCBlockShift = 9;
 
-    /* discard rest of ocr - contains allowed voltage range */
-    spiSkip(3);
-  }
+      /* discard rest of ocr - contains allowed voltage range */
+      spiSkip(3);
+    }
 
-  /* Set SPI SCK Speed */
+    /* Set SPI SCK Speed */
 #if (SCK_SPEED & 0x1) || (SCK_SPEED == 6)
-  SPSR &= ~(1 << SPI2X);
+    SPSR &= ~(1 << SPI2X);
 #else
-  SPSR |= (1 << SPI2X);
+    SPSR |= (1 << SPI2X);
 #endif
-  SPCR &= ~((1 <<SPR1) | (1 << SPR0));
-  SPCR |= (SCK_SPEED & 4 ? (1 << SPR1) : 0) | (SCK_SPEED & 2 ? (1 << SPR0) : 0);
+    SPCR &= ~((1 <<SPR1) | (1 << SPR0));
+    SPCR |= (SCK_SPEED & 4 ? (1 << SPR1) : 0) | (SCK_SPEED & 2 ? (1 << SPR0) : 0);
 
-  /* Initialize an available partition volume, first try 1, then 0 */
-  for (uint8_t part = 1;; part--) {
-    /* If we reached partition 2, we've failed our duty to find a volume */
-    if (part == 2) return 0;
+    /* Initialize an available partition volume, first try 1, then 0 */
+    for (uint8_t part = 1;; part--) {
+      /* If no partition at 1 or 0, we failed */
+      if (part == 0xFF) return 0;
 
-    uint32_t volumeStartBlock = 0;
+      uint32_t volumeStartBlock = 0;
 
-    /* if part == 0 assume super floppy with FAT boot sector in block zero
-     * if part > 0 assume mbr volume with partition table */
-    volume_readCache(0);
-    if (part) {
-      SDMINFAT::part_t* p = &volume_cacheBuffer.mbr.part[part-1];
+      /* if part == 0 assume super floppy with FAT boot sector in block zero
+       * if part > 0 assume mbr volume with partition table */
+      volume_readCache(0);
+      if (part) {
+        SDMINFAT::part_t* p = &volume_cacheBuffer.mbr.part[part-1];
       
-      /* not a valid partition? */
-      if ((p->boot & 0X7F) !=0) continue;
-      if (p->totalSectors < 100) continue;
-      if (p->firstSector == 0) continue;
+        /* not a valid partition? */
+        if ((p->boot & 0X7F) !=0) continue;
+        if (p->totalSectors < 100) continue;
+        if (p->firstSector == 0) continue;
       
-      volume_readCache(volumeStartBlock = p->firstSector);
-    }
-    SDMINFAT::bpb_t* bpb = &volume_cacheBuffer.fbs.bpb;
+        volume_readCache(volumeStartBlock = p->firstSector);
+      }
+      SDMINFAT::bpb_t* bpb = &volume_cacheBuffer.fbs.bpb;
     
-    /* not valid FAT volume? */
-    if (bpb->bytesPerSector != 512) continue;
-    if (bpb->fatCount == 0) continue;
-    if (bpb->reservedSectorCount == 0) continue;
-    if (bpb->sectorsPerCluster == 0) continue;
+      /* not valid FAT volume? */
+      if (bpb->bytesPerSector != 512) continue;
+      if (bpb->fatCount == 0) continue;
+      if (bpb->reservedSectorCount == 0) continue;
+      if (bpb->sectorsPerCluster == 0) continue;
 
-    volume.isMultiFat = bpb->fatCount > 1;
-    volume.blocksPerCluster = bpb->sectorsPerCluster;
-    volume.blocksPerFat = bpb->sectorsPerFat16 ? bpb->sectorsPerFat16 : bpb->sectorsPerFat32;
+      volume.isMultiFat = bpb->fatCount > 1;
+      volume.blocksPerCluster = bpb->sectorsPerCluster;
+      volume.blocksPerFat = bpb->sectorsPerFat16 ? bpb->sectorsPerFat16 : bpb->sectorsPerFat32;
 
-    volume.fatStartBlock = volumeStartBlock + bpb->reservedSectorCount;
+      volume.fatStartBlock = volumeStartBlock + bpb->reservedSectorCount;
 
-    /* directory start for FAT16 dataStart for FAT32 */
-    volume.rootCluster = volume.fatStartBlock + bpb->fatCount * volume.blocksPerFat;
+      /* directory start for FAT16 dataStart for FAT32 */
+      volume.rootCluster = volume.fatStartBlock + bpb->fatCount * volume.blocksPerFat;
 
-    /* total blocks for FAT16 or FAT32 */
-    volume.clusterLast = bpb->totalSectors16 ? bpb->totalSectors16 : bpb->totalSectors32;
-    /* data start for FAT16 and FAT32 */
-    volume.rootSize = 32 * bpb->rootDirEntryCount;
-    volume.dataStartBlock = volume.rootCluster + ((volume.rootSize + 511)/512);
-    /* Total data blocks */
-    volume.clusterLast -= (volume.dataStartBlock - volumeStartBlock);
-    /* divide by cluster size to get cluster count */
-    volume.clusterLast /= volume.blocksPerCluster;
-    /* Incremented to make usage logic easier to use */
-    volume.clusterLast++;
+      /* total blocks for FAT16 or FAT32 */
+      volume.clusterLast = bpb->totalSectors16 ? bpb->totalSectors16 : bpb->totalSectors32;
+      /* data start for FAT16 and FAT32 */
+      volume.rootSize = 32 * bpb->rootDirEntryCount;
+      volume.dataStartBlock = volume.rootCluster + ((volume.rootSize + 511)/512);
+      /* Total data blocks */
+      volume.clusterLast -= (volume.dataStartBlock - volumeStartBlock);
+      /* divide by cluster size to get cluster count */
+      volume.clusterLast /= volume.blocksPerCluster;
+      /* Incremented to make usage logic easier to use */
+      volume.clusterLast++;
 
-    /* We do not support FAT 12 */
-    if (volume.clusterLast <= 4085) continue;
+      /* We do not support FAT 12 */
+      if (volume.clusterLast <= 4085) continue;
 
-    /* FAT type is determined by cluster count */
-    volume.isfat16 = (volume.clusterLast <= 65525);
-    if (!volume.isfat16) {  
-      volume.rootCluster = bpb->fat32RootCluster;
+      /* FAT type is determined by cluster count */
+      volume.isfat16 = (volume.clusterLast <= 65525);
+      if (!volume.isfat16) {  
+        volume.rootCluster = bpb->fat32RootCluster;
+      }
+
+      /* Success! */
+      volume.isInitialized = 1;
+      break;
     }
-
-    /* Success! */
-    volume.isInitialized = 1;
-    break;
-  }
-
-openfile:
+  } /* Initialization end */
 
   /* Validate the file name - this prevents SD corruption issues */
   fi = filename_83fmt_len - 1;
   do {
-    if (filename_83fmt[fi] < 32 || filename_83fmt[fi] >= 127) {
-      return 0;
-    }
+    if (filename_83fmt[fi] & 0x80) return 0;
+    if (filename_83fmt[fi] < 32) return 0;
   } while (fi--);
 
   /* set to root directory */
   file_position = 0;
   file_isroot16dir = volume.isfat16;
-
-  /* root has no directory entry */
   file_curCluster = volume.rootCluster;
 
   /* Locate this file on the root volume */
   SDMINFAT::dir_t* p;
-  uint8_t emptyFound = 0;
-
-  /* search for file */
   uint8_t index = 0xF;
-  while (volume.isInitialized) {
+  uint8_t entryFound = 0;
+  uint8_t fileFound = 0;
+  do {
     /* Read sectors of 32 bytes, when it reaches the final sector (16) go to the next block */
     index++;
     index &= 0xF;
@@ -534,79 +529,72 @@ openfile:
     p = (SDMINFAT::dir_t*) file_read(32);
 
     /* Is this our file? */
-    if (!memcmp(filename_83fmt, p->name, 11) && !(p->attributes & SDMINFAT::DIR_ATT_FILE_TYPE_MASK)) {
-      /* remember found file */
-      file_curDir.index = index;
-      file_curDir.block = volume_cacheBlockNumber;
-      /* Skip the entire file creation logic below by using goto */
-      goto skipCreateFile;
-    }
+    fileFound = (!memcmp(filename_83fmt, p->name, 11) && p->isFile());
 
     char c = p->name[0];
-    if ((c == SDMINFAT::DIR_NAME_FREE) || (c == SDMINFAT::DIR_NAME_DELETED)) {
-      /* remember first empty slot */
-      if (!emptyFound) {
-        emptyFound = 1;
-        file_curDir.index = index;
+    if (fileFound || (c == SDMINFAT::DIR_NAME_FREE) || (c == SDMINFAT::DIR_NAME_DELETED)) {
+      /* Store found entry block and index */
+      if (!entryFound || fileFound) {
+        entryFound = 1;
         file_curDir.block = volume_cacheBlockNumber;
+        file_curDir.index = index;
       }
-      /* done if no entries follow */
+      /* Check for completion or end of directory */
       if (c == SDMINFAT::DIR_NAME_FREE) break;
     }
-  }
+  } while (volume.isInitialized && !fileFound);
 
-  /* only create new files when CREATING is set */
-  if (!(mode & FILE_CREATE)) return 0;
+  /* Create a new file entry */
+  if (!fileFound) {
+    /* only create new files when CREATING is set */
+    if (!(mode & FILE_CREATE)) return 0;
+    /* can not create new root clusters on FAT16 */
+    if (!entryFound && volume.isfat16) return 0;
 
-  /* cache found slot or add cluster if end of file */
-  if (!emptyFound) {
-    if (volume.isfat16) return 0;
+    /* No usable entry was found - append a new cluster root cluster */
+    if (!entryFound) {
+      /* Calling cacheCurrentBlock appends a new cluster to the chain */
+      /* Note: cache is not dirty after this call, we can safely discard it! */
+      file_position = 0;
+      volume_cacheCurrentBlock(1);
 
-    /* Calling cacheCurrentBlock appends a new cluster to the chain */
-    /* Note: cache is not dirty after this call, we can safely discard it! */
-    file_position = 0;
-    volume_cacheCurrentBlock(1);
+      /* use first entry in cluster */
+      file_curDir.block = volume_cacheBlockNumber;
+      file_curDir.index = 0;
 
-    /* use first entry in cluster */
-    file_curDir.block = volume_cacheBlockNumber;
-    file_curDir.index = 0;
+      /* Fill cache with zero data */
+      /* Loop takes less flash than memset(volume_cacheBuffer_.data, 0, 512); */
+      for (uint16_t d = 0; d < 512; d++) {
+        volume_cacheBuffer.data[d] = 0;
+      }
 
-    /* Fill cache with zero data */
-    /* Loop takes less flash than memset(volume_cacheBuffer_.data, 0, 512); */
-    for (uint16_t d = 0; d < 512; d++) {
-      volume_cacheBuffer.data[d] = 0;
+      /* Write this zero cache to all the clusters */
+      uint8_t i = volume.blocksPerCluster;
+      do {
+        volume_writeCache();
+        volume_cacheBlockNumber++;
+      } while (--i);
     }
+    p = file_readCacheDir();
 
-    /* Write this zero cache to all the clusters */
-    uint8_t i = volume.blocksPerCluster;
-    do {
-      volume_writeCache();
-      volume_cacheBlockNumber++;
-    } while (--i);
-  }
-  p = file_readCacheDir();
+    /* initialize as empty file */
+    memset(p, 0, sizeof(SDMINFAT::dir_t));
+    memcpy(p->name, filename_83fmt, 11);
 
-  /* initialize as empty file */
-  memset(p, 0, sizeof(SDMINFAT::dir_t));
-  memcpy(p->name, filename_83fmt, 11);
+    /* set timestamps */
+    p->lastWriteDate = p->lastAccessDate = p->creationDate = SDMINFAT::FAT_DEFAULT_DATE;
+    p->lastWriteTime = p->creationTime = SDMINFAT::FAT_DEFAULT_TIME;
 
-  /* set timestamps */
-  p->lastWriteDate = p->lastAccessDate = p->creationDate = SDMINFAT::FAT_DEFAULT_DATE;
-  p->lastWriteTime = p->creationTime = SDMINFAT::FAT_DEFAULT_TIME;
+    /* force write of entry to SD */
+    volume_writeCache();
 
-  /* force write of entry to SD */
-  volume_writeCache();
-
-skipCreateFile:
+  } /* Entry creation end */
 
   /* write to a read-only file is an error */
-  if (mode && p->attributes & SDMINFAT::DIR_ATT_READ_ONLY) return 0;
-
-  /* copy first cluster number for directory fields */
-  file_curCluster = (uint32_t)p->firstClusterHigh << 16;
-  file_curCluster |= p->firstClusterLow;
+  if (mode && p->isReadOnly()) return 0;
 
   /* Set up file fields to point to this file */
+  file_curCluster = p->firstCluster();
   file_available = p->fileSize;
   file_isroot16dir = 0;
   file_position = 0;
@@ -623,8 +611,11 @@ skipCreateFile:
     file_curCluster = 0;
     file_available = 0;
 
-    /* Flush the changed data, updating the first cluster and available state */
-    file_flush();
+    /* Update file entry to show as empty to prevent corrupted state */
+    p = file_readCacheDir();
+    p->fileSize = 0;
+    p->setFirstCluster(0);
+    volume_writeCache();
   }
 
   return volume.isInitialized;
@@ -678,8 +669,7 @@ uint8_t* volume_cacheCurrentBlock(uint8_t writeCluster) {
         if (file_curCluster == 0) {
           /* first cluster; write information to file dir block */
           SDMINFAT::dir_t* p = file_readCacheDir();
-          p->firstClusterLow = cluster & 0XFFFF;
-          p->firstClusterHigh = cluster >> 16;
+          p->setFirstCluster(cluster);
           volume_writeCache();
         } else {
           /* connect chains */
