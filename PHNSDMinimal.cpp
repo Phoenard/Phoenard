@@ -41,7 +41,8 @@ uint32_t  file_available;               /* available size when reading, total fi
 /* ============================================================================== */
 
 /* Macro to send a byte to SPI */
-#define spiSend(b)  SPDR = b; while (!(SPSR & (1 << SPIF)));
+#define spiWait()   while (!(SPSR & (1 << SPIF)));
+#define spiSend(b)  SPDR = b; spiWait();
 
 /* Receive a byte from SPI. Can be used to replace spiSend(0xFF) */
 static uint8_t spiRec(void) {
@@ -157,8 +158,8 @@ uint8_t volume_updateCache(uint32_t blockNumber) {
  * If the current cache data still needs to be written out, this is done first
  */
 void volume_readCache(uint32_t blockNumber) {
-  uint16_t i;
-  uint8_t data;
+  uint8_t* data = volume_cacheBuffer.data-1;
+  uint8_t* data_end = volume_cacheBuffer.data + 512;
   if (volume_updateCache(blockNumber)) {
     /* Use address if not SDHC card */
     if (card_command(SDMINFAT::CMD17, blockNumber << card_notSDHCBlockShift, 0XFF)) goto fail;
@@ -168,15 +169,12 @@ void volume_readCache(uint32_t blockNumber) {
      * Read the data one byte at a time
      * Read one extra byte at the end which is discarded
      */
-    i = 0;
     for (;;) {
-      data = spiRec();
-      if (i == 512) {
-        break;
-      } else {
-        volume_cacheBuffer.data[i] = data;
-      }
-      i++;
+      SPDR = 0xFF;
+      data++;
+      spiWait();
+      if (data == data_end) break;
+      *data = SPDR;
     }
   }
   return;
@@ -205,7 +203,8 @@ void volume_writeCache() {
  * Note that this function allows writing to the zero-block, so be careful!
  */
 void volume_writeCache(uint32_t block) {
-  uint16_t i;
+  uint8_t* data;
+  uint8_t* data_end = volume_cacheBuffer.data + 512;
   volume_cacheDirty = 0;
   volume_cacheBlockNumber = block;
 
@@ -222,9 +221,12 @@ write_block:
   spiSend(SDMINFAT::DATA_START_BLOCK);
 
   /* Write data from buffer to SPI - optimized loop */
-  for (i = 0; i < 512; i++) {
-    spiSend(*(volume_cacheBuffer.data + i));
-  }
+  data = volume_cacheBuffer.data;
+  do {
+    SPDR = *data;
+    data++;
+    spiWait();
+  } while (data != data_end);
 
   spiRec();    /* dummy crc */
   spiRec();    /* dummy crc */
