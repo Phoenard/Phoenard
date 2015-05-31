@@ -161,16 +161,17 @@ typedef uint16_t color_t;
  * @brief Color constants for use in 8-bit drawing functions
  */
 //@{
-#define BLACK_8BIT     0x00
-#define WHITE_8BIT     0xFF
-#define GRAY_8BIT      0xD5
-#define YELLOW_8BIT    0xEE
-#define ORANGE_8BIT    0xE4
-#define RED_8BIT       0xE0
-#define GREEN_8BIT     0xC7
-#define BLUE_8BIT      0x9E
-#define CYAN_8BIT      0xDF
-#define PURPLE_8BIT    0xDC
+#define BLACK_8BIT       0x00
+#define WHITE_8BIT       0xFF
+#define GRAY_8BIT        0xD5
+#define GRAY_LIGHT_8BIT  0xF6
+#define YELLOW_8BIT      0xEE
+#define ORANGE_8BIT      0xE4
+#define RED_8BIT         0xE0
+#define GREEN_8BIT       0xC7
+#define BLUE_8BIT        0x9E
+#define CYAN_8BIT        0xDF
+#define PURPLE_8BIT      0xDC
 //@}
 
 /**@name Display cursor direction constants

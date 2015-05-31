@@ -70,7 +70,7 @@
 #define COLOR_MENU_SEL   WHITE_8BIT
 #define COLOR_MENU_ADD   GREEN_8BIT
 #define COLOR_MENU_NAV   BLUE_8BIT
-#define COLOR_MENU_SKET  YELLOW_8BIT
+#define COLOR_MENU_SKET  GRAY_LIGHT_8BIT
 
 /* The colors used when drawing the edit menu */
 #define COLOR_EDIT_BG    BLACK_8BIT
