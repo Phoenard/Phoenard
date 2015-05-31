@@ -2,7 +2,7 @@
  * Sketch list - the default program that runs to display, edit and load sketches from the SD-card
  */
 
-#include "editicons.c"
+#include "icons.c"
 #include  <avr/eeprom.h>
 #include "Phoenard.h"
 
@@ -62,7 +62,7 @@
 #define EDIT_IDX_CANCEL     (EDIT_IDX_START+2)
 #define EDIT_IDX_DELETE     (EDIT_IDX_START+3)
 #define EDIT_IDX_RENAME     (EDIT_IDX_START+4)
-#define EDIT_IDX_ACCEPT     (EDIT_IDX_START+5)
+#define EDIT_IDX_DONE     (EDIT_IDX_START+5)
 #define EDIT_IDX_NONE       (EDIT_IDX_START+6)
 
 /* The colors used when drawing the main sketch menu */
@@ -76,6 +76,15 @@
 #define COLOR_EDIT_BG    BLACK_8BIT
 #define COLOR_EDIT_ICON  WHITE_8BIT
 #define COLOR_EDIT_SEL   WHITE_8BIT
+
+/* The colors used when drawing the sketch naming menu */
+#define COLOR_NAME_BG       BLACK_8BIT /* Background color of dialog */
+#define COLOR_NAME_NAM_NOR  BLUE_8BIT  /* Color for text that is not selected */
+#define COLOR_NAME_NAM_SEL  WHITE_8BIT /* Color for text that is selected */
+#define COLOR_NAME_KEY_BG   GRAY_8BIT  /* Background color behind keys */
+#define COLOR_NAME_KEY_TXT  BLACK_8BIT /* Key text and border color */
+#define COLOR_NAME_KEY_FOR  WHITE_8BIT /* Key foreground color */
+#define COLOR_NAME_KEY_SEL  BLUE_8BIT  /* Key foreground color when pressed */
 
 /* LCD touch input variables */
 uint16_t touch_x, touch_y;
@@ -149,13 +158,14 @@ void loop() {
    * General sketch list update loop starts here
    * All variables used in it are declared below.
    */
-  uint16_t icon_px;      /* X-coordinate of icon */
-  uint16_t icon_py;      /* Y-coordinate of icon */
-  uint8_t icon_w;        /* Width of the icon */
-  uint8_t icon_h;        /* Height of the icon */
-  uint8_t icon_idx;      /* Icon index in main sketch menu */
-  uint16_t sketch_index; /* Index in the sketch buffer */
-  int16_t sketch_addr;   /* SRAM address in the sketch buffer */
+  uint16_t icon_px;       /* X-coordinate of icon */
+  uint16_t icon_py;       /* Y-coordinate of icon */
+  uint8_t icon_w;         /* Width of the icon */
+  uint8_t icon_h;         /* Height of the icon */
+  uint8_t icon_idx;       /* Icon index in main sketch menu */
+  int16_t sketch_index;   /* Index in the sketch buffer */
+  int16_t sketch_addr;    /* SRAM address in the sketch buffer */
+  SketchInfo sketch_info; /* Sketch entry information */
 
   /* Routinely buffer in sketch information from the Micro-SD in the background */
   for (uint8_t i = 0; i < 16 && !sketches_reachedEnd; i++) {
@@ -198,13 +208,12 @@ void loop() {
     /* Create new entry if not found */
     if (create_new) {
       sketches_buff_cnt++;
-      SketchInfo info;
-      memcpy(info.name, p->name, 8);
-      info.icon = 0;
+      memcpy(sketch_info.name, p->name, 8);
+      sketch_info.icon = 0;
       if (sketch_addr >= 0) {
-        sram.writeBlock(sketch_addr, (char*) &info, sizeof(SketchInfo));
+        sram.writeBlock(sketch_addr, (char*) &sketch_info, sizeof(SketchInfo));
       } else {
-        sketches_buff[sketch_index] = info;
+        sketches_buff[sketch_index] = sketch_info;
       }
     }
     /* If SKI file, set icon location info */
@@ -229,67 +238,66 @@ void loop() {
 
   /* Update touch input */
   LCD_updateTouch();
-  uint8_t oldTouchedIndex = touchedIndex;
-  touchedIndex = MENU_IDX_NONE;
+  uint8_t newTouchedIndex = MENU_IDX_NONE;
 
   /* Draw and update all the main menu icons */
-  uint8_t* menu_icons[] = {icon_up, icon_add, icon_down};
   icon_px = MENU_OFF_X;
   icon_py = MENU_OFF_Y;
   icon_w = MENU_ICON_W;
   icon_h = MENU_ICON_H;
   icon_idx = 0;
+  sketch_index = sketch_offset - MENU_IDX_SKET;
   do {
     if (LCD_isTouched(icon_px, icon_py, icon_w, icon_h)) {
-      touchedIndex = icon_idx;
+      newTouchedIndex = icon_idx;
     }
     if (sketch_icon_dirty[icon_idx]) {
       sketch_icon_dirty[icon_idx] = 0;
 
       uint8_t icon_color;
-      uint8_t* icon_data;
-      
-      /* Color */
-      if (touchedIndex == icon_idx) {
-        icon_color = COLOR_MENU_SEL;
-      } else if (icon_idx >= MENU_IDX_SKET) {
-        icon_color = COLOR_MENU_SKET;
-      } else if (icon_idx == MENU_IDX_ADD) {
-        icon_color = COLOR_MENU_ADD;
-      } else {
-        icon_color = COLOR_MENU_NAV;
-      }
+      const uint8_t* icon_data;
 
-      /* Update and get icon data, and for sketches, the title */
+      /* Update icon, icon color and title */
       memset(sketch_icon_text, 0, 9);
-      if (icon_idx < MENU_IDX_SKET) {
-        /* Navigation icons - with no title */
-        icon_data = menu_icons[icon_idx];
-      } else {
-        /* Get sketch information to display */
-        sketch_index = sketch_offset + icon_idx - MENU_IDX_SKET;
-        sketch_addr = sketches_sram_start + sketch_index * sizeof(SketchInfo);
-        SketchInfo info;
-        if (sketch_index >= sketches_buff_cnt) {
-          break; /* No more sketches */
-        }
-        if (sketch_addr >= 0) {
-          card_setEnabled(false);
-          sram.readBlock(sketch_addr, (char*) &info, sizeof(SketchInfo));
-          card_setEnabled(true);
-        } else {
-          info = sketches_buff[sketch_index];
-        }
+      switch (icon_idx) {
+        case MENU_IDX_ADD:
+          /* Add sketch button */
+          icon_color = COLOR_MENU_ADD;
+          icon_data = icon_add;
+          break;
+        case MENU_IDX_UP:
+          /* Up navigation button */
+          icon_color = COLOR_MENU_NAV;
+          icon_data = icon_up;
+          break;
+        case MENU_IDX_DOWN:
+          /* Down navigation button */
+          icon_color = COLOR_MENU_NAV;
+          icon_data = icon_down;
+          break;
+        default:
+          /* Get sketch information to display */
+          sketch_addr = sketches_sram_start + sketch_index * sizeof(SketchInfo);
+          if (sketch_addr >= 0) {
+            card_setEnabled(false);
+            sram.readBlock(sketch_addr, (char*) &sketch_info, sizeof(SketchInfo));
+            card_setEnabled(true);
+          } else {
+            sketch_info = sketches_buff[sketch_index];
+          }
 
-        /* Refresh the sketch name */
-        memcpy(sketch_icon_text[icon_idx], info.name, 8);
-
-        /* Load icon data into memory if available */
-        icon_data = icon_sketch_default;
-        if (info.icon) {
-          volume_readCache(info.icon);
-          icon_data = volume_cacheBuffer.data;
-        }
+          /* Refresh the sketch color, name and icon */
+          memcpy(sketch_icon_text[icon_idx], sketch_info.name, 8);
+          icon_color = COLOR_MENU_SKET;
+          icon_data = icon_sketch_default;
+          if (sketch_info.icon) {
+            volume_readCache(sketch_info.icon);
+            icon_data = volume_cacheBuffer.data;
+          }
+          break;
+      }
+      if (newTouchedIndex == icon_idx) {
+        icon_color = COLOR_MENU_SEL;
       }
 
       /* Draw icon */
@@ -299,7 +307,9 @@ void loop() {
       break;
     }
 
+    /* Update indices and icon bounds */
     icon_idx++;
+    sketch_index++;
     if (icon_idx < MENU_IDX_SKET) {
       icon_py += MENU_STP_Y;
     } else if (icon_idx == MENU_IDX_SKET) {
@@ -314,49 +324,54 @@ void loop() {
         icon_py += SKETCHES_STP_Y;
       }
     }
-  } while (icon_idx < MENU_IDX_NONE);
+  } while ((icon_idx < MENU_IDX_NONE) && (sketch_index < sketches_buff_cnt));
+
+  /* Handle button presses here */
+  if (touchedIndex != MENU_IDX_NONE) {
+    /* Open edit menu when holding down on a sketch icon for some time */
+    if (touchedIndex >= MENU_IDX_SKET && ((millis() - pressed_time_start) > HOLD_ACTIVATE_DELAY)) {
+      editSketch(sketch_icon_text[touchedIndex], false);
+      reloadAll = true;
+
+    } else if (!LCD_isTouchedAny()) {
+      /* Perform actions when tapping an icon */
+      switch (touchedIndex) {
+        case MENU_IDX_UP:
+          /* Move sketch list one page up, ignore if impossible */
+          if (sketch_offset) {
+            sketch_offset -=  SKETCHES_PGINCR;
+            redrawIcons = true;
+          }
+          break;
+        case MENU_IDX_DOWN:
+          /* Move sketch list one page down, ignore if impossible */
+          if ((sketch_offset + SKETCHES_PGINCR) < sketches_buff_cnt) {
+            sketch_offset += SKETCHES_PGINCR;
+            redrawIcons = true;
+          }
+          break;
+        case MENU_IDX_ADD:
+          /* Ask for the new file name, if successful, edit the icon */
+          memset(sketch_icon_text[MENU_IDX_SKET], ' ' , 8);
+          if (askSketchName(sketch_icon_text[MENU_IDX_SKET])) {
+            editSketch(sketch_icon_text[MENU_IDX_SKET], true);
+          }
+          reloadAll = true;
+          break;
+        default:
+          /* Clicked a sketch, load it */
+          loadSketchReset(sketch_icon_text[touchedIndex]);
+          break;
+      }
+    }
+  }
 
   /* Redraw icons when touched index changes */
-  if (oldTouchedIndex != touchedIndex) {
-    sketch_icon_dirty[oldTouchedIndex] = 1;
+  if (touchedIndex != newTouchedIndex) {
     sketch_icon_dirty[touchedIndex] = 1;
+    sketch_icon_dirty[newTouchedIndex] = 1;
     pressed_time_start = millis();
-  }
-
-  /* Pressing and holding down on a sketch icon? Edit then. */
-  if (touchedIndex != MENU_IDX_NONE && touchedIndex >= MENU_IDX_SKET && ((millis() - pressed_time_start) > HOLD_ACTIVATE_DELAY)) {
-    editSketch(sketch_icon_text[touchedIndex], false);
-    reloadAll = true;
-  }
-  
-  /* Released a button? Handle logic for the button released. */
-  if (touchedIndex == MENU_IDX_NONE && oldTouchedIndex != MENU_IDX_NONE && !LCD_isTouchedAny()) {
-    
-    if (oldTouchedIndex == MENU_IDX_UP) {
-      /* Move sketch list one page up, ignore if impossible */
-      if (sketch_offset) {
-        sketch_offset -=  SKETCHES_PGINCR;
-        redrawIcons = true;
-      }
-    } else if (oldTouchedIndex == MENU_IDX_DOWN) {
-      /* Move sketch list one page down, ignore if impossible */
-      if ((sketch_offset + SKETCHES_PGINCR) < sketches_buff_cnt) {
-        sketch_offset += SKETCHES_PGINCR;
-        redrawIcons = true;
-      }
-    } else if (oldTouchedIndex == MENU_IDX_ADD) {
-      /* Ask for the new file name, if successful, edit the icon */
-      char name[9];
-      memset(name, ' ' , 8);
-      name[8] = 0;
-      if (askSketchName(name)) {
-        editSketch(name, true);
-      }
-      reloadAll = true;
-    } else {
-      /* Clicked a sketch, load it */
-      loadSketchReset(sketch_icon_text[oldTouchedIndex]);
-    }
+    touchedIndex = newTouchedIndex;
   }
 }
 
@@ -367,7 +382,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
   /* Mark sketch for loading */
   setLoadOptions(filename, SETTINGS_LOAD | SETTINGS_LOADWIPE);
 
-  /* Open or create the .SKI file, store the FAT clusters where the (file) data resides in */
+  /* Open or create the hex/ski files and store their locations on the Micro-SD */
   uint32_t ski_data_block = 0;
   uint32_t ski_file_length;
   uint32_t hex_file_length;
@@ -400,7 +415,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
   LCD_clearTouch();
 
   /* Set up the UI button icons and states */
-  unsigned char* button_icon[EDIT_IDX_NONE] = {
+  const unsigned char* button_icon[EDIT_IDX_NONE] = {
     edit_icon_changecolor_1, edit_icon_reset,  edit_icon_cancel,
     edit_icon_delete,        edit_icon_charup, edit_icon_accept
   };
@@ -413,8 +428,8 @@ void editSketch(char filename[9], boolean runWhenExit) {
     BLUE_8BIT, BLUE_8BIT, RED_8BIT,
     BLUE_8BIT, BLUE_8BIT, GREEN_8BIT
   };
-  uint8_t oldTouchedIndex;
   uint8_t touchedIndex = EDIT_IDX_NONE;
+  uint8_t newTouchedIndex;
 
   /* Store old icon and filename data for restoring (cancel) */
   volume_readCache(ski_data_block);
@@ -423,6 +438,8 @@ void editSketch(char filename[9], boolean runWhenExit) {
   memcpy(icon_original, volume_cacheBuffer.data, 512);
   memcpy(filename_original, filename, 8);
 
+  uint8_t icon_idx;
+  uint8_t icon_color;
   uint8_t draw_color = COLOR_EDIT_ICON;
   boolean edit_finish = false;
   long last_save = millis(); // Monitors the last time the icon data was saved
@@ -466,173 +483,147 @@ void editSketch(char filename[9], boolean runWhenExit) {
 
       PHNDisplay8Bit::fillRect(EDIT_ICON_X + (p_x * EDIT_ICON_SCALE), EDIT_ICON_Y + (p_y * EDIT_ICON_SCALE), EDIT_ICON_SCALE, EDIT_ICON_SCALE, draw_color);
 
-      // Mark cache dirty, notify it was changed
+      /* Mark cache dirty, notify it was changed */
       volume_cacheDirty = 1;
     }
 
     /* If button is touched, update touched index (states) */
-    oldTouchedIndex = touchedIndex;
-    touchedIndex = EDIT_IDX_NONE;
-    uint8_t i = -1;
+    newTouchedIndex = EDIT_IDX_NONE;
+    icon_idx = 0;
     for (uint8_t x = 0; x < 2; x++) {
-      for (uint8_t y = 0; y < 3; y++) {
-        i++;
-        
+     for (uint8_t y = 0; y < 3; y++) {
         unsigned int py = 5 + y * 65 + (y == 2) * 40;
         unsigned int px = 5 + x * (PHNDisplayHW::WIDTH - 58);
         if (LCD_isTouched(px, py, 48, 48)) {
-          touchedIndex = i;
+          newTouchedIndex = icon_idx;
+          icon_color = COLOR_EDIT_SEL;
+        } else {
+          icon_color = button_color[icon_idx];
         }
-        if (button_dirty[i]) {
-          button_dirty[i] = 0;
-          
-          /* Pressed? */
-          uint8_t color;
-          if (touchedIndex == i) {
-            color = COLOR_EDIT_SEL;
-          } else {
-            color = button_color[i];
-          }
+        if (button_dirty[icon_idx]) {
+          button_dirty[icon_idx] = 0;
 
           /* Draw the sketch icon */
-          LCD_write_icon(px, py, 48, 48, button_icon[i], button_title[i], COLOR_EDIT_BG, color);
+          LCD_write_icon(px, py, 48, 48, button_icon[icon_idx], button_title[icon_idx], COLOR_EDIT_BG, icon_color);
         }
+        icon_idx++;
+      }
+    }
+
+    /* Run sketch when the done button is pressed for some time */
+    if ((touchedIndex == EDIT_IDX_DONE) && ((millis() - last_done_pressed) > HOLD_ACTIVATE_DELAY)) {
+      runWhenExit = true;
+      edit_finish = true;
+    }
+
+    /* Handle button press-release actions */
+    if (!LCD_isTouchedAny()) {
+      switch (touchedIndex) {
+        case EDIT_IDX_COLOR:
+          if (draw_color == COLOR_EDIT_ICON) {
+            draw_color = COLOR_EDIT_BG;
+            button_icon[EDIT_IDX_COLOR] = edit_icon_changecolor_0;
+          } else {
+            draw_color = COLOR_EDIT_ICON;
+            button_icon[EDIT_IDX_COLOR] = edit_icon_changecolor_1;
+          }
+          break;
+
+        case EDIT_IDX_RESET:
+          /* Resets the icon to the default icon */
+          memcpy(volume_cacheBuffer.data, icon_sketch_default, 512);
+          volume_cacheDirty = 1;
+          needsIconRedraw = true;
+          break;
+
+        case EDIT_IDX_DELETE:
+        {
+          /* First ask the user if he is absolutely sure */
+          PHNDisplay8Bit::fill(BLACK_8BIT);
+          boolean cancel_down = false;
+          boolean accept_down = false;
+          const uint16_t text_off = 40;
+          const uint16_t cancel_x = 80;
+          const uint16_t cancel_y = 120;
+          const uint16_t accept_x = (PHNDisplayHW::WIDTH - cancel_x - 48);
+          const uint16_t accept_y = cancel_y;
+              
+          /* Print icons and text message to user for first draw */
+          LCD_write_icon(cancel_x, cancel_y, 48, 48, edit_icon_cancel, "Cancel", RED_8BIT);
+          LCD_write_icon(accept_x, accept_y, 48, 48, edit_icon_accept, "Delete", GREEN_8BIT);
+          PHNDisplay8Bit::writeString(text_off, text_off, 2, "Are you sure you want\n"
+                                                             "to permanently delete\n"
+                                                             "this sketch?", BLACK_8BIT, WHITE_8BIT);
+
+          for (;;) {
+            LCD_updateTouch();
+                
+            if (LCD_isTouched(cancel_x, cancel_y, 48, 48) != cancel_down) {
+              cancel_down = !cancel_down;
+              LCD_write_icon(cancel_x, cancel_y, 48, 48, edit_icon_cancel, "Cancel", cancel_down ? WHITE_8BIT : RED_8BIT);
+              if (!cancel_down && !LCD_isTouchedAny()) {
+                // Just break and continue
+                needsRedraw = true;
+                break;
+              }
+            }
+            if (LCD_isTouched(accept_x, accept_y, 48, 48) != accept_down) {
+              accept_down = !accept_down;
+              LCD_write_icon(accept_x, accept_y, 48, 48, edit_icon_accept, "Delete", accept_down ? WHITE_8BIT : GREEN_8BIT);
+              if (!accept_down && !LCD_isTouchedAny()) {
+                // Actually perform deletion
+                /* Delete icon file */
+                file_curDir = ski_file;
+                file_delete();
+
+                /* Delete HEX file */
+                file_curDir = hex_file;
+                file_delete();
+
+                /* If asked to load - don't load! */
+                runWhenExit = false;
+
+                /* Finish */
+                edit_finish = true;
+                break;
+              }
+            }
+          }
+          needsRedraw = true;
+        }
+          break;
+
+        case EDIT_IDX_RENAME:
+          if (askSketchName(filename)) {
+            needsEntryUpdate = true;
+          }
+          needsRedraw = true;
+          break;
+            
+        case EDIT_IDX_CANCEL:
+          /* Restore icon and filename */
+          memcpy(volume_cacheBuffer.data, icon_original, 512);
+          memcpy(filename, filename_original, 8);
+          volume_cacheDirty = 1;
+          needsEntryUpdate = true;
+
+          /* Don't load anything */
+          runWhenExit = false;
+          edit_finish = true;
+          break;
+          
+        case EDIT_IDX_DONE:
+          edit_finish = true;
+          break;
       }
     }
 
     /* Redraw icons when touched index changes */
-    if (oldTouchedIndex != touchedIndex) {
-      button_dirty[oldTouchedIndex] = 1;
+    if (touchedIndex != newTouchedIndex) {
       button_dirty[touchedIndex] = 1;
-    }
-
-    /* Handle accept button pressed for some time */
-    if (touchedIndex == EDIT_IDX_ACCEPT) {
-      if (oldTouchedIndex != touchedIndex) {
-        /* First press, store time */
-        last_done_pressed = millis();
-      } else if ((millis() - last_done_pressed) > HOLD_ACTIVATE_DELAY) {
-        /* Pressed for a given amount of time, run sketch and done */
-        runWhenExit = true;
-        edit_finish = true;
-      }
-    }
-
-    /* Handle button presses */
-    if (touchedIndex == EDIT_IDX_NONE) {
-      /* Released the touchscreen? */
-      if (!LCD_isTouchedAny() && oldTouchedIndex != EDIT_IDX_NONE) {
-
-        switch (oldTouchedIndex) {
-          case EDIT_IDX_COLOR:
-            {
-              if (draw_color == COLOR_EDIT_ICON) {
-                draw_color = COLOR_EDIT_BG;
-                button_icon[EDIT_IDX_COLOR] = edit_icon_changecolor_0;
-              } else {
-                draw_color = COLOR_EDIT_ICON;
-                button_icon[EDIT_IDX_COLOR] = edit_icon_changecolor_1;
-              }
-            }
-            break;
-
-          case EDIT_IDX_RESET:
-            {
-              /* Resets the icon to the default icon */
-              memcpy(volume_cacheBuffer.data, icon_sketch_default, 512);
-              volume_cacheDirty = 1;
-              needsIconRedraw = true;
-            }
-            break;
-            
-          case EDIT_IDX_DELETE:
-            {
-              /* First ask the user if he is absolutely sure */
-              PHNDisplay8Bit::fill(BLACK_8BIT);
-              boolean cancel_down = false;
-              boolean accept_down = false;
-              const uint16_t text_off = 40;
-              const uint16_t cancel_x = 80;
-              const uint16_t cancel_y = 120;
-              const uint16_t accept_x = (PHNDisplayHW::WIDTH - cancel_x - 48);
-              const uint16_t accept_y = cancel_y;
-              
-              /* Print icons and text message to user for first draw */
-              LCD_write_icon(cancel_x, cancel_y, 48, 48, edit_icon_cancel, "Cancel", RED_8BIT);
-              LCD_write_icon(accept_x, accept_y, 48, 48, edit_icon_accept, "Delete", GREEN_8BIT);
-              PHNDisplay8Bit::writeString(text_off, text_off, 2, "Are you sure you want\n"
-                                                                 "to permanently delete\n"
-                                                                 "this sketch?", BLACK_8BIT, WHITE_8BIT);
-
-              for (;;) {
-                LCD_updateTouch();
-                
-                if (LCD_isTouched(cancel_x, cancel_y, 48, 48) != cancel_down) {
-                  cancel_down = !cancel_down;
-                  LCD_write_icon(cancel_x, cancel_y, 48, 48, edit_icon_cancel, "Cancel", cancel_down ? WHITE_8BIT : RED_8BIT);
-                  if (!cancel_down && !LCD_isTouchedAny()) {
-                    // Just break and continue
-                    needsRedraw = true;
-                    break;
-                  }
-                }
-                if (LCD_isTouched(accept_x, accept_y, 48, 48) != accept_down) {
-                  accept_down = !accept_down;
-                  LCD_write_icon(accept_x, accept_y, 48, 48, edit_icon_accept, "Delete", accept_down ? WHITE_8BIT : GREEN_8BIT);
-                  if (!accept_down && !LCD_isTouchedAny()) {
-                    // Actually perform deletion
-                    /* Delete icon file */
-                    file_curDir = ski_file;
-                    file_delete();
-
-                    /* Delete HEX file */
-                    file_curDir = hex_file;
-                    file_delete();
-
-                    /* If asked to load - don't load! */
-                    runWhenExit = false;
-
-                    /* Finish */
-                    edit_finish = true;
-                    break;
-                  }
-                }
-              }
-              needsRedraw = true;
-            }
-            break;
-            
-          case EDIT_IDX_RENAME:
-            {
-              if (askSketchName(filename)) {
-                needsEntryUpdate = true;
-              }
-              needsRedraw = true;
-            }
-            break;
-            
-          case EDIT_IDX_CANCEL:
-            {
-              /* Restore icon and filename */
-              memcpy(volume_cacheBuffer.data, icon_original, 512);
-              memcpy(filename, filename_original, 8);
-              volume_cacheDirty = 1;
-              needsEntryUpdate = true;
-
-              /* Don't load anything */
-              runWhenExit = false;
-
-              edit_finish = true;
-            }
-            break;
-          
-          case EDIT_IDX_ACCEPT:
-            {
-              edit_finish = true;
-            }
-            break;
-        }
-      }
+      button_dirty[newTouchedIndex] = 1;
+      last_done_pressed = millis();
+      touchedIndex = newTouchedIndex;
     }
 
     /* Write file entry if needed */
@@ -659,7 +650,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
     }
 
     /* Write icon data to SD every 1 second */
-    if (volume_cacheDirty && (((millis() - last_save) >= EDIT_SAVEINTER) || edit_finish)) {
+    if (iconDirty && (((millis() - last_save) >= EDIT_SAVEINTER) || edit_finish)) {
       volume_writeCache();
     }
   }
@@ -687,13 +678,13 @@ boolean askSketchName(char name[8]) {
   // Fill with a white, then black, background
   const uint8_t KEYBOARD_HEIGHT = 167;
   PHNDisplayHW::setCursor(0, 0);
-  PHNDisplay8Bit::writePixelLines(GRAY_8BIT, KEYBOARD_HEIGHT);
-  PHNDisplay8Bit::writePixelLines(BLACK_8BIT, PHNDisplayHW::HEIGHT - KEYBOARD_HEIGHT);
+  PHNDisplay8Bit::writePixelLines(COLOR_NAME_KEY_BG, KEYBOARD_HEIGHT);
+  PHNDisplay8Bit::writePixelLines(COLOR_NAME_BG, PHNDisplayHW::HEIGHT - KEYBOARD_HEIGHT);
 
   // Put a filled square underneath the spacebar
   const uint16_t GREY_SPACE_X = 65;
   const uint16_t GREY_SPACE_H = 31;
-  PHNDisplay8Bit::fillRect(GREY_SPACE_X, KEYBOARD_HEIGHT, PHNDisplayHW::WIDTH - GREY_SPACE_X * 2, GREY_SPACE_H, GRAY_8BIT);
+  PHNDisplay8Bit::fillRect(GREY_SPACE_X, KEYBOARD_HEIGHT, PHNDisplayHW::WIDTH - GREY_SPACE_X * 2, GREY_SPACE_H, COLOR_NAME_KEY_BG);
 
   // Store the new file name as a buffer; only transfer if accepted
   char resultFilename[8];
@@ -803,18 +794,17 @@ boolean askSketchName(char name[8]) {
               }
             } else if (index == KEY_BACKSPACE_IDX) {
               // Backspace button
-              if (index_selChar < 8) {
-                if (index_selChar && resultFilename[index_selChar] == ' ') {
-                  memcpy(resultFilename + index_selChar - 1, resultFilename + index_selChar, 8 - index_selChar);
-                  resultFilename[7] = ' ';
-                } else {
-                  resultFilename[index_selChar] = ' ';
-                  index_selChar++;
-                }
+              if (index_selChar >= 8) {
+                index_selChar = 7;
               }
-              if (index_selChar) {
-                index_selChar--;
+              if (index_selChar && resultFilename[index_selChar] == ' ') {
+                memcpy(resultFilename + index_selChar - 1, resultFilename + index_selChar, 8 - index_selChar);
+                resultFilename[7] = ' ';
+              } else {
+                resultFilename[index_selChar] = ' ';
+                index_selChar++;
               }
+              index_selChar--;
               redrawAll = true;
             } else {
               // Keyboard pressed
@@ -844,21 +834,21 @@ boolean askSketchName(char name[8]) {
         if (index == KEY_CANCEL_IDX) {
           // Draw cancel button
           uint8_t color = pressed ? WHITE_8BIT : RED_8BIT;
-          PHNDisplay8Bit::writeImage_1bit(x, y, w, h, 1, edit_icon_cancel, DIR_RIGHT, BLACK_8BIT, color);
-          PHNDisplay8Bit::writeString(x + 6, y + 50, 1, "Cancel", BLACK_8BIT, color);
+          PHNDisplay8Bit::writeImage_1bit(x, y, w, h, 1, edit_icon_cancel, DIR_RIGHT, COLOR_NAME_BG, color);
+          PHNDisplay8Bit::writeString(x + 6, y + 50, 1, "Cancel", COLOR_NAME_BG, color);
         } else if (index == KEY_ACCEPT_IDX) {
           // Draw accept button
           uint8_t color = pressed ? WHITE_8BIT : GREEN_8BIT;
           const char* title = isNewSketch ? "Add sketch" : "Rename";
-          LCD_write_icon(x, y, w, h, edit_icon_accept, title, color);
+          LCD_write_icon(x, y, w, h, edit_icon_accept, title, COLOR_NAME_BG, color);
         } else {
           // Draw keyboard icons
-          uint8_t color = pressed ? BLUE_8BIT : WHITE_8BIT;
+          uint8_t color = pressed ? COLOR_NAME_KEY_SEL : COLOR_NAME_KEY_FOR;
           PHNDisplay8Bit::fillRect(x, y, w, h, color);
-          PHNDisplay8Bit::drawRect(x, y, w, h, BLACK_8BIT);
-          PHNDisplay8Bit::writeChar(x + 4, y + 3, 3, NAME_MAP[index], color, BLACK_8BIT);
+          PHNDisplay8Bit::drawRect(x, y, w, h, COLOR_NAME_KEY_TXT);
+          PHNDisplay8Bit::writeChar(x + 4, y + 3, 3, NAME_MAP[index], color, COLOR_NAME_KEY_TXT);
           if (index == KEY_BACKSPACE_IDX) {
-            PHNDisplay8Bit::fillRect(x + 10, y + 12, w - 20, 3, BLACK_8BIT);
+            PHNDisplay8Bit::fillRect(x + 10, y + 12, w - 20, 3, COLOR_NAME_KEY_TXT);
           }
         }
       }
@@ -892,13 +882,13 @@ boolean askSketchName(char name[8]) {
       if (dirty) {
         uint8_t color_a, color_b;
         if (index == index_selChar) {
-          color_a = WHITE_8BIT;
-          color_b = WHITE_8BIT;
+          color_a = COLOR_NAME_NAM_NOR;
+          color_b = COLOR_NAME_NAM_NOR;
         } else {
-          color_a = BLUE_8BIT;
-          color_b = BLACK_8BIT;
+          color_a = COLOR_NAME_NAM_SEL;
+          color_b = COLOR_NAME_BG;
         }
-        PHNDisplay8Bit::writeChar(x, y, 4, resultFilename[index], BLACK_8BIT, color_a);
+        PHNDisplay8Bit::writeChar(x, y, 4, resultFilename[index], COLOR_NAME_BG, color_a);
         PHNDisplay8Bit::drawLine(x, y + h, w, DIR_RIGHT, color_b);
       }
     }
@@ -916,7 +906,7 @@ boolean askSketchName(char name[8]) {
       PHNDisplay8Bit::drawRect(popup_x, popup_y, popup_w, popup_h, RED_8BIT);
       PHNDisplay8Bit::writeString(popup_x + txt_xoff, popup_y + 10, 2, popupMessage, WHITE_8BIT, RED_8BIT);
       delay(800);
-      PHNDisplay8Bit::fillRect(popup_x, popup_y, popup_w, popup_h, GRAY_8BIT);
+      PHNDisplay8Bit::fillRect(popup_x, popup_y, popup_w, popup_h, COLOR_NAME_KEY_BG);
       redrawAll = true;
       popupMessage = NULL;
     }
@@ -936,7 +926,7 @@ void updateVolume() {
     }
 
     PHNDisplay8Bit::writeString(30, 30, 2, "Micro-SD card was not\n"
-                                             "detected or is corrupt", BLACK_8BIT, RED_8BIT);
+                                           "detected or is corrupt", BLACK_8BIT, RED_8BIT);
     uint8_t is_touched = 0;
     uint8_t is_dirty = 1;
     for (;;) {
