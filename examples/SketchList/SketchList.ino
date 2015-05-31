@@ -210,7 +210,7 @@ void loop() {
     /* If SKI file, set icon location info */
     if (is_ski) {
       uint32_t icon_cluster = ((uint32_t) p->firstClusterHigh << 16) | p->firstClusterLow;
-      uint32_t icon_block = volume.dataStartBlock + ((icon_cluster - 2) * volume.blocksPerCluster);
+      uint32_t icon_block = volume_firstClusterBlock(icon_cluster);
       if (sketch_addr >= 0) {
         sram.writeBlock(sketch_addr + 8, (char*) &icon_block, sizeof(uint32_t));
       } else {
@@ -288,7 +288,7 @@ void loop() {
         icon_data = icon_sketch_default;
         if (info.icon) {
           volume_readCache(info.icon);
-          icon_data = volume_cacheBuffer_.data;
+          icon_data = volume_cacheBuffer.data;
         }
       }
 
@@ -376,23 +376,23 @@ void editSketch(char filename[9], boolean runWhenExit) {
 
   /* Open or create the .SKI file */
   if (file_open(filename, "SKI", FILE_CREATE)) {
-    ski_file = file_dir_;
+    ski_file = file_curDir;
     file_position = 0;
     if (!file_available) {
       volume_cacheCurrentBlock(1);
-      memcpy(volume_cacheBuffer_.data, icon_sketch_default, 512);
+      memcpy(volume_cacheBuffer.data, icon_sketch_default, 512);
       file_available = 512;
-      volume_cacheDirty_ = 1;
+      volume_cacheDirty = 1;
       file_flush();
     }
     volume_cacheCurrentBlock(0);
-    ski_data_block = volume_cacheBlockNumber_;
+    ski_data_block = volume_cacheBlockNumber;
     ski_file_length = file_available;
   }
 
   /* Open or create the .HEX file, store pointer to file directory */
   if (file_open(filename, "HEX", FILE_CREATE)) {
-    hex_file = file_dir_;
+    hex_file = file_curDir;
     hex_file_length = file_available;
   }
 
@@ -420,7 +420,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
   volume_readCache(ski_data_block);
   uint8_t icon_original[512];
   char filename_original[8];
-  memcpy(icon_original, volume_cacheBuffer_.data, 512);
+  memcpy(icon_original, volume_cacheBuffer.data, 512);
   memcpy(filename_original, filename, 8);
 
   uint8_t draw_color = COLOR_EDIT_ICON;
@@ -448,7 +448,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
     }
     if (needsIconRedraw) {
       needsIconRedraw = false;
-      PHNDisplay8Bit::writeImage_1bit(EDIT_ICON_X, EDIT_ICON_Y, SKETCHES_ICON_W, SKETCHES_ICON_H, EDIT_ICON_SCALE, volume_cacheBuffer_.data, DIR_RIGHT, COLOR_EDIT_BG, COLOR_EDIT_ICON);
+      PHNDisplay8Bit::writeImage_1bit(EDIT_ICON_X, EDIT_ICON_Y, SKETCHES_ICON_W, SKETCHES_ICON_H, EDIT_ICON_SCALE, volume_cacheBuffer.data, DIR_RIGHT, COLOR_EDIT_BG, COLOR_EDIT_ICON);
     }
 
     /* If touching paint area, update buffer and screen */
@@ -459,15 +459,15 @@ void editSketch(char filename[9], boolean runWhenExit) {
       uint8_t  data_msk = (1 << (p_x & 0x7));
 
       if (draw_color == COLOR_EDIT_ICON) {
-        *(volume_cacheBuffer_.data + data_idx) |= data_msk;
+        *(volume_cacheBuffer.data + data_idx) |= data_msk;
       } else {
-        *(volume_cacheBuffer_.data + data_idx) &= ~data_msk;
+        *(volume_cacheBuffer.data + data_idx) &= ~data_msk;
       }
 
       PHNDisplay8Bit::fillRect(EDIT_ICON_X + (p_x * EDIT_ICON_SCALE), EDIT_ICON_Y + (p_y * EDIT_ICON_SCALE), EDIT_ICON_SCALE, EDIT_ICON_SCALE, draw_color);
 
       // Mark cache dirty, notify it was changed
-      volume_cacheDirty_ = 1;
+      volume_cacheDirty = 1;
     }
 
     /* If button is touched, update touched index (states) */
@@ -539,8 +539,8 @@ void editSketch(char filename[9], boolean runWhenExit) {
           case EDIT_IDX_RESET:
             {
               /* Resets the icon to the default icon */
-              memcpy(volume_cacheBuffer_.data, icon_sketch_default, 512);
-              volume_cacheDirty_ = 1;
+              memcpy(volume_cacheBuffer.data, icon_sketch_default, 512);
+              volume_cacheDirty = 1;
               needsIconRedraw = true;
             }
             break;
@@ -582,11 +582,11 @@ void editSketch(char filename[9], boolean runWhenExit) {
                   if (!accept_down && !LCD_isTouchedAny()) {
                     // Actually perform deletion
                     /* Delete icon file */
-                    file_dir_ = ski_file;
+                    file_curDir = ski_file;
                     file_delete();
 
                     /* Delete HEX file */
-                    file_dir_ = hex_file;
+                    file_curDir = hex_file;
                     file_delete();
 
                     /* If asked to load - don't load! */
@@ -614,9 +614,9 @@ void editSketch(char filename[9], boolean runWhenExit) {
           case EDIT_IDX_CANCEL:
             {
               /* Restore icon and filename */
-              memcpy(volume_cacheBuffer_.data, icon_original, 512);
+              memcpy(volume_cacheBuffer.data, icon_original, 512);
               memcpy(filename, filename_original, 8);
-              volume_cacheDirty_ = 1;
+              volume_cacheDirty = 1;
               needsEntryUpdate = true;
 
               /* Don't load anything */
@@ -640,18 +640,18 @@ void editSketch(char filename[9], boolean runWhenExit) {
       needsEntryUpdate = false;
 
       /* Save the SKI file */
-      file_dir_ = ski_file;
+      file_curDir = ski_file;
       file_available = ski_file_length;
       file_save(filename);
 
       /* Save the HEX file */
-      file_dir_ = hex_file;
+      file_curDir = hex_file;
       file_available = hex_file_length;
       file_save(filename);
     }
 
     /* Reset save counter when data changes */
-    if (!volume_cacheDirty_) {
+    if (!volume_cacheDirty) {
        iconDirty = false;
     } else if (!iconDirty) {
        iconDirty = true;
@@ -659,7 +659,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
     }
 
     /* Write icon data to SD every 1 second */
-    if (volume_cacheDirty_ && (((millis() - last_save) >= EDIT_SAVEINTER) || edit_finish)) {
+    if (volume_cacheDirty && (((millis() - last_save) >= EDIT_SAVEINTER) || edit_finish)) {
       volume_writeCache();
     }
   }

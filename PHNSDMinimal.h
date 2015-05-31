@@ -96,20 +96,20 @@ typedef struct {
 
 /* ============================================================================== */
 
-extern uint8_t card_notSDHCBlockShift;         /* Card is SD1 or SD2, and NOT SDHC. In that case this value is 9, 0 otherwise */
+extern uint8_t card_notSDHCBlockShift;      /* Card is SD1 or SD2, and NOT SDHC. In that case this value is 9, 0 otherwise */
 
-extern union SDMINFAT::cache_t volume_cacheBuffer_;  /* 512 byte cache for device blocks */
-extern uint32_t volume_cacheBlockNumber_;   /* Logical number of block in the cache */
-extern uint8_t  volume_cacheDirty_;        /* readCache() will write current block first if true */
-extern uint8_t  volume_cacheFATMirror_;    /* current block in cache is a mirrored FAT block */
+extern union SDMINFAT::cache_t volume_cacheBuffer;  /* 512 byte cache for device blocks */
+extern uint32_t volume_cacheBlockNumber;   /* Logical number of block in the cache */
+extern uint8_t  volume_cacheDirty;         /* readCache() will write current block first if true */
+extern uint8_t  volume_cacheFATMirror;     /* current block in cache is a mirrored FAT block */
 
 extern CardVolume volume;                  /* stores all current volume information */
 
-extern uint8_t   file_isroot16dir;             /* file is a FAT16 root directory */
-extern uint32_t  file_curCluster_;             /* cluster for current file position */
-extern uint32_t  file_position;                /* current file position in bytes from beginning */
-extern FilePtr   file_dir_;                    /* directory currently selected */
-extern uint32_t  file_available;               /* available size when reading, total file size when writing */
+extern uint8_t   file_isroot16dir;         /* file is a FAT16 root directory */
+extern uint32_t  file_curCluster;          /* cluster for current file position */
+extern uint32_t  file_position;            /* current file position in bytes from beginning */
+extern FilePtr   file_curDir;              /* directory currently selected */
+extern uint32_t  file_available;           /* available size when reading, total file size when writing */
 
 /* ============================================================================== */
 
@@ -124,6 +124,10 @@ void card_setEnabled(uint8_t enabled);
 void volume_writeCache(void);
 /// Writes out the current cached block to the block specified
 void volume_writeCache(uint32_t block);
+/// Gets the first block of a cluster
+inline uint32_t volume_firstClusterBlock(uint32_t cluster) {
+  return volume.dataStartBlock + ((cluster - 2) * volume.blocksPerCluster);
+}
 /// Caches the current block to be read/written
 uint8_t* volume_cacheCurrentBlock(uint8_t writeCluster);
 /// Reads in the cache at the block specified
@@ -160,8 +164,6 @@ char file_read_byte(void);
 /// Writes a single byte
 void file_write_byte(char b);
 
-/// Lists sketches found in ROOT (temporary, will be moved)
-uint8_t file_list_sketches(uint16_t offset, uint8_t count, char filenames[][9]);
 /// Deletes the currently opened file
 void file_delete(void);
 /// Saves the currently opened file under a new name, extension is preserved
