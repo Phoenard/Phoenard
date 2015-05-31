@@ -25,6 +25,13 @@
 #define SKETCHES_FULLH      (SKETCHES_CNT_Y * SKETCHES_STP_Y)
 #define SKETCHES_TXT_XINCR  7
 
+/* Menu icon settings */
+#define MENU_STP_Y   SKETCHES_STP_Y
+#define MENU_ICON_W  32
+#define MENU_ICON_H  64
+#define MENU_OFF_X   (PHNDisplayHW::WIDTH-MENU_ICON_W)
+#define MENU_OFF_Y   5
+
 /* Edit dialog settings */
 #define EDIT_ICON_SCALE     3
 #define EDIT_ICON_W         (EDIT_ICON_SCALE * SKETCHES_ICON_W)
@@ -57,26 +64,22 @@
 #define IDX_DOWN        (IDX_MENU_START+2)
 #define IDX_NONE        (IDX_MENU_START+3)
 
-/* Menu icon settings */
-#define MENU_STP_Y   SKETCHES_STP_Y
-#define MENU_ICON_W  32
-#define MENU_ICON_H  64
-#define MENU_OFF_X   (PHNDisplayHW::WIDTH-MENU_ICON_W)
-#define MENU_OFF_Y   5
-
 /* Background color for the menus */
 #define COLOR_BG      BLACK_8BIT
 
 /* The colors used when drawing sketch icons */
-#define COLOR_C1      COLOR_BG
-#define COLOR_C2      WHITE_8BIT
-#define COLOR_C1_SEL  WHITE_8BIT
-#define COLOR_C2_SEL  BLACK_8BIT
+#define COLOR_SKET_NOR  YELLOW_8BIT
+#define COLOR_SKET_SEL  WHITE_8BIT
 
 /* The colors used when drawing the right navigation bar */
-#define COLOR_MENU_SEL WHITE_8BIT
-#define COLOR_MENU_ADD GREEN_8BIT
-#define COLOR_MENU_NAV BLUE_8BIT
+#define COLOR_MENU_SEL  WHITE_8BIT
+#define COLOR_MENU_ADD  GREEN_8BIT
+#define COLOR_MENU_NAV  BLUE_8BIT
+
+/* The colors used when drawing the edit menu */
+#define COLOR_EDIT_BG   RED_8BIT
+#define COLOR_EDIT_ICON WHITE_8BIT
+#define COLOR_EDIT_SEL  WHITE_8BIT
 
 /* LCD touch input variables */
 uint16_t touch_x, touch_y;
@@ -93,7 +96,7 @@ typedef struct {
  * The remaining ~2730 entries are stored on the External SRAM chip
  */
 SketchInfo sketches_buff[100];
-int sketches_cnt = 0;
+int sketches_buff_cnt = 0;
 const int16_t sketches_sram_start = -sizeof(sketches_buff);
 boolean sketches_reachedEnd = false;
 
@@ -121,10 +124,10 @@ void loop() {
     redrawIcons = true;
     touchedIndex = IDX_NONE;
     LCD_clearTouch();
-    sketches_cnt = 0;
+    sketches_buff_cnt = 0;
     sketches_reachedEnd = false;
     updateVolume();
-    PHNDisplay8Bit::fill(BLACK_8BIT);
+    PHNDisplay8Bit::fill(COLOR_BG);
     digitalWrite(13, HIGH);
     reloadAll = false;
   }
@@ -132,7 +135,7 @@ void loop() {
   /* Clear the sketch icon area and redraw all icons */
   if (redrawIcons) {
     redrawIcons = false;
-    PHNDisplay8Bit::fillRect(SKETCHES_OFF_X, SKETCHES_OFF_Y, SKETCHES_FULLW, SKETCHES_FULLH, BLACK_8BIT);
+    PHNDisplay8Bit::fillRect(SKETCHES_OFF_X, SKETCHES_OFF_Y, SKETCHES_FULLW, SKETCHES_FULLH, COLOR_BG);
     memset(sketch_icon_dirty, 1, sizeof(sketch_icon_dirty));
   }
 
@@ -146,9 +149,18 @@ void loop() {
     volume_init(0);
   }
 
+  /*
+   * General sketch list update loop starts here
+   * All variables used in it are declared below.
+   */
+  unsigned int icon_px;  /* X-coordinate of icons drawn */
+  unsigned int icon_py;  /* Y-coordinate of icons drawn */
+  uint8_t icon_idx;      /* Icon index in main sketch menu */
+  uint16_t sketch_index; /* Index in the sketch buffer */
+  int16_t sketch_addr;   /* SRAM address in the sketch buffer */
+
   /* Routinely buffer in sketch information from the Micro-SD in the background */
-  uint8_t i;
-  for (i = 0; i < 16 && !sketches_reachedEnd; i++) {
+  for (uint8_t i = 0; i < 16 && !sketches_reachedEnd; i++) {
     /* Read next directory entry */
     SDMINFAT::dir_t* p = (SDMINFAT::dir_t*) file_read(32);
 
@@ -167,10 +179,10 @@ void loop() {
     if (!is_ski && memcmp("HEX", p->name+8, 3)) continue;
 
     /* Locate this sketch name in the memory buffer */
-    uint16_t sketch_index = 0;
-    int16_t sketch_addr = sketches_sram_start;
+    sketch_index = 0;
+    sketch_addr = sketches_sram_start;
     boolean create_new = true;
-    while (sketch_index < sketches_cnt) {
+    while (sketch_index < sketches_buff_cnt) {
       if (sketch_addr >= 0) {
         /* Reading SRAM space - turn the SD-card off */
         card_setEnabled(false);
@@ -187,7 +199,7 @@ void loop() {
 
     /* Create new entry if not found */
     if (create_new) {
-      sketches_cnt++;
+      sketches_buff_cnt++;
       SketchInfo info;
       memcpy(info.name, p->name, 8);
       info.icon = 0;
@@ -224,93 +236,96 @@ void loop() {
 
   /* Draw and update the menu navigation icons */
   uint8_t* menu_icons[] = {icon_up, icon_add, icon_down};
-  for (i = IDX_MENU_START; i < IDX_NONE; i++) {
-    unsigned int px = MENU_OFF_X;
-    unsigned int py = MENU_OFF_Y + (MENU_STP_Y*(i-IDX_MENU_START));
-
-    if (LCD_isTouched(px, py, MENU_ICON_W + LCD_RIGHT_BORDER, MENU_ICON_H)) {
-      touchedIndex = i;
+  icon_px = MENU_OFF_X;
+  icon_py = MENU_OFF_Y;
+  for (icon_idx = IDX_MENU_START; icon_idx < IDX_NONE; icon_idx++) {
+    
+    if (LCD_isTouched(icon_px, icon_py, MENU_ICON_W + LCD_RIGHT_BORDER, MENU_ICON_H)) {
+      touchedIndex = icon_idx;
     }
 
-    if (sketch_icon_dirty[i]) {
-      sketch_icon_dirty[i] = 0;
+    if (sketch_icon_dirty[icon_idx]) {
+      sketch_icon_dirty[icon_idx] = 0;
 
       /* Pressed? */
       uint8_t color;
       color = COLOR_BG;
-      if (touchedIndex == i) {
+      if (touchedIndex == icon_idx) {
         color = COLOR_MENU_SEL;
-      } else if (i == IDX_ADD) {
+      } else if (icon_idx == IDX_ADD) {
         color = COLOR_MENU_ADD;
       } else {
         color = COLOR_MENU_NAV;
       }
 
       /* Draw the sketch icon */
-      uint8_t* icon_data = menu_icons[i-IDX_MENU_START];
-      PHNDisplay8Bit::writeImage_1bit(px, py, MENU_ICON_W, MENU_ICON_H, 1, icon_data, DIR_RIGHT, color, COLOR_BG);
+      uint8_t* icon_data = menu_icons[icon_idx-IDX_MENU_START];
+      PHNDisplay8Bit::writeImage_1bit(icon_px, icon_py, MENU_ICON_W, MENU_ICON_H, 1, icon_data, DIR_RIGHT, color, COLOR_BG);
+      
+      /* Update icon position - only vertical position is changed */
+      icon_py += MENU_STP_Y;
     }
   }
 
-  /* Draw and update touch input for sketch icons */
-  i = -1; // Makes use of overflow logic
-  for (uint16_t y = 0; y < SKETCHES_CNT_Y; y++) {
-    for (uint16_t x = 0; x < SKETCHES_CNT_X; x++) {
-      i++;
+  /* Draw and update touch input for sketch icons; breaks after first icon redraw */
+  sketch_index = sketch_offset;
+  icon_px = SKETCHES_OFF_X;
+  icon_py = SKETCHES_OFF_Y;
+  uint16_t sketch_index_end = min(sketch_offset + SKETCHES_CNT, sketches_buff_cnt);
+  for (uint16_t sketch_index = sketch_offset; sketch_index < sketch_index_end; sketch_index++) {
+    icon_idx = (sketch_index - sketch_offset);
 
-      /* Get the index where sketch information is stored at */
-      uint16_t sketch_index = (i+sketch_offset);
-      if (sketch_index >= sketches_cnt) {
-        continue;
+    /* Handle touch input */
+    if (LCD_isTouched(icon_px, icon_py, SKETCHES_ICON_W, SKETCHES_ICON_H)) {
+      touchedIndex = icon_idx;
+    }
+
+    /* Redraw the sketch if needed */
+    if (sketch_icon_dirty[icon_idx]) {
+      sketch_icon_dirty[icon_idx] = 0;
+
+      /* Pressed? */
+      uint8_t color;
+      if (touchedIndex == icon_idx) {
+        color = COLOR_SKET_SEL;
+      } else {
+        color = COLOR_SKET_NOR;
       }
 
-      unsigned int px = SKETCHES_OFF_X + x * SKETCHES_STP_X;
-      unsigned int py = SKETCHES_OFF_Y + y * SKETCHES_STP_Y;
-
-      /* Handle touch input */
-      if (LCD_isTouched(px, py, SKETCHES_ICON_W, SKETCHES_ICON_H)) {
-        touchedIndex = i;
+      /* Read in sketch information */
+      SketchInfo info;
+      int16_t sketch_addr = sketches_sram_start + sketch_index * sizeof(SketchInfo);
+      if (sketch_addr >= 0) {
+        card_setEnabled(false);
+        sram.readBlock(sketch_addr, (char*) &info, sizeof(SketchInfo));
+        card_setEnabled(true);
+      } else {
+        info = sketches_buff[sketch_index];
       }
 
-      /* Redraw the sketch if needed */
-      if (sketch_icon_dirty[i]) {
-        sketch_icon_dirty[i] = 0;
+      /* Refresh the sketch name */
+      memcpy(sketch_icon_text[icon_idx], info.name, 8);
+      sketch_icon_text[icon_idx][8] = 0;
 
-        /* Pressed? */
-        uint8_t color1, color2;
-        if (touchedIndex == i) {
-          color1 = COLOR_C1_SEL;
-          color2 = COLOR_C2_SEL;
-        } else {
-          color1 = COLOR_C1;
-          color2 = COLOR_C2;
-        }
-
-        /* Read in sketch information */
-        SketchInfo info;
-        int16_t sketch_addr = sketches_sram_start + sketch_index * sizeof(SketchInfo);
-        if (sketch_addr >= 0) {
-          card_setEnabled(false);
-          sram.readBlock(sketch_addr, (char*) &info, sizeof(SketchInfo));
-          card_setEnabled(true);
-        } else {
-          info = sketches_buff[sketch_index];
-        }
-
-        /* Refresh the sketch name */
-        memcpy(sketch_icon_text[i], info.name, 8);
-        sketch_icon_text[i][8] = 0;
-
-        /* Load icon data into memory if available */
-        uint8_t* icon_data = icon_sketch_default;
-        if (info.icon) {
-          volume_readCache(info.icon);
-          icon_data = volume_cacheBuffer_.data;
-        }
-
-        /* Draw the sketch icon */
-        LCD_write_icon(px, py, SKETCHES_ICON_W, SKETCHES_ICON_H, icon_data, sketch_icon_text[i], color1, color2, COLOR_C2);
+      /* Load icon data into memory if available */
+      uint8_t* icon_data = icon_sketch_default;
+      if (info.icon) {
+        volume_readCache(info.icon);
+        icon_data = volume_cacheBuffer_.data;
       }
+
+      /* Draw the sketch icon */
+      LCD_write_icon(icon_px, icon_py, SKETCHES_ICON_W, SKETCHES_ICON_H, icon_data, sketch_icon_text[icon_idx], COLOR_BG, color);
+        
+      /* Skip further updates for this round to ensure a fluent UI */
+      break;
+    }
+
+    /* Update drawn icon position */
+    icon_px += SKETCHES_STP_X;
+    if (icon_px >= (SKETCHES_OFF_X + SKETCHES_CNT_X * SKETCHES_STP_X)) {
+      icon_px = SKETCHES_OFF_X;
+      icon_py += SKETCHES_STP_Y;
     }
   }
 
@@ -338,7 +353,7 @@ void loop() {
       }
     } else if (oldTouchedIndex == IDX_DOWN) {
       /* Move sketch list one page down, ignore if impossible */
-      if ((sketch_offset + SKETCHES_PGINCR) < sketches_cnt) {
+      if ((sketch_offset + SKETCHES_PGINCR) < sketches_buff_cnt) {
         sketch_offset += SKETCHES_PGINCR;
         redrawIcons = true;
       }
@@ -421,7 +436,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
   memcpy(icon_original, volume_cacheBuffer_.data, 512);
   memcpy(filename_original, filename, 8);
 
-  uint8_t draw_color = COLOR_C2;
+  uint8_t draw_color = COLOR_EDIT_ICON;
   boolean edit_finish = false;
   long last_save = millis(); // Monitors the last time the icon data was saved
   long last_done_pressed = 0; // Monitors how long the 'done' button is pressed
@@ -439,14 +454,14 @@ void editSketch(char filename[9], boolean runWhenExit) {
     /* Redraw static content when changed */
     if (needsRedraw) {
       needsRedraw = false;
-      PHNDisplay8Bit::fill(BLACK_8BIT);
-      PHNDisplay8Bit::writeString(EDIT_NAME_X, EDIT_NAME_Y + EDIT_NAME_YOFF, EDIT_NAME_SCALE, filename, BLACK_8BIT, COLOR_C2);
+      PHNDisplay8Bit::fill(COLOR_EDIT_BG);
+      PHNDisplay8Bit::writeString(EDIT_NAME_X, EDIT_NAME_Y + EDIT_NAME_YOFF, EDIT_NAME_SCALE, filename, COLOR_EDIT_BG, COLOR_EDIT_ICON);
       memset(button_dirty, 1, sizeof(button_dirty));
       needsIconRedraw = true;
     }
     if (needsIconRedraw) {
       needsIconRedraw = false;
-      PHNDisplay8Bit::writeImage_1bit(EDIT_ICON_X, EDIT_ICON_Y, SKETCHES_ICON_W, SKETCHES_ICON_H, EDIT_ICON_SCALE, volume_cacheBuffer_.data, DIR_RIGHT, COLOR_C1, COLOR_C2);
+      PHNDisplay8Bit::writeImage_1bit(EDIT_ICON_X, EDIT_ICON_Y, SKETCHES_ICON_W, SKETCHES_ICON_H, EDIT_ICON_SCALE, volume_cacheBuffer_.data, DIR_RIGHT, COLOR_EDIT_BG, COLOR_EDIT_ICON);
     }
 
     /* If touching paint area, update buffer and screen */
@@ -456,7 +471,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
       uint16_t data_idx = (p_y * (SKETCHES_ICON_W / 8)) + (p_x / 8);
       uint8_t  data_msk = (1 << (p_x & 0x7));
 
-      if (draw_color == COLOR_C2) {
+      if (draw_color == COLOR_EDIT_ICON) {
         *(volume_cacheBuffer_.data + data_idx) |= data_msk;
       } else {
         *(volume_cacheBuffer_.data + data_idx) &= ~data_msk;
@@ -487,13 +502,13 @@ void editSketch(char filename[9], boolean runWhenExit) {
           /* Pressed? */
           uint8_t color;
           if (touchedIndex == i) {
-            color = WHITE_8BIT;
+            color = COLOR_EDIT_SEL;
           } else {
             color = button_color[i];
           }
 
           /* Draw the sketch icon */
-          LCD_write_icon(px, py, 48, 48, button_icon[i], button_title[i], color);
+          LCD_write_icon(px, py, 48, 48, button_icon[i], button_title[i], COLOR_EDIT_BG, color);
         }
       }
     }
@@ -524,11 +539,11 @@ void editSketch(char filename[9], boolean runWhenExit) {
         switch (oldTouchedIndex) {
           case EDIT_IDX_COLOR:
             {
-              if (draw_color == COLOR_C2) {
-                draw_color = COLOR_C1;
+              if (draw_color == COLOR_EDIT_ICON) {
+                draw_color = COLOR_EDIT_BG;
                 button_icon[EDIT_IDX_COLOR] = edit_icon_changecolor_0;
               } else {
-                draw_color = COLOR_C2;
+                draw_color = COLOR_EDIT_ICON;
                 button_icon[EDIT_IDX_COLOR] = edit_icon_changecolor_1;
               }
             }
@@ -988,16 +1003,16 @@ void loadSketchReset(char* filename) {
  * colorC specifies the foreground color of the text
  * A black background is assumed.
  */
-void LCD_write_icon(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t* icon, const char* title, uint8_t colorA, uint8_t colorB, uint8_t colorC) {
-  PHNDisplay8Bit::writeImage_1bit(x, y, w, h, 1, icon, DIR_RIGHT, colorA, colorB);
-  PHNDisplay8Bit::writeString(x + (w - strlen(title) * 6) / 2, y + h + 2, 1, title, BLACK_8BIT, colorC);
+void LCD_write_icon(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t* icon, const char* title, uint8_t color0, uint8_t color1) {
+  PHNDisplay8Bit::writeImage_1bit(x, y, w, h, 1, icon, DIR_RIGHT, color0, color1);
+  PHNDisplay8Bit::writeString(x + (w - strlen(title) * 6) / 2, y + h + 2, 1, title, color0, color1);
 }
 
 /*
  * Overload to make the icon drawing a little simpler to call, with the same color used for title and icon
  */
-void LCD_write_icon(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t* icon, const char* title, uint8_t color) {
-  LCD_write_icon(x, y, w, h, icon, title, BLACK_8BIT, color, color);
+void LCD_write_icon(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint8_t* icon, const char* title, uint8_t color0) {
+  LCD_write_icon(x, y, w, h, icon, title, BLACK_8BIT, color0);
 }
 
 void LCD_updateTouch(void) {
