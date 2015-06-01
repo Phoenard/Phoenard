@@ -28,7 +28,7 @@ THE SOFTWARE.
 uint8_t card_notSDHCBlockShift;         /* Card is SD1 or SD2, and NOT SDHC. In that case this value is 9, 0 otherwise */
 
 union SDMINFAT::cache_t volume_cacheBuffer;      /* 512 byte cache for device blocks */
-uint32_t volume_cacheBlockNumber = 0XFFFFFFFF;   /* Logical number of block in the cache */
+uint32_t volume_cacheBlockNumber;       /* Logical number of block in the cache */
 uint8_t  volume_cacheDirty = 0;         /* readCache() will write current block first if true */
 uint8_t  volume_cacheFATMirror = 0;     /* current block in cache is a mirrored FAT block */
 CardVolume volume;                      /* stores all current volume information */
@@ -450,6 +450,7 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
 
       /* if part == 0 assume super floppy with FAT boot sector in block zero
        * if part > 0 assume mbr volume with partition table */
+      volume_cacheBlockNumber = 0XFFFFFFFF;
       volume_readCache(0);
       if (part) {
         SDMINFAT::part_t* p = &volume_cacheBuffer.mbr.part[part-1];
