@@ -396,7 +396,7 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
     while (card_command(SDMINFAT::CMD0, 0, 0X95) != SDMINFAT::R1_IDLE_STATE) {
 
       /* check for timeout */
-      if (timeout_cycle_ctr++ & 128) return 0;  
+      if (timeout_cycle_ctr++ & 32) return 0;  
     }
 
     /* check SD version */
