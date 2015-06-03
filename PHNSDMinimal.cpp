@@ -37,7 +37,7 @@ uint8_t   file_isroot16dir;             /* file is a FAT16 root directory */
 uint32_t  file_curCluster;              /* cluster for current file position */
 uint32_t  file_position;                /* current file position in bytes from beginning */
 FilePtr   file_curDir;                  /* directory currently selected */
-uint32_t  file_available;               /* available size when reading, total file size when writing */
+uint32_t  file_size;                    /* total size of the currently opened file */
 /* ============================================================================== */
 
 /* Macro to send a byte to SPI */
@@ -320,7 +320,7 @@ void file_save(char filename[8]) {
   SDMINFAT::dir_t* p = file_readCacheDir();
 
   /* update file size */
-  p->fileSize = file_available;
+  p->fileSize = file_size;
 
   /* update first cluster fields */
   memcpy(p->name, filename, 8);
@@ -351,7 +351,7 @@ void file_flush(void) {
   SDMINFAT::dir_t* p = file_readCacheDir();
 
   /* update file size */
-  p->fileSize = file_available;
+  p->fileSize = file_size;
 
   /* update first cluster fields */
   volume_writeCache();
@@ -598,12 +598,12 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
 
   /* Set up file fields to point to this file */
   file_curCluster = p->firstCluster();
-  file_available = p->fileSize;
+  file_size = p->fileSize;
   file_isroot16dir = 0;
   file_position = 0;
 
   /* Writing to a non-empty file requires the file to be wiped first */
-  if (file_available && (mode & FILE_WIPE)) {
+  if (file_size && (mode & FILE_WIPE)) {
     uint32_t next;
     uint32_t firstClst = file_curCluster;
     while (volume_fatGet(firstClst, &next)) {
@@ -612,7 +612,7 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
     }
 
     file_curCluster = 0;
-    file_available = 0;
+    file_size = 0;
 
     /* Update file entry to show as empty to prevent corrupted state */
     p = file_readCacheDir();
@@ -717,7 +717,6 @@ char* file_read(uint16_t nbyteIncrement) {
 
   /* Increment position read */
   file_position += nbyteIncrement;
-  file_available -= nbyteIncrement;
   return read;
 }
 
@@ -727,9 +726,20 @@ void file_write(const char* data, uint16_t nBytes) {
 
   /* Increment position read */
   file_position += nBytes;
-  if (file_position > file_available) {
-    file_available = file_position;
-  }
+  if (file_position > file_size) file_size = file_position;
+}
+
+/* 
+ * Writes a single byte to the file.
+ */
+void file_write_byte(char b) {
+  /* Cache the current block and set the byte in that buffer */
+  volume_cacheCurrentBlock(1)[0] = b;
+  volume_cacheDirty = 1;
+
+  /* Increment the bytes written */
+  file_position++;
+  if (file_position > file_size) file_size = file_position;
 }
 
 /* 
@@ -740,24 +750,28 @@ char file_read_byte(void) {
   return *file_read(1);
 }
 
-/* Writes a single byte to the file. Taken over from the original buffer writing,
- * optimized to write single bytes at a time only */
-void file_write_byte(char b) {
+/* 
+ * Writes a single byte to the file. Taken over from the original buffer writing,
+ * optimized to write single bytes at a time only
+ * Note that this function is for appending bytes only.
+ * It is assumed that the file position == file size.
+ */
+void file_append_byte(char b) {
   /* Cache the current block and set the byte in that buffer */
   volume_cacheCurrentBlock(1)[0] = b;
   volume_cacheDirty = 1;
 
   /* Increment the bytes written */
-  file_position = ++file_available;
+  file_position = ++file_size;
 }
 
 /* Reads a single line of HEX data from a HEX file */
 uint8_t file_read_hex_line(uint8_t* buff) {
   uint8_t length = 0;
   uint8_t found_data_start = 0;
-  while (file_available) {
+  while (file_position < file_size) {
     /* Read the next byte, handle block incrementing */
-    char c = file_read_byte();
+    char c = *file_read(1);
     if (found_data_start) {
       /* Read the data until a char before the 0-range is read */
       if (c < '0') break;
@@ -785,7 +799,7 @@ uint8_t file_read_hex_line(uint8_t* buff) {
  * Make sure to leave 4 bytes available for the address, length and record type fields
  * A maximum of 123 bytes of data can be written per line
  */
-void file_write_hex_line(uint8_t* buff, uint8_t len, uint32_t address, unsigned char recordType) {
+void file_append_hex_line(uint8_t* buff, uint8_t len, uint32_t address, unsigned char recordType) {
   /* Append data at the first 4 bytes */
   buff[0] = len;
   buff[1] = (unsigned char) (address >> 8);
@@ -795,7 +809,7 @@ void file_write_hex_line(uint8_t* buff, uint8_t len, uint32_t address, unsigned 
   len <<= 1;
 
   /* Start actual writing */
-  file_write_byte(':');
+  file_append_byte(':');
   unsigned int crc = 0;
   do {
     uint8_t data;
@@ -821,10 +835,10 @@ void file_write_hex_line(uint8_t* buff, uint8_t len, uint32_t address, unsigned 
         c += 'A' - '0' - 10;
       }
       c += '0';
-      file_write_byte(c);
+      file_append_byte(c);
     } while (--len & 0x1);
   } while (len != 0xFE);
   
-  file_write_byte('\r');
-  file_write_byte('\n');
+  file_append_byte('\r');
+  file_append_byte('\n');
 }

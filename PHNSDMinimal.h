@@ -109,7 +109,7 @@ extern uint8_t   file_isroot16dir;         /* file is a FAT16 root directory */
 extern uint32_t  file_curCluster;          /* cluster for current file position */
 extern uint32_t  file_position;            /* current file position in bytes from beginning */
 extern FilePtr   file_curDir;              /* directory currently selected */
-extern uint32_t  file_available;           /* available size when reading, total file size when writing */
+extern uint32_t  file_size;                /* total size of the currently opened file */
 
 /* ============================================================================== */
 
@@ -154,7 +154,7 @@ SDMINFAT::dir_t* file_readCacheDir(void);
 /// Reads a single full HEX line (intel HEX format)
 uint8_t file_read_hex_line(uint8_t* buff);
 /// Writes a single full HEX line (intel HEX format)
-void file_write_hex_line(uint8_t* buff, uint8_t len, uint32_t address, unsigned char recordType);
+void file_append_hex_line(uint8_t* buff, uint8_t len, uint32_t address, unsigned char recordType);
 /// Reads a next block of data, size being fixed increments of 1/2/4/8/16/32/64/128/256/512
 char* file_read(uint16_t nByteIncrement);
 /// Writes a new block of data, size being fixed increments of 1/2/4/8/16/32/64/128/256/512
@@ -163,6 +163,8 @@ void file_write(const char* data, uint16_t nBytes);
 char file_read_byte(void);
 /// Writes a single byte
 void file_write_byte(char b);
+/// Writes a single byte at the end of the file
+void file_append_byte(char b);
 
 /// Deletes the currently opened file
 void file_delete(void);

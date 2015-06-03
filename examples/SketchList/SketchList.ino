@@ -62,7 +62,7 @@
 #define EDIT_IDX_CANCEL     (EDIT_IDX_START+2)
 #define EDIT_IDX_DELETE     (EDIT_IDX_START+3)
 #define EDIT_IDX_RENAME     (EDIT_IDX_START+4)
-#define EDIT_IDX_DONE     (EDIT_IDX_START+5)
+#define EDIT_IDX_DONE       (EDIT_IDX_START+5)
 #define EDIT_IDX_NONE       (EDIT_IDX_START+6)
 
 /* The colors used when drawing the main sketch menu */
@@ -393,22 +393,22 @@ void editSketch(char filename[9], boolean runWhenExit) {
   if (file_open(filename, "SKI", FILE_CREATE)) {
     ski_file = file_curDir;
     file_position = 0;
-    if (!file_available) {
+    if (!file_size) {
       volume_cacheCurrentBlock(1);
       memcpy(volume_cacheBuffer.data, icon_sketch_default, 512);
-      file_available = 512;
+      file_size = 512;
       volume_cacheDirty = 1;
       file_flush();
     }
     volume_cacheCurrentBlock(0);
     ski_data_block = volume_cacheBlockNumber;
-    ski_file_length = file_available;
+    ski_file_length = file_size;
   }
 
   /* Open or create the .HEX file, store pointer to file directory */
   if (file_open(filename, "HEX", FILE_CREATE)) {
     hex_file = file_curDir;
-    hex_file_length = file_available;
+    hex_file_length = file_size;
   }
 
   /* Wait for touch to be released */
@@ -632,12 +632,12 @@ void editSketch(char filename[9], boolean runWhenExit) {
 
       /* Save the SKI file */
       file_curDir = ski_file;
-      file_available = ski_file_length;
+      file_size = ski_file_length;
       file_save(filename);
 
       /* Save the HEX file */
       file_curDir = hex_file;
-      file_available = hex_file_length;
+      file_size = hex_file_length;
       file_save(filename);
     }
 
