@@ -331,12 +331,8 @@ void file_save(char filename[8]) {
 /* Note: MUST be performed right after opening a file, do not write/read! */
 void file_delete(void) {
   /* Delete contents of file */
-  uint32_t next;
-  uint32_t firstClst = file_curCluster;
-  while (volume_fatGet(firstClst, &next)) {
-    volume_fatPut(firstClst, 0);
-    firstClst = next;
-  }
+  file_truncate();
+  
   /* Set first char of filename to mark deletion, then save */
   char filename[8];
   filename[0] = SDMINFAT::DIR_NAME_DELETED;
@@ -604,24 +600,28 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
 
   /* Writing to a non-empty file requires the file to be wiped first */
   if (file_size && (mode & FILE_WIPE)) {
-    uint32_t next;
-    uint32_t firstClst = file_curCluster;
-    while (volume_fatGet(firstClst, &next)) {
-      volume_fatPut(firstClst, 0);
-      firstClst = next;
-    }
-
-    file_curCluster = 0;
-    file_size = 0;
-
-    /* Update file entry to show as empty to prevent corrupted state */
-    p = file_readCacheDir();
-    p->fileSize = 0;
-    p->setFirstCluster(0);
-    volume_writeCache();
+    file_truncate();
   }
 
   return volume.isInitialized;
+}
+
+void file_truncate() {
+  /* Delete contents of file */
+  uint32_t next;
+  uint32_t firstClst = file_curCluster;
+  while (volume_fatGet(firstClst, &next)) {
+    volume_fatPut(firstClst, 0);
+    firstClst = next;
+  }
+  file_curCluster = 0;
+  file_size = 0;
+  
+  /* Update file entry to show as empty to prevent corrupted state */
+  SDMINFAT::dir_t* p = file_readCacheDir();
+  p->fileSize = 0;
+  p->setFirstCluster(0);
+  volume_writeCache();
 }
 
 /* Caches the block at the current position in the file

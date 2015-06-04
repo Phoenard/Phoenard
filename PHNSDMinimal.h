@@ -147,6 +147,8 @@ uint8_t volume_init(uint8_t resetPosition = 1);
  * The mode specified the way to open the file, where FILE_READ, FILE_WRITE and FILE_CREATE are possible
  */
 uint8_t file_open(const char* filename, const char* ext, uint8_t mode);
+/// Deletes all contents of a file (must call after opening file)
+void file_truncate();
 /// Flushes any pending block writes to the card
 void file_flush(void);
 /// Reads the current directory entry information into the cache
