@@ -123,18 +123,24 @@ void setup() {
 }
 
 void loop() {
+  /* In case the Micro-SD library fails, attempt to re-initialize */
+  if (reloadAll || !volume.isInitialized) {
+    digitalWrite(13, LOW);
+    updateVolume();
+    digitalWrite(13, HIGH);
+    reloadAll = true;
+  }
+
   /* When reloading, initialize all fields to the defaults */
   if (reloadAll) {
-    digitalWrite(13, LOW);
     redrawIcons = true;
     touchedIndex = MENU_IDX_NONE;
     LCD_clearTouch();
     sketches_buff_cnt = 0;
     sketches_reachedEnd = false;
-    updateVolume();
-    PHNDisplay8Bit::fill(COLOR_MENU_BG);
-    digitalWrite(13, HIGH);
+    volume_init(1);
     reloadAll = false;
+    PHNDisplay8Bit::fill(COLOR_MENU_BG);
   }
 
   /* Clear the sketch icon area and redraw all icons */
@@ -147,11 +153,6 @@ void loop() {
   /* Pre-load the next block of file listing */
   if (!sketches_reachedEnd) {
     volume_cacheCurrentBlock(0);
-  }
-
-  /* In case the Micro-SD library fails, attempt to re-initialize */
-  if (!volume.isInitialized) {
-    volume_init(0);
   }
 
   /*
@@ -920,11 +921,12 @@ void updateVolume() {
 
   /* Display a message to the user that no SD-card is inserted */
   for (;;) {
-    volume_init();
+    volume_init(0);
     if (volume.isInitialized) {
       return;
     }
 
+    PHNDisplay8Bit::fill(COLOR_MENU_BG);
     PHNDisplay8Bit::writeString(30, 30, 2, "Micro-SD card was not\n"
                                            "detected or is corrupt", BLACK_8BIT, RED_8BIT);
     uint8_t is_touched = 0;
