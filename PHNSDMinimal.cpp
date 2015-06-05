@@ -97,17 +97,12 @@ uint8_t card_command(uint8_t cmd, uint32_t arg, uint8_t crc) {
   return result;
 }
 
-/* wait for spiRec() to return a specific value, with ~600ms timeout */
+/* wait for spiRec() to return a specific value, with ~200ms timeout */
 uint8_t card_waitForData(uint8_t data_state) {
-  /* 
-   * Note: original timeout was 600ms
-   * 213 cycles = 14 ms, thus about 9128 cycles timeout
-   * To reduce code size, 0x2000 (8192) was chosen instead
-   */
-  uint16_t t_cycle = 0;
-  do {
+  /* Maximum of 0xFFFF cycles is about 200 ms */
+  for (uint16_t i = 0xFFFF; i; i--) {
     if (spiRec() == data_state) return 1;
-  } while (~(t_cycle++ & 0x2000));
+  }
   return 0;
 }
 
