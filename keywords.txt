@@ -31,6 +31,7 @@ PHN_Label	KEYWORD1
 PHN_LineGraph	KEYWORD1
 PHN_Scrollbar	KEYWORD1
 PHN_TextBox	KEYWORD1
+PHN_Keyboard	KEYWORD1
 
 #######################################
 # Namespaces (KEYWORD1)

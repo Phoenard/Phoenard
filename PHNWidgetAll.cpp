@@ -37,3 +37,4 @@ THE SOFTWARE.
 #include "widgets/PHNBarGraph.cpp"
 #include "widgets/PHNScrollbar.cpp"
 #include "widgets/PHNTextBox.cpp"
+#include "widgets/PHNKeyboard.cpp"
