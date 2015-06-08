@@ -686,7 +686,7 @@ size_t PHN_Display::write(uint8_t c) {
   } else if (c == '\r') {
     // skip em
   } else {
-    drawChar(textOpt.cursor_x, textOpt.cursor_y, c, textOpt.textcolor, textOpt.textsize);
+    drawChar(textOpt.cursor_x, textOpt.cursor_y, c, textOpt.textsize);
     textOpt.cursor_x += textOpt.textsize*6;
   }
   return 0;
@@ -725,7 +725,7 @@ void PHN_Display::printDate(Date date) {
 }
 
 void PHN_Display::printMem(const uint8_t* font_char) {
-  drawCharMem(textOpt.cursor_x, textOpt.cursor_y, font_char, textOpt.textcolor, textOpt.textsize);
+  drawCharMem(textOpt.cursor_x, textOpt.cursor_y, font_char, textOpt.textsize);
   write(' ');
 }
 
@@ -765,7 +765,7 @@ void PHN_Display::drawStringMiddle(uint16_t x, uint16_t y, uint16_t width, uint1
   print(text);
 }
 
-void PHN_Display::drawString(uint16_t x, uint16_t y, const char *c, color_t color, uint8_t size) {
+void PHN_Display::drawString(uint16_t x, uint16_t y, const char *c, uint8_t size) {
   uint16_t c_x = x;
   uint16_t c_y = y;
   while (*c) {
@@ -773,7 +773,7 @@ void PHN_Display::drawString(uint16_t x, uint16_t y, const char *c, color_t colo
       c_x = x;
       c_y += size*8;
     } else {
-      drawChar(c_x, c_y, *c, color, size);
+      drawChar(c_x, c_y, *c, size);
       c_x += size*6;
     }
     c++;
@@ -781,17 +781,16 @@ void PHN_Display::drawString(uint16_t x, uint16_t y, const char *c, color_t colo
 }
 
 // draw a character
-void PHN_Display::drawChar(uint16_t x, uint16_t y, char c, 
-          color_t color, uint8_t size) {
-  drawCharMem(x, y, font_5x7+(c*5), color, size);
+void PHN_Display::drawChar(uint16_t x, uint16_t y, char c, uint8_t size) {
+  drawCharMem(x, y, font_5x7+(c*5), size);
 }
 
-void PHN_Display::drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, color_t color, uint8_t size) {
+void PHN_Display::drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, uint8_t size) {
   // If transparent background, make use of a (slower) cube drawing algorithm
   // For non-transparent backgrounds, make use of the faster 1-bit image drawing function
   if (textOpt.text_hasbg) {
     // Use standard internal minimal drawing function
-    PHNDisplay16Bit::writeFont_1bit(x, y, size, font_char, textOpt.textbg, color);
+    PHNDisplay16Bit::writeFont_1bit(x, y, size, font_char, textOpt.textbg, textOpt.textcolor);
   } else {
     // Draw in vertical 'dot' chunks for each 5 columns
     // Empty (0) data 'blocks' are skipped leaving them 'transparent'
@@ -806,7 +805,7 @@ void PHN_Display::drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, 
           for (pcount = 0; line & 0x1; pcount++) {
             line >>= 1;
           }
-          fillRect(x+cx*size, y+cy*size, size, size*pcount, color);
+          fillRect(x+cx*size, y+cy*size, size, size*pcount, textOpt.textcolor);
           cy += pcount;
         } else {
           line >>= 1;

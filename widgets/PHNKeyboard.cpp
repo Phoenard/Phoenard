@@ -45,8 +45,19 @@ void PHN_Keyboard::setSpacing(int spacingW, int spacingH) {
 }
 
 void PHN_Keyboard::setKeys(const char* keyChars) {
-  this->keyChars.set(keyChars, strlen(keyChars));
+  this->keyChars.setText(keyChars);
   invalidate();
+}
+
+void PHN_Keyboard::setSpecial(const char* specialText) {
+  this->specialText.setText(specialText);
+
+  // Refresh any keys that show this text
+  if (!invalidated) {
+    for (int i = 0; i < count; i++) {
+      if (key(i) == '\a') updateCell(i, true);
+    }
+  }
 }
 
 void PHN_Keyboard::setupCells() {
@@ -73,6 +84,7 @@ void PHN_Keyboard::update() {
     updateCell(i, false);
   }
   if (pressedIdx != oldPressedIdx) {
+    updateCell(pressedIdx, true);
     updateCell(oldPressedIdx, true);
   }
   clickedIdx = -1;
@@ -116,12 +128,34 @@ void PHN_Keyboard::updateCell(int idx, bool forceDraw) {
 
   // Update as needed
   bool isTouched = display.isTouched(cx, cy, cw, cellH);
-  if ((isTouched != (idx == pressedIdx)) || forceDraw) {
-    color_t key_color = color(isTouched ? HIGHLIGHT : FOREGROUND);
-    display.fillRect(cx, cy, cw, cellH, key_color);
-    display.drawRect(cx, cy, cw, cellH, color(FRAME));
-    display.setTextColor(color(CONTENT), key_color);
-    display.drawStringMiddle(cx, cy, cw, cellH, txt);
+  if (forceDraw) {
+    if (txt[0] == '\r') {
+      // Transparent 'open space' character
+    } else {
+      color_t key_color = color(isTouched ? HIGHLIGHT : FOREGROUND);
+      display.fillRect(cx, cy, cw, cellH, key_color);
+      display.drawRect(cx, cy, cw, cellH, color(FRAME));
+      display.setTextColor(color(CONTENT), key_color);
+
+      if (txt[0] == '\b') {
+        // Backspace shown as a <--
+        display.drawStringMiddle(cx, cy, cw, cellH, "<-");
+      } else if (txt[0] == '\t') {
+        // Tab character, show 'TAB'
+        display.drawStringMiddle(cx, cy, cw, cellH, "TAB");
+      } else if (txt[0] == '\n') {
+        // Newline character, show 'ENTER'
+        display.drawStringMiddle(cx, cy, cw, cellH, "ENTER");
+      } else if (txt[0] == '\a') {
+        // This character is used to show 'special' text
+        // This text is set using the setSpecial function
+        // Common function is to show a mode toggle here
+        display.drawStringMiddle(cx, cy, cw, cellH, specialText.text());
+      } else {
+        // Regular ASCII character
+        display.drawStringMiddle(cx, cy, cw, cellH, txt);
+      }
+    }
   }
   if (isTouched) pressedIdx = idx;
 }

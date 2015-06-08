@@ -54,6 +54,10 @@ public:
   void growToFit(int newDataSize);
   /// Sets new data to be stored, the data is copied into this buffer
   void set(const void* data, int dataSize);
+  /// Sets the new data as a String
+  void setText(const char* data);
+  /// Accesses the data as a String
+  char* text() const { return (char*) data; }
   /// Assigns data from one buffer to another
   DataCopyBuffer& operator=( const DataCopyBuffer& other );
 

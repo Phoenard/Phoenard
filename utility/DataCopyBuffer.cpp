@@ -53,6 +53,10 @@ void DataCopyBuffer::set(const void* data, int dataSize) {
   memcpy(this->data, data, dataSize);
 }
 
+void DataCopyBuffer::setText(const char* data) {
+  set(data, strlen(data)+1);
+}
+
 DataCopyBuffer& DataCopyBuffer::operator=( const DataCopyBuffer& other ) {
   set(other.data, other.dataSize);
   return *this;

@@ -355,6 +355,7 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
 
   Viewport old = display.getViewport();
   display.setViewport(x+_textSize+1, y+_textSize+1, width, height);
+  display.setTextColor(color(CONTENT));
 
   // Draw selection highlight, cursor and text
   int row = -scrollOffset;
@@ -411,7 +412,7 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
             display.fillRect(x - 1, y, chr_w+1, chr_h, color(HIGHLIGHT));
 
           // Draw text
-          display.drawChar(x, y, text[i], color(CONTENT), _textSize);
+          display.drawChar(x, y, text[i], _textSize);
         }
       }
     }

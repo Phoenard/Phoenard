@@ -308,11 +308,11 @@ class PHN_Display : public PHN_WidgetContainer {
 
   /* Draw text at specific coordinates */
   /// Draws a single character at [x, y] of an optional size specified
-  void drawChar(uint16_t x, uint16_t y, char c, color_t color, uint8_t s = 1);
+  void drawChar(uint16_t x, uint16_t y, char c, uint8_t s = 1);
   /// Draws character data (7x5 size) at [x, y] of an optional size specified
-  void drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, color_t color, uint8_t s = 1);
+  void drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, uint8_t s = 1);
   /// Draws a String of characters at [x, y] of an optional size specified
-  void drawString(uint16_t x, uint16_t y, const char* text, color_t color, uint8_t s = 1);
+  void drawString(uint16_t x, uint16_t y, const char* text, uint8_t s = 1);
   /**@brief Draws a String of characters in the area [x, y, width, height]
    *
    * Draws the text in the middle of the rectangular area specified.

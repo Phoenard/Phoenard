@@ -55,6 +55,8 @@ class PHN_Keyboard : public PHN_Widget {
   void setSpacing(int spacingW, int spacingH);
   /// Sets all the character keys to display
   void setKeys(const char* keyChars);
+  /// Sets a special string token to display for /a keys
+  void setSpecial(const char* specialText);
   /// Obtains the character for a given key index
   char key(int index) const { return ((char*) keyChars.data)[index]; }
   /// Obtains the key character index clicked, -1 when there is none
@@ -68,6 +70,7 @@ class PHN_Keyboard : public PHN_Widget {
   void setupCells();
   void updateCell(int idx, bool forceDraw);
   DataCopyBuffer keyChars;
+  DataCopyBuffer specialText;
   unsigned char cols, rows;
   unsigned char cellW, cellH, spacW, spacH;
   int count;
