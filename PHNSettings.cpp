@@ -60,3 +60,24 @@ void PHN_Settings_WriteCali(PHN_Settings *settings, int hor_a, int hor_b, int ve
     settings->touch_ver_b = 1023 - ver_b;
   }
 }
+
+void PHN_loadSketch(const char* sketchName, bool loadNow) {
+  // Write sketch load instruction to EEPROM
+  PHN_Settings settings;
+  PHN_Settings_Load(settings);
+  for (char i = 0; i < 8; i++) {
+    // Read the next character; fix NULL and lower case characters
+    char c = (*sketchName) ? *(sketchName++) : ' ';
+    if (c >= 'a' && c <= 'z') c -= ('a' - 'A');
+    settings.sketch_toload[i] = c;
+  }
+  settings.flags |= SETTINGS_LOAD;
+  PHN_Settings_Save(settings);
+  
+  // If set, reset the device using the watchdog timer
+  if (loadNow) {
+    WDTCSR = (1<<WDE) | (1<<WDCE);
+    WDTCSR = (1<<WDE);
+    for(;;);
+  }
+}

@@ -83,5 +83,7 @@ typedef struct {
 void PHN_Settings_ReadCali(PHN_Settings settings, int *hor_a, int *hor_b, int *ver_a, int *ver_b);
 /// Writes the screen calibration information to the settings
 void PHN_Settings_WriteCali(PHN_Settings *settings, int hor_a, int hor_b, int ver_a, int ver_b);
+/// Requests the bootloader to load a particular sketch
+void PHN_loadSketch(const char* sketchName, bool loadNow = true);
 
 #endif
