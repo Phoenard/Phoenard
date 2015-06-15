@@ -81,7 +81,7 @@ void PHN_Keyboard::update() {
   
   pressedIdx = -1;
   for (int i = 0; i < count; i++) {
-    updateCell(i, false);
+    updateCell(i, invalidated);
   }
   if (pressedIdx != oldPressedIdx) {
     updateCell(pressedIdx, true);
@@ -94,17 +94,10 @@ void PHN_Keyboard::update() {
 }
 
 void PHN_Keyboard::draw() {
-  // Fill with background color
-  fillWidgetArea(color(BACKGROUND));
-
-  // Go by all the cells, force-updating them
-  clickedIdx = -1;
-  for (int i = 0; i < count; i++) {
-    updateCell(i, true);
-  }
+  // Drawing is done during the update phase
 }
 
-void PHN_Keyboard::updateCell(int idx, bool forceDraw) {
+void PHN_Keyboard::updateCell(int idx, bool drawCell) {
   // Ignore these
   if (idx == -1) return;
   
@@ -119,7 +112,7 @@ void PHN_Keyboard::updateCell(int idx, bool forceDraw) {
   // If text is the same as the character before, it is one key
   // In that case, don't do anything here
   if (col > 0 && key(idx-1) == txt[0]) return;
-  
+
   // Get the amount of cells covered by the same character
   for (unsigned char i = 1; i < (cols-col); i++) {
     if (key(idx+i) != txt[0]) break;
@@ -128,7 +121,7 @@ void PHN_Keyboard::updateCell(int idx, bool forceDraw) {
 
   // Update as needed
   bool isTouched = display.isTouched(cx, cy, cw, cellH);
-  if (forceDraw) {
+  if (drawCell) {
     if (txt[0] == '\r') {
       // Transparent 'open space' character
     } else {

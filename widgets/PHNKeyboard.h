@@ -68,7 +68,7 @@ class PHN_Keyboard : public PHN_Widget {
   virtual void draw(void);
  private:
   void setupCells();
-  void updateCell(int idx, bool forceDraw);
+  void updateCell(int idx, bool drawCell);
   DataCopyBuffer keyChars;
   DataCopyBuffer specialText;
   unsigned char cols, rows;
