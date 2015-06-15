@@ -176,6 +176,9 @@ void PHN_TextBox::setSelection(const char* selectionText) {
   int len = min(strlen(selectionText), textBuff.dataSize-length+selLength);
   char* text = (char*) textBuff.data;
   bool appended = (selLength == 0 && selStart == length);
+  
+  // If nothing is set, do nothing
+  if (!len) return;
 
   // Shift everything after the selection to the right
   memmove(text+selStart+len, text+selEnd, length-selEnd);

@@ -25,6 +25,11 @@ THE SOFTWARE.
 
 #include "PHNKeyboard.h"
 
+PHN_Keyboard::PHN_Keyboard() {
+  this->pressedIdx = -1;
+  this->clickedIdx = -1;
+}
+
 void PHN_Keyboard::setDimension(int rows, int columns) {
   this->rows = rows;
   this->cols = columns;
