@@ -31,6 +31,12 @@ PHN_Image::PHN_Image(void (*drawFunc)(int, int, int, int, PHN_Image&), uint32_t 
   this->setData((void*) &data, 4);
 }
 
+PHN_Image::PHN_Image(void (*drawFunc)(int, int, int, int, PHN_Image&), const char* text) {
+  this->_drawFunc = drawFunc;
+  this->_palette = PALETTE(BLACK, RED, WHITE);
+  this->setData((const void*) text, strlen(text) + 1);
+}
+
 PHN_Image::PHN_Image(void (*drawFunc)(int, int, int, int, PHN_Image&), const void* data, int dataSize) {
   this->_drawFunc = drawFunc;
   this->_palette = PALETTE(BLACK, RED, WHITE);
@@ -47,15 +53,15 @@ void text_image_draw_func(int x, int y, int width, int height, PHN_Image &img) {
   display.fillRect(x, y, width, height, img.palette().get(0));
   display.drawRect(x, y, width, height, img.palette().get(1));
   display.setTextColor(img.palette().get(2));
-  display.drawStringMiddle(x, y, width, height, (char*) img.data());
+  display.drawStringMiddle(x, y, width, height, img.text());
 }
 
 void flash_image_draw_func(int x, int y, int width, int height, PHN_Image &img) {
-  FlashMemoryStream stream((uint8_t*) *((uint32_t*) img.data()), 0xFFFFFFFF);
+  FlashMemoryStream stream(img.data_ptr(), 0xFFFFFFFF);
   display.drawImage(stream, x, y);
 }
 
 void flash_indexed_image_draw_func(int x, int y, int width, int height, PHN_Image &img) {
-  FlashMemoryStream stream((uint8_t*) *((uint32_t*) img.data()), 0xFFFFFFFF);
+  FlashMemoryStream stream(img.data_ptr(), 0xFFFFFFFF);
   display.drawImageColorMap(stream, x, y, img.palette().data());
 }

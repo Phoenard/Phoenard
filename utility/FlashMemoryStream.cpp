@@ -25,21 +25,9 @@ THE SOFTWARE.
 
 #include "FlashMemoryStream.h"
 
-FlashMemoryStream::FlashMemoryStream(const uint8_t *startAddress, uint32_t length) {
-  _startAddress = startAddress;
+FlashMemoryStream::FlashMemoryStream(const void *startAddress, uint32_t length) {
+  _startAddress = (const uint8_t*) startAddress;
   _length = length;
-  _pos = 0;
-}
-
-FlashMemoryStream::FlashMemoryStream(const uint16_t *startAddress, uint32_t length) {
-  _startAddress = (const uint8_t*) startAddress;
-  _length = length * 2;
-  _pos = 0;
-}
-
-FlashMemoryStream::FlashMemoryStream(const uint32_t *startAddress, uint32_t length) {
-  _startAddress = (const uint8_t*) startAddress;
-  _length = length * 4;
   _pos = 0;
 }
 

@@ -25,8 +25,8 @@ THE SOFTWARE.
 
 #include "MemoryStream.h"
 
-MemoryStream::MemoryStream(const uint8_t* data, uint16_t length) {
-  _data = data;
+MemoryStream::MemoryStream(const void* data, uint16_t length) {
+  _data = (uint8_t*) data;
   _length = length;
   _pos = 0;
 }

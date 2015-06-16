@@ -43,7 +43,7 @@ class MemoryStream : public Stream {
   uint16_t _pos;
  public:
   /// Creates a new MemoryStream starting at the address in RAM specified
-  MemoryStream(const uint8_t* data, uint16_t length);
+  MemoryStream(const void* data, uint16_t length);
   virtual int read();
   virtual int peek();
   virtual int available();

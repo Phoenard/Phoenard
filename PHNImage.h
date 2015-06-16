@@ -51,6 +51,8 @@ public:
   PHN_Image() {}
   /// Constructs a new image with the draw function and uint32 data
   PHN_Image(void (*drawFunc)(int, int, int, int, PHN_Image&), uint32_t data);
+  /// Constructs a new image with the draw function and text NULL-terminated data
+  PHN_Image(void (*drawFunc)(int, int, int, int, PHN_Image&), const char* text);
   /// Constructs a new image with the draw function and data set
   PHN_Image(void (*drawFunc)(int, int, int, int, PHN_Image&), const void* data, int dataSize);
   /// Constructs a new image, using the data of the image specified
@@ -61,7 +63,13 @@ public:
   /// Sets a new palette of colors set for the image
   const void setPalette(const PHN_Palette &palette) { _palette = palette; }
   /// Gets the data associated with the image
-  const void* data() { return _data.data; }
+  const void* data() const { return _data.data; }
+  /// Gets the data associated with the image as text
+  const char* text() const { return (const char*) _data.data; }
+  /// Gets the data associated with the image as an integer
+  const uint32_t data_int() const { return *((uint32_t*) _data.data); }
+  /// Gets the data associated with the image as a memory pointer
+  const void* data_ptr() const { return (void*) data_int(); }
   /// Gets the byte size of the data associated with the image
   const int dataSize() { return _data.dataSize; }
 
@@ -86,7 +94,7 @@ void flash_indexed_image_draw_func(int x, int y, int width, int height, PHN_Imag
 //!@endcond
 
 /// Macro for creating an image drawing text with a color border
-#define TEXT_Image(text)  PHN_Image(text_image_draw_func, text, strlen(text) + 1)
+#define TEXT_Image(text)  PHN_Image(text_image_draw_func, text)
 /// Macro for creating an image drawing image data stored in flash
 #define FLASH_Image(data)  PHN_Image(flash_image_draw_func, (uint32_t) (data))
 /// Macro for creating an image drawing image data stored in flash, utilizing a color map

@@ -45,12 +45,9 @@ class FlashMemoryStream : public Stream {
   uint32_t _pos;
   uint32_t _length;
  public:
-  /// Creates a new Flash Memory stream reading from at the byte data address specified
-  FlashMemoryStream(const uint8_t *startAddress, uint32_t length = 0xFFFFFFFF);
-  /// Creates a new Flash Memory stream reading from at the word data address specified
-  FlashMemoryStream(const uint16_t *startAddress, uint32_t length = 0xFFFFFFFF);
-  /// Creates a new Flash Memory stream reading from at the long data address specified
-  FlashMemoryStream(const uint32_t *startAddress, uint32_t length = 0xFFFFFFFF);
+  /// Creates a new Flash Memory stream reading from at the address specified
+  FlashMemoryStream(const void *startAddress, uint32_t length = 0xFFFFFFFF);
+
   virtual int read();
   virtual int peek();
   virtual int available();
