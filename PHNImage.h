@@ -60,6 +60,8 @@ public:
 
   /// Gets the palette of colors set for the image
   const PHN_Palette &palette() { return _palette; }
+  /// Gets a color in the palette of colors set for the image
+  const color_t color(uint8_t index) { return _palette.get(index); }
   /// Sets a new palette of colors set for the image
   const void setPalette(const PHN_Palette &palette) { _palette = palette; }
   /// Gets the data associated with the image

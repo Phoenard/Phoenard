@@ -380,11 +380,11 @@ bool PHN_Sim::writeATCommand(const char* command) {
   return false;
 }
 
-inline bool PHN_Sim::sendATCommand(const char* command) {
+bool PHN_Sim::sendATCommand(const char* command) {
   return sendATCommand(command, 0, 0);
 }
 
-inline bool PHN_Sim::sendATCommand(const char* command, char* respBuffer, uint16_t respBufferLength) {
+bool PHN_Sim::sendATCommand(const char* command, char* respBuffer, uint16_t respBufferLength) {
   return sendATCommand(command, respBuffer, respBufferLength, SIM_ATCOMMAND_TIMEOUT);
 }
 
