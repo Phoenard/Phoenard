@@ -28,6 +28,11 @@ THE SOFTWARE.
  * @brief Main include file for the Phoenard library
  */
 
+// Compilation architecture check to prevent impossible to understand errors
+#ifndef __AVR_ATmega2560__
+  #error "The Phoenard library only supports the ATMega 2560 CPU architecture"
+#endif
+ 
 #include "PHNSettings.h"
 #include "PHNDisplayHardware.h"
 #include "PHNDisplay.h"
