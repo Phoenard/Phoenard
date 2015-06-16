@@ -1,8 +1,6 @@
 #include "PHNTextBox.h"
 
 PHN_TextBox::PHN_TextBox() {
-  const int maxLength = 100;
-
   this->length = 0;
   this->selStart = 0;
   this->selLength = 0;
@@ -50,9 +48,9 @@ void PHN_TextBox::setScrollbarVisible(bool visible) {
 }
 
 void PHN_TextBox::setText(const char* text) {
-  length = min(textBuff.dataSize-1, strlen(text));
+  length = min(textBuff.dataSize-1, (int) strlen(text));
   memcpy(textBuff.data, text, sizeof(char) * length);
-  ((char*) textBuff.data)[length] = 0;
+  textBuff.text()[length] = 0;
   updateScrollLimit();
   setSelectionRange(length, 0);
   invalidate();
@@ -173,7 +171,7 @@ void PHN_TextBox::backspace() {
 }
 
 void PHN_TextBox::setSelection(const char* selectionText) {
-  int len = min(strlen(selectionText), textBuff.dataSize-length+selLength);
+  int len = min((int) strlen(selectionText), (int) (textBuff.dataSize-length+selLength));
   char* text = (char*) textBuff.data;
   bool appended = (selLength == 0 && selStart == length);
   
@@ -251,7 +249,7 @@ void PHN_TextBox::update() {
     int posRow = (pos.y-(this->y+_textSize+1)) / chr_h;
 
     // Go by all characters until found
-    int x, y;
+    int x;
     int col = 0;
     int row = -scrollOffset;
     int pressedIdx = this->length;

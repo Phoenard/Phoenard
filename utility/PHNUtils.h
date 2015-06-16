@@ -47,7 +47,7 @@ uint8_t bit_reverse(uint8_t b);
 /// Reads a stream until no further reading is possible
 void flushRead(Stream &stream);
 /// Waits until a character becomes available to be read
-bool waitAvailable(Stream &stream, long timeoutMS);
+bool waitAvailable(Stream &stream, unsigned long timeoutMS);
 /**
  * @brief Flushes one stream to another and vice versa
  *

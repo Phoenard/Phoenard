@@ -85,7 +85,7 @@ void PHN_Sim::update() {
     Serial.println(inputBuffer);
 
     // Find any commands in the received message
-    char* inputText = inputText;
+    char* inputText;
     for (int i = 0; i < inputIndex; i++) {
       inputText = inputBuffer+i;
       if (strstr(inputText, "NO CARRIER") == inputText) {
@@ -123,9 +123,9 @@ inline bool PHN_Sim::waitRead() {
   return waitAvailable(Serial1, SIM_ATCOMMAND_TIMEOUT);
 }
 
-bool PHN_Sim::readToken(char *token, long timeoutMS) {
+bool PHN_Sim::readToken(const char *token, unsigned long timeoutMS) {
   uint16_t i = 0;
-  long startTime = millis();
+  unsigned long startTime = millis();
   while (token[i]) {
     if ((millis() - startTime) >= timeoutMS) {
       // Timeout
@@ -139,8 +139,12 @@ bool PHN_Sim::readToken(char *token, long timeoutMS) {
 }
 
 bool PHN_Sim::enterPin(const char* pin) {
-  char command[13] = "AT+CPIN=";
+  // Build the enter pin command
+  char command[13];
+  memcpy(command, "AT+CPIN=", 8);
   strncpy(command+8, pin, 4);
+  command[12] = 0;
+  
   if (sendATCommand(command)) {
     // Wait for the 'Call Ready' Response
     return readToken("Call Ready", 10000);
@@ -176,7 +180,7 @@ bool PHN_Sim::readProvider(char* buffer, int bufferLength) {
   char resp[50];
   char *provArgs[3];
   if (sendATCommand("AT+COPS?", resp, 50) && getSimTextArgs(resp, provArgs, 3) == 3) {
-    int len = min(strlen(provArgs[2])+1, bufferLength);
+    int len = min((int) (strlen(provArgs[2])+1), bufferLength);
     memcpy(buffer, provArgs[2], len * sizeof(char));
     buffer[len] = 0;
     return true;
@@ -317,7 +321,7 @@ SimContact PHN_Sim::readContact(uint8_t contactIndex) {
 
 bool PHN_Sim::sendMessage(char* receiverAddress, char* messageText) {
   char command[200];
-  int i, index;
+  int index;
 
   // Set to text message mode
   writeATCommand("AT+CMGF=1");

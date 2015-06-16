@@ -584,7 +584,7 @@ namespace PHNDisplay16Bit {
   }
 
   void writeImage_1bit(uint16_t x, uint16_t y, uint8_t width, uint8_t height, uint8_t scale, const uint8_t* data, uint8_t direction, uint16_t color0, uint16_t color1) {
-    uint8_t pix_dat, dy, dx, si = 0, d = 0;
+    uint8_t pix_dat = 0, dy, dx, si = 0, d = 0;
     uint8_t l = height * scale;
     for (dy = 0; dy < l; dy++) {
       PHNDisplayHW::setCursor(x, y, direction);

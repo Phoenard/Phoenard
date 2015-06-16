@@ -102,13 +102,13 @@ typedef struct {
  */
 SketchInfo sketches_buff[100];
 int sketches_buff_cnt = 0;
-const int16_t sketches_sram_start = -sizeof(sketches_buff);
+const int sketches_sram_start = -sizeof(sketches_buff);
 boolean sketches_reachedEnd = false;
 
 /* Variables used by the main sketch list showing logic */
 char sketch_icon_text[MENU_IDX_CNT][9];
 char sketch_icon_dirty[MENU_IDX_CNT];
-uint16_t sketch_offset = 0;
+int sketch_offset = 0;
 boolean reloadAll = true;
 boolean redrawIcons;
 uint8_t touchedIndex;
@@ -385,8 +385,8 @@ void editSketch(char filename[9], boolean runWhenExit) {
 
   /* Open or create the hex/ski files and store their locations on the Micro-SD */
   uint32_t ski_data_block = 0;
-  uint32_t ski_file_length;
-  uint32_t hex_file_length;
+  uint32_t ski_file_length = 0;
+  uint32_t hex_file_length = 0;
   FilePtr ski_file;
   FilePtr hex_file;
 
@@ -718,7 +718,7 @@ boolean askSketchName(char name[8]) {
   uint8_t index_dirty_b = 0xFF;
   uint8_t index_dirty_c = 0xFF;
   uint8_t index_dirty_d = 0xFF;
-  char *popupMessage = NULL;
+  const char *popupMessage = NULL;
   for (;;) {
     uint16_t col = 0;
     uint16_t row = 0;

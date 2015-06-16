@@ -25,7 +25,7 @@ THE SOFTWARE.
 
 #include "BufferedReadStream.h"
 
-BufferedReadStream::BufferedReadStream(Stream *baseStream, uint16_t bufferSize) {
+BufferedReadStream::BufferedReadStream(Stream *baseStream, int bufferSize) {
   _baseStream = baseStream;
   _bufferLen = bufferSize;
   _bufferPos = bufferSize;

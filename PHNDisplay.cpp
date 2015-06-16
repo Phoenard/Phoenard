@@ -386,12 +386,12 @@ void PHN_Display::fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
     setViewport(oldViewport);
   } else if (h >= w) {
     // Draw vertical lines when height > width
-    for (int wx = 0; wx < w; wx++) {
+    for (uint16_t wx = 0; wx < w; wx++) {
       drawVerticalLine(x+wx, y, h, fillcolor);
     }
   } else {
     // Draw horizontal lines otherwise
-    for (int wy = 0; wy < h; wy++) {
+    for (uint16_t wy = 0; wy < h; wy++) {
       drawHorizontalLine(x, y+wy, w, fillcolor);
     }
   }
@@ -732,9 +732,9 @@ void PHN_Display::printMem(const uint8_t* font_char) {
 void PHN_Display::drawStringMiddle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const char* text) {
 
   // Calculate the total amount of rows and columns the text displays
-  int textCols = 0;
-  int textCols_tmp = 0;
-  int textRows = 1;
+  unsigned int textCols = 0;
+  unsigned int textCols_tmp = 0;
+  unsigned int textRows = 1;
   const char* text_p = text;
   while (*text_p) {
     if (*text_p == '\n') {
@@ -749,19 +749,18 @@ void PHN_Display::drawStringMiddle(uint16_t x, uint16_t y, uint16_t width, uint1
   if (textCols_tmp > textCols) textCols = textCols_tmp;
 
   // Draw text at an appropriate size to fit the rectangle
-  int textLen = strlen(text);
-  int textsize = 1;
+  unsigned int textsize = 1;
   while ((textCols * (textsize+1) * 6 + 2) < width && (textRows * (textsize+1) * 8 + 2) < height) {
     textsize++;
   }
   
   // Find offset to use to draw in the middle
-  int textWidth = textCols * textsize * 6;
-  int textHeight = textRows * textsize * 8;
-  int x_offset = (width - textWidth) >> 1;
-  int y_offset = (height - textHeight) >> 1;
+  unsigned int textWidth = textCols * textsize * 6;
+  unsigned int textHeight = textRows * textsize * 8;
+  unsigned text_x = x + ((width - textWidth) >> 1);
+  unsigned text_y = y + ((height - textHeight) >> 1);
   setTextSize(textsize);
-  setCursor(x + x_offset, y + y_offset);
+  setCursor(text_x, text_y);
   print(text);
 }
 

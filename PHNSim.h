@@ -186,7 +186,7 @@ public:
   /// Waits until reading is possible with the default timeout
   bool waitRead();
   /// Reads up until a String token is read
-  bool readToken(char *token, long timeoutMS);
+  bool readToken(const char *token, unsigned long timeoutMS);
 };
 
 extern PHN_Sim sim;

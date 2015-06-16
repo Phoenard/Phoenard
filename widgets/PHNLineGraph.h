@@ -64,7 +64,7 @@ class PHN_LineGraph : public PHN_Widget {
  private:
   unsigned char _dim;
   float _min, _max;
-  unsigned int _pos;
+  int _pos;
   bool autoClearDisabled;
   DataCopyBuffer _lastValues;
   PHN_Palette _lineColors;

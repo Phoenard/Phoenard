@@ -30,7 +30,7 @@ void PHN_Button::setText(const char* text) {
 }
 
 void PHN_Button::setImage(const PHN_Image &image) {
-  for (char i = 0; i < 3; i++) {
+  for (unsigned char i = 0; i < 3; i++) {
     images[i] = image;
   }
   

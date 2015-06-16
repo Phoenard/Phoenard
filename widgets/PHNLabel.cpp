@@ -32,7 +32,7 @@ PHN_Label::PHN_Label() {
 
 void PHN_Label::setText(const char* text) {
   int txtLen = strlen(text);
-  bool lenChange = txtLen != strlen(this->text());
+  bool lenChange = txtLen != (int) strlen(this->text());
   this->textBuff.set(text, txtLen + 1);
   if (lenChange) {
     invalidate();

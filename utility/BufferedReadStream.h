@@ -43,12 +43,12 @@ class BufferedReadStream : public Stream {
 private:
   Stream *_baseStream;
   unsigned char *_buffer;
-  uint16_t _bufferLen;
-  uint16_t _bufferPos;
+  int _bufferLen;
+  int _bufferPos;
   void refreshBuffer();
 public:
   /// Constructs a new buffered read stream reading from the baseStream
-  BufferedReadStream(Stream* baseStream, uint16_t BufferSize);
+  BufferedReadStream(Stream* baseStream, int BufferSize);
   ~BufferedReadStream();
   virtual int read();
   virtual int peek();

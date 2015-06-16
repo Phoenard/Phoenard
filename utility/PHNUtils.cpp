@@ -34,8 +34,8 @@ void flushRead(Stream &stream) {
     stream.read();
 }
 
-bool waitAvailable(Stream &stream, long timeoutMS) {
-  long startTime = millis();
+bool waitAvailable(Stream &stream, unsigned long timeoutMS) {
+  unsigned long startTime = millis();
   while ((millis() - startTime) < timeoutMS) {
     if (stream.available())
       return true;
