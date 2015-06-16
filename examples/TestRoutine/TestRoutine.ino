@@ -90,14 +90,9 @@ void setup() {
   // Wait for a very short time for a response back to initiate test station mode
   isStationConnected = readToken(Serial, "Station OK", 200);
 
-  // Setup eeprom to load home menu without saving on next reset
+  // Reset EEPROM settings upon next reset
   if (isStationConnected) {
-    PHN_Settings settings;
-    PHN_Settings_Load(settings);
-    memcpy(settings.sketch_toload, "SKETCHES", 8);
-    settings.flags |= SETTINGS_LOAD;
-    settings.flags &= ~(SETTINGS_MODIFIED | SETTINGS_LOADWIPE);
-    PHN_Settings_Save(settings);
+    PHN_Settings_Save(SETTINGS_DEFAULT);
   }
 
   // LCD Test

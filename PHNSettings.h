@@ -67,6 +67,20 @@ typedef struct {
   unsigned char flags;
 } PHN_Settings;
 
+/* Default Phoenard settings, used to restore corrupted or wiped EEPROM */
+#define SETTINGS_DEFAULT_SKETCH        {'S', 'K', 'E', 'T', 'C', 'H', 'E', 'S'}
+#define SETTINGS_DEFAULT_FLAGS         (SETTINGS_LOAD | SETTINGS_CHANGED | SETTINGS_TOUCH_VER_INV)
+#define SETTINGS_DEFAULT_TOUCH_HOR_A   138
+#define SETTINGS_DEFAULT_TOUCH_HOR_B   171
+#define SETTINGS_DEFAULT_TOUCH_VER_A   134
+#define SETTINGS_DEFAULT_TOUCH_VER_B   115
+
+const PHN_Settings SETTINGS_DEFAULT = {
+  SETTINGS_DEFAULT_TOUCH_HOR_A, SETTINGS_DEFAULT_TOUCH_HOR_B,
+  SETTINGS_DEFAULT_TOUCH_VER_A, SETTINGS_DEFAULT_TOUCH_VER_B,
+  SETTINGS_DEFAULT_SKETCH, SETTINGS_DEFAULT_SKETCH, 0, SETTINGS_DEFAULT_FLAGS
+};
+
 /// The total size of the device EEPROM
 #define EEPROM_SIZE           4096
 /// The total size of the settings stored

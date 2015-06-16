@@ -65,7 +65,7 @@ void PHN_loadSketch(const char* sketchName, bool loadNow) {
   // Write sketch load instruction to EEPROM
   PHN_Settings settings;
   PHN_Settings_Load(settings);
-  for (char i = 0; i < 8; i++) {
+  for (unsigned char i = 0; i < 8; i++) {
     // Read the next character; fix NULL and lower case characters
     char c = (*sketchName) ? *(sketchName++) : ' ';
     if (c >= 'a' && c <= 'z') c -= ('a' - 'A');
