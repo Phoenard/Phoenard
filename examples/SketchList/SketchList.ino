@@ -391,7 +391,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
   FilePtr hex_file;
 
   /* Open or create the .SKI file */
-  if (file_open(filename, "SKI", FILE_CREATE)) {
+  if (file_open(filename, "SKI", SDMIN_FILE_CREATE)) {
     ski_file = file_curDir;
     file_position = 0;
     if (!file_size) {
@@ -407,7 +407,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
   }
 
   /* Open or create the .HEX file, store pointer to file directory */
-  if (file_open(filename, "HEX", FILE_CREATE)) {
+  if (file_open(filename, "HEX", SDMIN_FILE_CREATE)) {
     hex_file = file_curDir;
     hex_file_length = file_size;
   }
@@ -781,7 +781,7 @@ boolean askSketchName(char name[8]) {
                 if (memcmp(resultFilename, name, 8) == 0) {
                   // If file name is left the same, allow right away
                   return true;
-                } else if (file_open(trimmed, "HEX", FILE_READ)) {
+                } else if (file_open(trimmed, "HEX", SDMIN_FILE_READ)) {
                   // If file name already exists on the SD card, do not allow
                   popupMessage = "Name is already used";
                 } else {

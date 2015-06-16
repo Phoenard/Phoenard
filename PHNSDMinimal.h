@@ -56,10 +56,10 @@ THE SOFTWARE.
 #include "PHNSDMinimal_fat.h"
 #include "PHNCore.h"
 
-#define FILE_READ    0
-#define FILE_WRITE   (FILE_CREATE | FILE_WIPE)
-#define FILE_CREATE  1
-#define FILE_WIPE    2
+#define SDMIN_FILE_READ    0
+#define SDMIN_FILE_WRITE   (FILE_CREATE | FILE_WIPE)
+#define SDMIN_FILE_CREATE  1
+#define SDMIN_FILE_WIPE    2
 
 /* SCK Speed defines */
 /* Speed number, 0 is full speed, 6 is slowest speed */
@@ -144,7 +144,8 @@ uint8_t volume_init(uint8_t resetPosition = 1);
  * 
  * The filename must be 8 characters long, padded with spaces at the end if needed.
  * The extension must be 3 characters long, padded with spaces at the end if needed.
- * The mode specified the way to open the file, where FILE_READ, FILE_WRITE and FILE_CREATE are possible
+ * The mode specified the way to open the file, where SDMIN_FILE_READ, SDMIN_FILE_WRITE
+ * and SDMIN_FILE_CREATE are possible
  */
 uint8_t file_open(const char* filename, const char* ext, uint8_t mode);
 /// Deletes all contents of a file (must call after opening file)

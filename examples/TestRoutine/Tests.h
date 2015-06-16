@@ -276,7 +276,7 @@ TestResult testConnector() {
   while (true) {
     // Wait for data with a timeout
     while (!Serial.available()) {
-      if ((millis() - timeout_start) > 100) {
+      if ((millis() - timeout_start) > 500) {
         return TestResult(false, "Test station Serial timeout");
       }
     }
@@ -608,14 +608,13 @@ TestResult testBluetooth() {
 
 TestResult testSD() {
   // Attempt to initialize the Micro-SD
-  const char name_none[1] = {0};
-  file_open(name_none, name_none, FILE_READ);
-  if (!volume.isInitialized) {
+  volume.isInitialized = 0;
+  if (!volume_init()) {
     return TestResult(false, "Failed to initialize SD card");
   }
 
   // Attempt to find the SKETCHES.HEX
-  if (!file_open("SKETCHES", "HEX", FILE_READ)) {
+  if (!file_open("SKETCHES", "HEX", SDMIN_FILE_READ)) {
     return TestResult(false, "Unable to find main sketch");
   }
 

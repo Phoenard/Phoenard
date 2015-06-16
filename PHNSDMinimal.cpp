@@ -294,7 +294,7 @@ void volume_fatPut(uint32_t cluster, uint32_t value) {
 /* Ensure card is initialized by opening an arbitrary (non-existent) file */
 uint8_t volume_init(uint8_t resetPosition) {
   const char name_none[1] = {0};
-  file_open(name_none, name_none, FILE_READ);
+  file_open(name_none, name_none, SDMIN_FILE_READ);
   if (!volume.isInitialized) return 0;
   
   /* Prepare for reading the root directory entries */
@@ -541,7 +541,7 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
   /* Create a new file entry */
   if (!fileFound) {
     /* only create new files when CREATING is set */
-    if (!(mode & FILE_CREATE)) return 0;
+    if (!(mode & SDMIN_FILE_CREATE)) return 0;
     /* can not create new root clusters on FAT16 */
     if (!entryFound && volume.isfat16) return 0;
 
@@ -594,7 +594,7 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
   file_position = 0;
 
   /* Writing to a non-empty file requires the file to be wiped first */
-  if (file_size && (mode & FILE_WIPE)) {
+  if (file_size && (mode & SDMIN_FILE_WIPE)) {
     file_truncate();
   }
 
