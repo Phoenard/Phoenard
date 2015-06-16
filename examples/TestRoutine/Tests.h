@@ -619,6 +619,12 @@ TestResult testSD() {
     return TestResult(false, "Unable to find main sketch");
   }
 
+  // In test station mode, set sketch to read-only
+  if (isStationConnected) {
+    file_readCacheDir()->attributes |= DIR_ATT_READ_ONLY;
+    volume_writeCache();
+  }
+
   // Make sure to de-initialize the Micro-SD CS pin
   card_setEnabled(false);
 
