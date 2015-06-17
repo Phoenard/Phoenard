@@ -59,10 +59,13 @@ typedef struct {
 
 /// Struct to hold the touch screen input information
 typedef struct {
-  int x, y, pressure;
+  int x, y;
+  float pressure;
 
+  bool isPressed() const { return pressure > 0.0F; }
+  
   bool isPressed(int x, int y, int width, int height) {
-    return this->pressure && this->x >= x && this->y >= y && this->x < (x + width) && this->y < (y + height);
+    return isPressed() && this->x >= x && this->y >= y && this->x < (x + width) && this->y < (y + height);
   }
 } PressPoint;
 

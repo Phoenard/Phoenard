@@ -73,7 +73,7 @@ void loop() {
   PHNDisplayHW::readTouch(&x, &y, &pressure);
 
   // Touched?
-  if (pressure >= 50.0F) {
+  if (pressure >= PHNDisplayHW::PRESSURE_THRESHOLD) {
     // Draw a pixel there
     PHNDisplayHW::setCursor(x, y, DIR_RIGHT);
     PHNDisplay8Bit::writePixel(WHITE_8BIT);
@@ -96,7 +96,7 @@ TouchData getData(int x, int y) {
   boolean pressed = false;
   TouchData touch;
   unsigned int analogX, analogY, analogZ, analogZ2;
-  const int Z_THRES_START = 40;
+  const int Z_THRES_START = 50;
   const int Z_THRES_STOP = 0;
   for (;;) {
     // Track analog x/y

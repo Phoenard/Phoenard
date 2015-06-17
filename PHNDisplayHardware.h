@@ -212,6 +212,12 @@ namespace PHNDisplayHW {
   const uint32_t PIXELS = ((uint32_t) WIDTH * (uint32_t) HEIGHT);
   /// The display width that takes the slider into account
   const uint16_t WIDTH_SLIDER = (WIDTH + 32);
+  /// Minimum possible pressure value
+  const float PRESSURE_MIN = 0.0F;
+  /// Maximum possible pressure value
+  const float PRESSURE_MAX = 1.0F;
+  /// Pressure value above which a press should be detected
+  const float PRESSURE_THRESHOLD = 0.2F;
 
   /// Resets and then initializes the LCD screen registers for first use
   void init();

@@ -265,7 +265,7 @@ namespace PHNDisplayHW {
     digitalWrite(HiZPin1, LOW);
     pinMode(HiZPin2, INPUT);
     digitalWrite(HiZPin2, LOW);
-    delay(1);
+    delayMicroseconds(50);
   }
 
   void readTouch(uint16_t *analogX, uint16_t *analogY, uint16_t *analogZ1, uint16_t *analogZ2) {
@@ -328,9 +328,21 @@ namespace PHNDisplayHW {
     // First read the touch raw input
     PHNDisplayHW::readTouch(&analogX, &analogY, &analogZ1, &analogZ2);
 
+    // If Z1 pressure indicates 0, assume no press
+    if (!analogZ1) {
+      *pressure = 0.0F;
+      return;
+    }
+
     // Proceed to use the calibration found in EEPROM to transform the analog X/Y
+    // Only loads in the bytes needed - simpler but slower is to load the full struct
     PHN_Settings settings;
-    PHN_Settings_Load(settings);
+
+    // Read the 4 calibration constants as one block, and separately read the single flags byte
+    PHN_Settings_LoadField(settings, touch_hor_a, 4);
+    PHN_Settings_LoadField(settings, flags, 1);
+
+    // Read and apply screen calibration options
     PHN_Settings_ReadCali(settings, &hor_a, &hor_b, &ver_a, &ver_b);
     *touch_x = map(analogX, hor_a, hor_b, 0, WIDTH - 1);
     *touch_y = map(analogY, ver_a, ver_b, 0, HEIGHT - 1);
@@ -353,6 +365,10 @@ namespace PHNDisplayHW {
     } else if (analogY > 700) {
       *pressure += *pressure * (0.004 * (analogY - 700));
     }
+
+    // Clamp pressure within the range 0 - 240
+    *pressure /= 240.0F;
+    if (*pressure > 1.0F) *pressure = 1.0F;
   }
 }
 

@@ -1005,7 +1005,7 @@ void LCD_updateTouch(void) {
   PHNDisplayHW::readTouch(&touch_x, &touch_y, &f_pressure);
 
   /* Not touched */
-  boolean isNotTouched = ((old_x == 0xFFFF && f_pressure <= 70.0F) || f_pressure == 0.0F);
+  boolean isNotTouched = ((old_x == 0xFFFF && f_pressure <= PHNDisplayHW::PRESSURE_THRESHOLD) || f_pressure == 0.0F);
   if (isNotTouched || touch_waitup) {
     /* Not touched or waiting for touch to engage */
     if (isNotTouched) {

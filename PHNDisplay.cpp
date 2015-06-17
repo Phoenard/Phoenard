@@ -550,20 +550,18 @@ void PHN_Display::update() {
 
 void PHN_Display::updateTouch() {
   uint16_t touch_x, touch_y;
-  float touch_pressure;
 
   // Store the previous state
   touchLast = touchLive;
 
   // Read the touch input
-  PHNDisplayHW::readTouch(&touch_x, &touch_y, &touch_pressure);
-  touchLive.pressure = (int) touch_pressure;
+  PHNDisplayHW::readTouch(&touch_x, &touch_y, &touchLive.pressure);
 
   // Update live touched down state
-  if (touchLive.pressure >= TFTLCD_TOUCH_PRESSURE_THRESHOLD) {
+  if (touchLive.pressure >= PHNDisplayHW::PRESSURE_THRESHOLD) {
     // Touch input received
     touchInputLive = true;
-    
+
     // Pressed inside the screen, or pressed the slider?
     touchInputSlider = (touch_x >= PHNDisplayHW::WIDTH);
     
@@ -586,7 +584,7 @@ void PHN_Display::updateTouch() {
       cgramFunc_inv(&touch_x, &touch_y);
 
       // Apply a smoothing if touched previously
-      if (touchLast.pressure) {
+      if (touchLast.isPressed()) {
         // Calculate the change in touch value
         int dx = ((int) touch_x - (int) touchLive.x);
         int dy = ((int) touch_y - (int) touchLive.y);
@@ -600,7 +598,7 @@ void PHN_Display::updateTouch() {
         touchLive.y = touch_y;
       }
     }
-  } else if (touchLive.pressure == 0) {
+  } else if (!touchLive.isPressed()) {
     // No longer pressed when pressure reaches 0
     touchInputLive = false;
   }
@@ -617,11 +615,11 @@ void PHN_Display::updateTouch() {
   sliderWasDown = sliderDown;
   sliderDown = touchInput && touchInputSlider;
   if (!touchInput || touchInputSlider) {
-    touchLive.pressure = 0;
+    touchLive.pressure = 0.0F;
   }
 
   // Further point updates on state changes
-  if (touchLive.pressure && !touchLast.pressure) {
+  if (touchLive.isPressed() && !touchLast.isPressed()) {
     touchStart = touchLive;
   }
   if (sliderDown && !sliderWasDown) {
@@ -629,7 +627,7 @@ void PHN_Display::updateTouch() {
   }
   
   // If press was released, mark it with a flag just this time
-  if (!touchLive.pressure && touchLast.pressure) {
+  if (!touchLive.isPressed() && touchLast.isPressed()) {
      // If clicked already handled, undo it and proceed with normal leave logical_and
      if (touchClicked) {
        touchClicked = false;

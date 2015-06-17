@@ -87,11 +87,15 @@ const PHN_Settings SETTINGS_DEFAULT = {
 #define EEPROM_SETTINGS_SIZE  sizeof(PHN_Settings)
 /// The address in EEPROM where the settings are stored
 #define EEPROM_SETTINGS_ADDR  (EEPROM_SIZE - EEPROM_SETTINGS_SIZE)
+/// Macro to obtain the EEPROM address to a particular option field
+#define EEPROM_SETTINGS_ADDR_FIELD(field)  (const uint8_t*) (EEPROM_SETTINGS_ADDR+offsetof(PHN_Settings, field))
 
 /// Macro to load settings from EEPROM
 #define PHN_Settings_Load(settings)  eeprom_read_block( &settings, (void*) EEPROM_SETTINGS_ADDR, EEPROM_SETTINGS_SIZE)
 /// Macro to save settings to EEPROM
 #define PHN_Settings_Save(settings)  eeprom_write_block(&settings, (void*) EEPROM_SETTINGS_ADDR, EEPROM_SETTINGS_SIZE)
+/// Macro to load a single or a group of setting fields from EEPROM
+#define PHN_Settings_LoadField(settings, field, size)  eeprom_read_block(&settings.field, EEPROM_SETTINGS_ADDR_FIELD(field), size)
 
 /// Reads the screen calibration information from the settings
 void PHN_Settings_ReadCali(PHN_Settings settings, int *hor_a, int *hor_b, int *ver_a, int *ver_b);
