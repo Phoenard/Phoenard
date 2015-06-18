@@ -441,7 +441,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
 
   uint8_t icon_idx;
   uint8_t icon_color;
-  uint8_t draw_color = COLOR_EDIT_ICON;
+  uint8_t draw_color = COLOR_EDIT_BG;
   boolean edit_finish = false;
   long last_save = millis(); // Monitors the last time the icon data was saved
   long last_done_pressed = 0; // Monitors how long the 'done' button is pressed
@@ -707,13 +707,15 @@ boolean askSketchName(char name[8]) {
   const uint8_t KEY_WIDTH = 23;
   const uint8_t KEY_HEIGHT = 29;
   const uint8_t KEY_SPACING = 3;
+
+  // Set selected start index to end of name
+  uint8_t index_selChar = 0;
+  for (; index_selChar < 8 && name[index_selChar] != ' '; index_selChar++);
   
   uint16_t x, y;
   uint16_t w, h;
-  
   boolean redrawAll = true;
   uint8_t index_touched = 0xFF;
-  uint8_t index_selChar = 0;
   uint8_t index_dirty_a = 0xFF;
   uint8_t index_dirty_b = 0xFF;
   uint8_t index_dirty_c = 0xFF;
