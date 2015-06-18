@@ -919,8 +919,8 @@ void PHN_Display::drawImageMain(Stream &imageStream, int x, int y, void (*color)
       goTo(0, header.height - 1, 0);
 
       // Used variables and calculated constants
-      uint32_t px, py;
-      uint32_t imageWidthSize = ((uint32_t) header.bitCount * header.width) >> 3;
+      uint16_t px, py;
+      uint16_t imageWidthSize = ((uint32_t) header.bitCount * header.width) >> 3;
       uint8_t imageWidthPadding = (4 - (imageWidthSize & 0x3)) & 0x3;
 
       // Process each row of pixels
