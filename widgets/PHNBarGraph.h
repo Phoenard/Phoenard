@@ -33,7 +33,7 @@ THE SOFTWARE.
 #ifndef _PHN_BARGRAPH_H_
 #define _PHN_BARGRAPH_H_
 
-/// Shows a value with a needle-pointer display, the range and value changeable
+/// Shows a value on a variable sized colored bar, the range and value changeable
 class PHN_BarGraph : public PHN_Widget {
  public:
   /// Sets the minimum and maximum value of the gauge

@@ -1,3 +1,7 @@
+/*
+ * Demo for button functionality. The screen shortly flashes with a color
+ * as the corresponding button is pressed.
+ */
 #include "Phoenard.h"
 
 // Define four buttons

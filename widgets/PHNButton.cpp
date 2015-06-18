@@ -33,8 +33,10 @@ void PHN_Button::setImage(const PHN_Image &image) {
   for (unsigned char i = 0; i < 3; i++) {
     images[i] = image;
   }
-  
-  // Apply the default palette values
+}
+
+void PHN_Button::draw() {
+  // Force-apply the default palette values
   const color_t colors_0[] = {color(FOREGROUND), color(FRAME), color(CONTENT)};
   const color_t colors_1[] = {color(HIGHLIGHT), color(FRAME), color(CONTENT)};
   const color_t colors_2[] = {color(ACTIVATED), color(FRAME), color(CONTENT)};
@@ -42,9 +44,8 @@ void PHN_Button::setImage(const PHN_Image &image) {
   setImagePalette(0, PHN_Palette(colors_0, 3));
   setImagePalette(1, PHN_Palette(colors_1, 3));
   setImagePalette(2, PHN_Palette(colors_2, 3));
-}
 
-void PHN_Button::draw() {
+  // Redraw the right state
   if (isClicked()) {
     images[2].draw(x, y, width, height);
   } else if (isTouched()) {
