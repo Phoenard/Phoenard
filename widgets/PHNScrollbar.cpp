@@ -26,7 +26,7 @@ THE SOFTWARE.
 #include "PHNScrollbar.h"
 
 void PHN_Scrollbar::setRange(int minValue, int maxValue) {
-  if (scrollMin != minValue || scrollMax != maxValue) {
+  if ((scrollMin != minValue) || (scrollMax != maxValue)) {
     scrollMin = minValue;
     scrollMax = maxValue;
     setValue(value());
@@ -36,138 +36,170 @@ void PHN_Scrollbar::setRange(int minValue, int maxValue) {
 
 void PHN_Scrollbar::setValue(int value) {
   int newValue;
-  if (value < scrollMin) {
-    newValue = scrollMin;
-  } else if (value > scrollMax) {
-    newValue = scrollMax;
+  int minVal = min(scrollMin, scrollMax);
+  int maxVal = max(scrollMin, scrollMax);
+  if (value < minVal) {
+    newValue = minVal;
+  } else if (value > maxVal) {
+    newValue = maxVal;
   } else {
     newValue = value;
   }
   if (newValue != scrollPos) {
     valueChanged = true;
     scrollPos = newValue;
-    invalidate();
   }
 }
 
 void PHN_Scrollbar::draw() {
-  if (!width || !height) {
-    return;
-  }
+  // Draw background/frame
   display.fillRect(x+1, y+1, width-2, height-2, color(FOREGROUND));
   display.drawRect(x, y, width, height, color(FRAME));
-  
-  // Draw the lines distinguishing the up/down scroll buttons
-  if (longLayout) {
-    display.drawVerticalLine(x+height-1, y, height-1, color(FRAME));
-    display.drawVerticalLine(x+width-height, y, height-1, color(FRAME));
-  } else {
-    display.drawHorizontalLine(x+1, y+width-1, width-1, color(FRAME));
-    display.drawHorizontalLine(x+1, y+height-width, width-1, color(FRAME));
+
+  // Draw the rest of the bar
+  updateBar(true);
+}
+
+void PHN_Scrollbar::update() {
+  if (!invalidated) updateBar(false);
+}
+
+void PHN_Scrollbar::updateBar(bool redrawing) {
+  bool longLayout = (width > height);
+  bool scrollReversed = (scrollMax < scrollMin);
+  int barSize = longLayout ? (width-height*2) : (height-width*2);
+  int scrollStart = min(scrollMin, scrollMax);
+  int scrollDiff = abs(scrollMax-scrollMin);
+  int barHandleSize = max(3, (scrollDiff==1) ? (barSize/2) : (barSize / scrollDiff));
+  bool barIsTouched = false;
+  bool incrIsTouched = false;
+  bool decrIsTouched = false;
+  bool navIsPressed = false;
+  bool barPressChanged = false;
+  bool barChanged = valueChanged;
+
+  // Reset value changed to false
+  valueChanged = false;
+
+  // Update touch input
+  barIsTouched = display.isTouched(x, y, width, height);
+  barPressChanged = (barWasPressed != barIsTouched);
+  barWasPressed = barIsTouched;
+  if (barIsTouched) {
+    float fact;
+    if (longLayout) {
+      int xPos_a = x+height;
+      int xPos_b = x+width-height-barHandleSize;
+      fact = (float) (display.getTouch().x-xPos_a) / (float) (xPos_b-xPos_a);
+    } else {
+      int yPos_a = y+width;
+      int yPos_b = y+height-width-barHandleSize;
+      fact = (float) (display.getTouch().y-yPos_a) / (float) (yPos_b-yPos_a);
+      fact = 1.0F - fact;
+    }
+    if (scrollReversed) fact = 1.0F - fact;
+    decrIsTouched = (fact < 0.0F);
+    incrIsTouched = (fact > 1.0F);
+    navIsPressed = decrIsTouched || incrIsTouched;
+    if (!navIsPressed) {
+      setValue(scrollStart + (int)(scrollDiff * fact));
+      barChanged |= valueChanged;
+    }
   }
+
+  // Refresh the scroll increment buttons
+  if (barPressChanged) {
+    if (incrIsTouched) setValue(value() + 1);
+    if (decrIsTouched) setValue(value() - 1);
+  }
+
+  // Draw border between buttons and bar
+  if (redrawing) {
+    if (longLayout) {
+      display.drawVerticalLine(x+height-1, y, height-1, color(FRAME));
+      display.drawVerticalLine(x+width-height, y, height-1, color(FRAME));
+    } else {
+      display.drawHorizontalLine(x+1, y+width-1, width-1, color(FRAME));
+      display.drawHorizontalLine(x+1, y+height-width, width-1, color(FRAME));
+    }
+  }
+
   // When no scrolling is possible, abort at this point
   // This shows a 'disabled' state where no arrows/bar are visible
   if (scrollMin == scrollMax) {
     return;
   }
 
-  if (longLayout) {
-    if (pressedUp) {
-      display.fillRect(x+1, y+1, height-2, height-2, color(HIGHLIGHT));
+  // Draw the frame
+  if (redrawing || barPressChanged || (navIsPressed != navWasPressed)) {
+    navWasPressed = navIsPressed;
+    color_t color_btn1 = color(incrIsTouched ? HIGHLIGHT : FOREGROUND);
+    color_t color_btn2 = color(decrIsTouched ? HIGHLIGHT : FOREGROUND);
+    if (longLayout != scrollReversed) {
+      color_t c = color_btn2;
+      color_btn2 = color_btn1;
+      color_btn1 = c;
     }
-    if (pressedDown) {
-      display.fillRect(x+width-height, y+1, height-2, height-2, color(HIGHLIGHT));
-    }
+    if (longLayout) {    
+      // Draw the left/right buttons
+      display.fillRect(x+1, y+1, height-2, height-2, color_btn1);
+      display.fillRect(x+width-height+1, y+1, height-2, height-2, color_btn2);
 
-    // Draw up/down arrows
-    int tri_size = (int) (height*0.7);
-    int tri_start = (height>>1) - (tri_size>>1);
-    display.drawTriangle(x+tri_start-1, y+height-tri_start,
-                         x+tri_start+tri_size-1, y+height-tri_start,
-                         x+tri_start+(tri_size>>1), y+tri_start, color(CONTENT));
-    display.drawTriangle(x+width-tri_start-tri_size, y+tri_start,
-                         x+width-tri_start, y+tri_start,
-                         x+width-tri_start-(tri_size>>1)-1, y+height-tri_start, color(CONTENT));
-    
-    // No scrollbar drawn when in minimal long-layout
-  } else {
-    if (pressedUp) {
-      display.fillRect(x+1, y+1, width-2, width-2, color(HIGHLIGHT));
-    }
-    if (pressedDown) {
-      display.fillRect(x+1, y+height-width+1, width-2, width-2, color(HIGHLIGHT));
-    }
-
-    // Draw up/down arrows
-    int tri_size = (int) (width*0.7);
-    int tri_start = (width>>1) - (tri_size>>1);
-    display.drawTriangle(x+tri_start, y+tri_start+tri_size-1,
-                         x+tri_start+tri_size, y+tri_start+tri_size-1,
-                         x+tri_start+(tri_size>>1), y+tri_start-1, color(CONTENT));
-    display.drawTriangle(x+tri_start, y+height-tri_start-tri_size,
-                         x+tri_start+tri_size, y+height-tri_start-tri_size,
-                         x+tri_start+(tri_size>>1), y+height-tri_start, color(CONTENT));
-
-    // Draw the bar area
-    if (barSize > 10) {
-      int scrollDiff = (scrollMax-scrollMin);
-      int barHandleSize = max(3, (scrollDiff==1) ? (barSize/2) : (barSize / scrollDiff));
-      int barOffset = (int) ((float) (barSize-barHandleSize) * (float) (scrollPos-scrollMin) / (float)scrollDiff);
-      display.drawRect(x+1, y+width+barOffset, width-2, barHandleSize, color(CONTENT));
-      if (pressedBar) {
-        display.fillRect(x+2, y+width+barOffset+1, width-4, barHandleSize-2, color(HIGHLIGHT));
-      }
-    }
-  }           
-}
-
-void PHN_Scrollbar::update() {
-  this->longLayout = (width > height);
-  this->barSize = height-width*2;
-  this->valueChanged = false;
-
-  // Read presses
-  bool newUp, newDown, newBar;
-  if (display.isTouched(x, y, width, height)) {
-    if (longLayout) {
-      newUp = display.isTouched(x, y, height, height);
-      newDown = display.isTouched(x+width-height, y, height, height);
+      // Draw the left/right arrows
+      int tri_size = (int) (height*0.7);
+      int tri_start = (height>>1) - (tri_size>>1);
+      display.drawTriangle(x+tri_start-1, y+tri_start+(tri_size>>1),
+                           x+tri_start+tri_size-1, y+height-tri_start,
+                           x+tri_start+tri_size-1, y+tri_start, color(CONTENT));
+      display.drawTriangle(x+width-tri_start, y+tri_start+(tri_size>>1),
+                           x+width-tri_size-tri_start, y+tri_start,
+                           x+width-tri_size-tri_start, y+height-tri_start, color(CONTENT));
     } else {
-      newUp = display.isTouched(x, y, width, width);
-      newDown = display.isTouched(x, y+height-width, width, width);
+      // Draw the up/down buttons
+      display.fillRect(x+1, y+1, width-2, width-2, color_btn1);
+      display.fillRect(x+1, y+height-width+1, width-2, width-2, color_btn2);
+
+      // Draw the up/down arrows
+      int tri_size = (int) (width*0.7);
+      int tri_start = (width>>1) - (tri_size>>1);
+      display.drawTriangle(x+tri_start, y+tri_start+tri_size-1,
+                           x+tri_start+tri_size, y+tri_start+tri_size-1,
+                           x+tri_start+(tri_size>>1), y+tri_start-1, color(CONTENT));
+      display.drawTriangle(x+tri_start, y+height-tri_start-tri_size,
+                           x+tri_start+tri_size, y+height-tri_start-tri_size,
+                           x+tri_start+(tri_size>>1), y+height-tri_start, color(CONTENT));
     }
-    // If not pressing the buttons, we are selecting somewhere in between
-    newBar = !newUp && !newDown && !longLayout && barSize>10;
-    if (newBar) {
-      int scrollDiff = (scrollMax-scrollMin);
-      int barHandleSize = max(3, (scrollDiff==1) ? (barSize/2) : (barSize / scrollDiff));
-      int yPos_a = y+width;
-      int yPos_b = y+height-width-barHandleSize;
-      float fact = (float) (display.getTouch().y-yPos_a) / (float) (yPos_b-yPos_a);
-      fact = constrain(fact, 0.0F, 1.0F);
-      setValue(scrollMin + (int)(scrollDiff * fact));
-    }
-  } else {
-    newUp = false;
-    newDown = false;
-    newBar = false;
   }
 
-  // Update state
-  if (newBar != pressedBar) {
-    pressedBar = newBar;
-    invalidate();
-  }
-  if (newUp != pressedUp) {
-    pressedUp = newUp;
-    invalidate();
-    if (pressedUp)
-      setValue(value() - 1);
-  }
-  if (newDown != pressedDown) {
-    pressedDown = newDown;
-    invalidate();
-    if (pressedDown)
-      setValue(value() + 1);
+  // Draw the bar when forced and only when the bar is larger than 10
+  if ((redrawing || barChanged || barPressChanged) && (barSize > 10)) {
+    int scrollPosFixed = scrollReversed ? (scrollMin - scrollPos) : scrollPos;
+    int prevSliderPos = this->sliderPos;
+    this->sliderPos = (int) ((float) (barSize-barHandleSize) * (float) (scrollPosFixed-scrollStart) / (float)scrollDiff);
+    if (longLayout) {
+      // Transform position for horizontal layout
+      this->sliderPos = x+height+this->sliderPos;
+
+      // Erase previous bar if not redrawing / first draw
+      if (!redrawing) {
+        display.fillRect(prevSliderPos, y+1, barHandleSize, height-2, color(FOREGROUND));
+      }
+
+      // Update and draw the new bar
+      display.drawRect(this->sliderPos, y+1, barHandleSize, height-2, color(CONTENT));
+      display.fillRect(this->sliderPos+1, y+2, barHandleSize-2, height-4, color(barIsTouched ? HIGHLIGHT : FOREGROUND));
+    } else {
+      // Transform position for vertical layout
+      this->sliderPos = y+height-width-this->sliderPos-barHandleSize;
+
+      // Erase previous bar if not redrawing / first draw
+      if (!redrawing) {
+        display.fillRect(x+1, prevSliderPos, width-2, barHandleSize, color(FOREGROUND));
+      }
+
+      // Update and draw the new bar
+      display.drawRect(x+1, this->sliderPos, width-2, barHandleSize, color(CONTENT));
+      display.fillRect(x+2, this->sliderPos+1, width-4, barHandleSize-2, color(barIsTouched ? HIGHLIGHT : FOREGROUND));
+    }
   }
 }

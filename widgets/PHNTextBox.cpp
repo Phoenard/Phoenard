@@ -107,7 +107,7 @@ void PHN_TextBox::updateScrollLimit() {
   int scrollMax = row - rows + 1;
   if (col == cols)
     scrollMax++;
-  scroll.setRange(0, max(0, scrollMax));
+  scroll.setRange(max(0, scrollMax), 0);
 }
 
 void PHN_TextBox::setSelectionRange(int position, int length) {
@@ -425,7 +425,7 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
   int scrollMax = row - rows + scrollOffset + 1;
   if (col == cols)
     scrollMax++;
-  scroll.setRange(0, max(0, scrollMax));
+  scroll.setRange(max(0, scrollMax), 0);
 
   // Restore viewport
   display.setViewport(old);

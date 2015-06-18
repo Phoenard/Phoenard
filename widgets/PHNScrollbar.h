@@ -55,10 +55,12 @@ class PHN_Scrollbar : public PHN_Widget {
   virtual void draw(void);
   virtual void update(void);
  private:
+  void updateBar(bool redrawing);
   int scrollPos, scrollMin, scrollMax;
-  int barSize;
-  bool pressedUp, pressedDown, pressedBar;
-  bool longLayout, valueChanged;
+  int sliderPos;
+  bool barWasPressed;
+  bool navWasPressed;
+  bool valueChanged;
 };
 
 #endif
