@@ -10,6 +10,10 @@
 #define LCD_RIGHT_BORDER    32
 #define HOLD_ACTIVATE_DELAY 1000
 
+/* Swipe settings and calibration */
+#define SWIPE_FADE          0.05
+#define SWIPE_THRESHOLD     2.0
+
 /* Sketches list settings */
 #define SKETCHES_CNT_X      4
 #define SKETCHES_CNT_Y      3
@@ -87,8 +91,11 @@
 #define COLOR_NAME_KEY_SEL  BLUE_8BIT  /* Key foreground color when pressed */
 
 /* LCD touch input variables */
-uint16_t touch_x, touch_y;
-boolean touch_waitup;
+uint16_t touch_x, touch_y; /* Touch x/y coordinates, is 0xFFFF when not pressed */
+boolean touch_waitup;      /* Whether we are waiting a cycle */
+uint32_t swipe_last_time;  /* Last known time while swiping */
+uint16_t swipe_last_pos;   /* Last known position while swiping */
+float swipe_speed;         /* Speed of swiping in pixels/ms */
 
 /* Sketch information buffer */
 typedef struct {
@@ -327,8 +334,37 @@ void loop() {
     }
   } while ((icon_idx < MENU_IDX_NONE) && (sketch_index < sketches_buff_cnt));
 
+  /* Update the swipe measurements, on release perform action */
+  if (!LCD_isTouchedAny()) {
+    /* Handle releases, evaluate previously measured swipe speed */
+    if (swipe_speed > SWIPE_THRESHOLD) {
+      sketch_icon_dirty[touchedIndex] = 1;
+      touchedIndex = MENU_IDX_DOWN;
+    }
+    if (swipe_speed < -SWIPE_THRESHOLD) {
+      sketch_icon_dirty[touchedIndex] = 1;
+      touchedIndex = MENU_IDX_UP;
+    }
+    swipe_speed = 0.0F;
+  } else if (swipe_last_pos != 0xFFFF) {
+    /* Handle swipe speed measurement */
+    float diff = (float) ((int) touch_y - (int) swipe_last_pos);
+    float time = (float) (millis() - swipe_last_time);
+    float curr_speed = diff / time;
+    if (abs(curr_speed) > abs(swipe_speed)) {
+      swipe_speed = curr_speed;
+    } else {
+      swipe_speed += SWIPE_FADE * (curr_speed - swipe_speed);
+    }
+  }
+
+  /* Update last known swipe position and time */
+  swipe_last_pos = touch_y;
+  swipe_last_time = millis();
+
   /* Handle button presses here */
   if (touchedIndex != MENU_IDX_NONE) {
+
     /* Open edit menu when holding down on a sketch icon for some time */
     if (touchedIndex >= MENU_IDX_SKET && ((millis() - pressed_time_start) > HOLD_ACTIVATE_DELAY)) {
       editSketch(sketch_icon_text[touchedIndex], false);
@@ -340,7 +376,7 @@ void loop() {
         case MENU_IDX_UP:
           /* Move sketch list one page up, ignore if impossible */
           if (sketch_offset) {
-            sketch_offset -=  SKETCHES_PGINCR;
+            sketch_offset -= SKETCHES_PGINCR;
             redrawIcons = true;
           }
           break;
