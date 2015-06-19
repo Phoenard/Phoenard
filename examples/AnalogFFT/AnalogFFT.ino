@@ -32,6 +32,8 @@
 #define FD_GRAPH_CNT   62
 
 /* FFT state variables */
+int16_t fft_zeroPoint = 0;           /* Zero-center point relative to which ADC is measured */
+float fft_zeroPointF = 0.0F;         /* Zero-center point running average */
 volatile byte fft_position = 0;      /* Running position of the FFT */
 int16_t fft_capture[FFT_N];          /* Waveform ADC capturing buffer */
 complex_t bfly_buff[FFT_N];          /* FFT buffer */
@@ -104,6 +106,10 @@ void displayFFT() {
     x += FD_GRAPH_SIZE + 1;
   }
 
+  // Refresh zero-point using a running average
+  fft_zeroPointF += 0.01 * (float) (captureSum / FD_GRAPH_CNT);
+  fft_zeroPoint = (int16_t) fft_zeroPointF;
+
   // Convert the sum of all waveform captures into a graph intensity range
   intensity = map(captureSum,-10000,10000,TD_GRAPH_Y,TD_GRAPH_Y+TD_GRAPH_H);
   intensity = constrain(intensity, TD_GRAPH_Y, TD_GRAPH_Y+TD_GRAPH_H);
@@ -125,6 +131,9 @@ ISR(ADC_vect) {
   if (fft_position < FFT_N) {
     /* Input ADC value */
     value = ADC;
+
+    /* Subtract zero-offset */
+    value -= fft_zeroPoint;
 
     /* Add random noise */
     if (RANDOM_NOISE) {
