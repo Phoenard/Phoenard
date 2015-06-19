@@ -21,7 +21,7 @@
 
 /* Time-domain graph settings */
 #define TD_GRAPH_X     6
-#define TD_GRAPH_Y     22
+#define TD_GRAPH_Y     21
 #define TD_GRAPH_W     306
 #define TD_GRAPH_H     90
 
@@ -115,7 +115,7 @@ void displayFFT() {
   // Increment time position, wipe when fully filled up
   if (++timePos >= (TD_GRAPH_X+TD_GRAPH_W)) {
     timePos = TD_GRAPH_X;
-    display.fillRect(TD_GRAPH_X, TD_GRAPH_Y, TD_GRAPH_W+2, TD_GRAPH_H, BLACK);
+    display.fillRect(TD_GRAPH_X, TD_GRAPH_Y+1, TD_GRAPH_W+2, TD_GRAPH_H, BLACK);
   }
 }
 
