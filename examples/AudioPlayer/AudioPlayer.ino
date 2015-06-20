@@ -23,10 +23,11 @@ void setup() {
   playButton.setBounds(50, 50, 150, 140);
   playButton.setText("Play!");
   display.addWidget(playButton);
-  
+
   // Setup the volume slider widget
+  // Use volume 0 as max, because volume 0 is loudest
   volumeSlider.setBounds(246, 40, 30, 240-60);
-  volumeSlider.setRange(0, 64);
+  volumeSlider.setRange(64, 0);
   volumeSlider.setValue(50);
   display.addWidget(volumeSlider);
   
