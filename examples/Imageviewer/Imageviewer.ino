@@ -19,7 +19,7 @@ void loop() {
 
 void ShowImages(File dir) {
   // Go through all files and subdirectories
-  for (File entry = dir.openNextFile(); entry; ) {
+  for (File entry; entry = dir.openNextFile(); entry) {
     char* name = entry.name();
     char* ext = name + strlen(name) - 3;
 

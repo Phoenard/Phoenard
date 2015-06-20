@@ -951,7 +951,7 @@ void PHN_Display::drawImageMain(Stream &imageStream, int x, int y, void (*color)
       // Read LCD headers
       Imageheader_LCD header;
       imageStream.readBytes((char*) &header, sizeof(header));
-      uint32_t imagePixels = header.width * header.height;
+      uint32_t imagePixels = (uint32_t) header.width * (uint32_t) header.height;
 
       // Read colormap, empty if not used/available
       color_t colorMap[header.colors];
