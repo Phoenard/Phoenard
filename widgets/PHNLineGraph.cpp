@@ -37,7 +37,13 @@ void PHN_LineGraph::setRange(float minimum, float maximum) {
 
 void PHN_LineGraph::clear() {
   _pos = 0;
-  invalidate();
+  draw();
+}
+
+void PHN_LineGraph::addValue(float value) {
+  float v[1];
+  v[0] = value;
+  addValues(v);
 }
 
 void PHN_LineGraph::addValues(const float* values) {
@@ -45,7 +51,7 @@ void PHN_LineGraph::addValues(const float* values) {
   if (_pos >= width-2) {
     _pos = 0;
     if (!autoClearDisabled) {
-      invalidate();
+      clear();
     }
   }
 
@@ -63,19 +69,22 @@ void PHN_LineGraph::addValues(const float* values) {
       y_new = 1 + (values[i] - _min) / (_max - _min) * (height-2);
     }
 
+    // Reverse the y-value
+    y_new = height - y_new - 1;
+
     // If not auto-clearing, wipe the current column first
     if (autoClearDisabled) {
       display.drawVerticalLine(x+x_new, y+1, height-2, this->color(BACKGROUND));
     }
 
     // Draw a line connecting old with new
-    // If position is 0, draw only a dot.
-    if (_pos) {
+    // If position is 0 or value did not change, draw only a dot.
+    if (_pos && (*y_old_ptr != y_new)) {
       display.drawLine(x+x_new, y+*y_old_ptr, x+x_new, y+y_new, color);
     } else {
       display.drawPixel(x+x_new, y+y_new, color);
     }
-    
+
     // Update old position
     *y_old_ptr = y_new;
   }

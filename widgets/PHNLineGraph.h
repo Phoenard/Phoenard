@@ -55,6 +55,8 @@ class PHN_LineGraph : public PHN_Widget {
   const unsigned int position(void) { return _pos; }
   /// Adds a new column of values; values being a value for each line
   void addValues(const float* values);
+  /// Adds a new column of a line of values
+  void addValue(float value);
   /// Sets whether the graph is automatically cleared every turn
   void setAutoClear(bool autoClear) { autoClearDisabled = !autoClear; }
   /// Clears the graph

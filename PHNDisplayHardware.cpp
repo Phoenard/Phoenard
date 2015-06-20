@@ -530,6 +530,23 @@ namespace PHNDisplay16Bit {
       }
     }
   }
+  
+  void writePixels(uint16_t* colorData, uint16_t length) {
+    uint16_t* p = colorData;
+    uint16_t* p_end = p + length;
+    do {
+      /* Write the first byte, subtract length within data write to add delay */
+      TFTLCD_WR_PORT = WR_WRITE_A;
+      TFTLCD_DATA_PORT = *p >> 8;
+      length--;
+      TFTLCD_WR_PORT = WR_WRITE_B;
+      /* Write the second byte, fill cycles with NOPs to add delay */
+      TFTLCD_WR_PORT = WR_WRITE_A;
+      TFTLCD_DATA_PORT = *p & 0xFF;
+      asm volatile ("nop\n");
+      TFTLCD_WR_PORT = WR_WRITE_B;
+    } while (++p != p_end);
+  }
 
   void drawLine(uint16_t x, uint16_t y, uint32_t length, uint8_t direction, uint16_t color) {
     /* Move cursor to the right position */

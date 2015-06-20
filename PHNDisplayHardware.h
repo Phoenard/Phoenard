@@ -294,6 +294,8 @@ namespace PHNDisplay16Bit {
   uint16_t readPixel();
   /// Writes out many 16-bit color pixels in bulk, length is the amount of pixels to write out
   void writePixels(uint16_t color, uint32_t length);
+  /// Writes out many 16-bit color pixels in bulk, using an array of pixel data
+  void writePixels(uint16_t* colorData, uint16_t length);
   /// Drawing a line with 16-bit color
   void drawLine(uint16_t x, uint16_t y, uint32_t length, uint8_t direction, uint16_t color);
   /// Fills the entire screen with 16-bit color
