@@ -243,6 +243,14 @@ namespace PHNDisplayHW {
     int b = (int) color565Blue(colorA) + (int) color565Blue(colorB);
     return color565(r >> 1, g >> 1, b >> 1);
   }
+  
+  color_t colorLerp(color_t colorA, color_t colorB, float f) {
+    float cf = (1.0 - f);
+    float r = cf * color565Red(colorA) + f * color565Red(colorB);
+    float g = cf * color565Green(colorA) + f * color565Green(colorB);
+    float b = cf * color565Blue(colorA) + f * color565Blue(colorB);
+    return color565((uint8_t) r, (uint8_t) g, (uint8_t) b);
+  }
 
   uint8_t color565Red(color_t color) {
     return (color & 0x001F) << 3;

@@ -241,6 +241,8 @@ namespace PHNDisplayHW {
   color_t color565(uint8_t r, uint8_t g, uint8_t b);
   /// Calculates the average of two 16-bit 565 colors
   color_t colorAverage(color_t colorA, color_t colorB);
+  /// Performs linear interpolation between two 16-but 565 colors
+  color_t colorLerp(color_t colorA, color_t colorB, float f);
   /// Obtains the RED component of a 16-bit 565 color
   uint8_t color565Red(color_t color);
   /// Obtains the GREEN component of a 16-bit 565 color
