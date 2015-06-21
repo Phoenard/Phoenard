@@ -97,6 +97,12 @@ void PHN_LineGraph::update() {
 }
 
 void PHN_LineGraph::draw() {
-  display.fillRect(x + 1, y + 1, width - 2, height - 2, color(BACKGROUND));
+  // Draw the frame
   display.drawRect(x, y, width, height, color(FRAME));
+
+  // Fill the background by drawing from left to right
+  color_t bg = color(BACKGROUND);
+  for (int dx = 1; dx < (width - 1); dx++) {
+    display.drawVerticalLine(x + dx, y + 1, height - 2, bg);
+  }
 }

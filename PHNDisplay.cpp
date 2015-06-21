@@ -545,7 +545,20 @@ bool PHN_Display::isTouchChange(uint16_t x, uint16_t y, uint16_t width, uint16_t
 
 void PHN_Display::update() {
   updateTouch();
-  updateWidgets(true, true, false);
+  PHN_WidgetContainer::updateWidgets(true, true, false);
+}
+
+void PHN_Display::updateWidgets() {
+  touchStart.pressure = 0.0F;
+  touchLive.pressure = 0.0F;
+  touchLast.pressure = 0.0F;
+  touchInput = false;
+  touchInputLive = false;
+  touchInputSlider = false;
+  touchClicked = false;
+  sliderDown = false;
+  sliderWasDown = false;
+  PHN_WidgetContainer::updateWidgets(true, true, false);
 }
 
 void PHN_Display::updateTouch() {
