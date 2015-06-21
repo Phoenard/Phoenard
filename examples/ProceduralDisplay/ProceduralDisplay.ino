@@ -17,7 +17,7 @@
 #define SECTION_LENGTH 4000  // The length of a single animated section
 
 /* A list of functions the renderer will go through */
-void (*functions[])() = {planetGen, tunnelGen, bouncingLineGen, sineWaveGen};
+void (*functions[])() = {slideshowGen, planetGen, tunnelGen, slideshowGen, bouncingLineGen, sineWaveGen};
 
 color_t terrainBuffer[TERRAIN_LENGTH]; // Buffer of the current terrain line being generated
 int terrainPosition = 0;               // Current scrolling position on the screen

@@ -27,7 +27,7 @@ void tunnelGen() {
       colorF = 0.0F;
       colorA = colorB;
       
-      uint8_t r = random(0xFF);
+      uint8_t r = 128 + random(128);
       colorB = PHNDisplayHW::color565(r, r, r);
     }
         
