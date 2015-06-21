@@ -58,7 +58,7 @@ void PHN_LineGraph::addValues(const float* values) {
   // Draw the line
   for (unsigned char i = 0; i < _dim; i++) {
     color_t color = _lineColors.get(i);
-    unsigned int *y_old_ptr = (unsigned int*) _lastValues.data;
+    unsigned int *y_old_ptr = (unsigned int*) _lastValues.data + i;
     unsigned int x_new = _pos + 1;
     unsigned int y_new;
     if (values[i] <= _min) {
