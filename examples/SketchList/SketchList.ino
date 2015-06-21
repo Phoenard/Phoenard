@@ -359,7 +359,7 @@ void loop() {
   }
 
   /* Update last known swipe position and time */
-  swipe_last_pos = touch_y;
+  swipe_last_pos = (touch_x <= (SKETCHES_FULLW+SKETCHES_OFF_X)) ? touch_y : 0xFFFF;
   swipe_last_time = millis();
 
   /* Handle button presses here */
