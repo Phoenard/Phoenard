@@ -72,9 +72,11 @@ void PHN_LineGraph::addValues(const float* values) {
     // Reverse the y-value
     y_new = height - y_new - 1;
 
-    // If not auto-clearing, wipe the current column first
+    // If not auto-clearing, wipe the next future column first
     if (autoClearDisabled) {
-      display.drawVerticalLine(x+x_new, y+1, height-2, this->color(BACKGROUND));
+      int x_next = x_new+1;
+      if (x_next >= (width-1)) x_next = 1;
+      display.drawVerticalLine(x+x_next, y+1, height-2, this->color(BACKGROUND));
     }
 
     // Draw a line connecting old with new
