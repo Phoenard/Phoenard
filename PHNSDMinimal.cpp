@@ -71,14 +71,15 @@ uint8_t card_command(uint8_t cmd, uint32_t arg, uint8_t crc) {
   uint8_t* command_data;
 
   /* Wait until no longer busy */
-  /* Unused, does not appear to be required */
-  /* card_waitForData(DATA_IDLE_BLOCK); */
+  /* Replaced by adding 4 flush bytes in the command struct */
+  /* card_waitForData(0xFF); */
 
   /* 
    * Write out the full command
    * First all arguments are packed into a single command struct
    * Then the entire struct is written out in one go
    */
+  command.flush = 0xFFFFFFFF;
   command.cmd = cmd | 0x40;
   command.arg = arg;
   command.crc = crc;

@@ -78,6 +78,7 @@ typedef struct {
   uint8_t crc;
   uint32_t arg;
   uint8_t cmd;
+  uint32_t flush;
 } CardCommand;
 
 /// Stores all information about a loaded volume
