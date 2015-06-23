@@ -40,7 +40,7 @@ THE SOFTWARE.
 #define SIM_PWR_DELAY 1500
 
 // AT Command timeout in MS.
-#define SIM_ATCOMMAND_TIMEOUT 400
+#define SIM_ATCOMMAND_TIMEOUT 600
 // AT Send Text message timeout in MS
 #define SIM_ATCOMMAND_SENDTEXT_TIMEOUT 8000
 // Total amount of times an AT Command will be executed
@@ -114,19 +114,27 @@ public:
   /// Toggles power on or off - for async toggling
   void togglePower();
 
-  /// Enters SIM Pin code
-  bool enterPin(const char* pin);
-  /// Gets the pin entering status
-  int getPinStatus();
+  // Read SIM general information
+  /// Reads the SIM network registration status
+  int getRegStatus();
   /// Reads the current data according to the SIM
   Date readDate();
   /// Reads the SIM provider name
   bool readProvider(char* buffer, int bufferLength);
-  /// Reads the battery level
+  /// Reads the battery level ranging 0.0 (empty) to 1.0 (full)
   float readBatteryLevel();
-  /// Reads the signal level
+  /// Reads the signal level in dB, is 0 when there is no connection
   int readSignalLevel();
 
+  // Reading/Entering of access codes
+  /// Enters SIM Pin code
+  bool enterPin(const char* pin);
+  /// Enters SIM PUK and new Pin code
+  bool enterPuk(const char* puk, const char* newPin);
+  /// Gets the pin entering status
+  int getPinStatus();
+
+  // Calling
   /// Initiates a call
   void call(const char* address);
   /// Ends the current call, or cancels a call
@@ -137,6 +145,8 @@ public:
   int getCallStatus();
   /// Gets the number of the person calling this SIM
   String getIncomingNumber();
+  /// Sends a DTMF tone number, does nothing when character is NULL
+  void sendDTMF(char character);
 
   // Text messages
   /// Reads a message from the inbox
@@ -182,6 +192,7 @@ public:
   int callStatus;
   char incomingNumber[20];
   bool initialized;
+  bool callReady, gpsReady; // Used when switching between call/gps mode
 
   /// Waits until reading is possible with the default timeout
   bool waitRead();

@@ -39,6 +39,8 @@ void PHN_Sim::init() {
   this->callStatus = SIM_CALL_STATUS_NONE;
   this->latestInbox = -1;
   this->initialized = true;
+  this->callReady = false;
+  this->gpsReady = false;
 }
 
 void PHN_Sim::begin() {
@@ -82,6 +84,9 @@ void PHN_Sim::update() {
       inputBuffer[inputIndex++] = Serial1.read();
     }
     inputBuffer[inputIndex] = 0;
+
+    // Debugging: log all incoming data
+    Serial.print("Update input: ");
     Serial.println(inputBuffer);
 
     // Find any commands in the received message
@@ -114,6 +119,10 @@ void PHN_Sim::update() {
             latestInbox = atoi(args[1]);
           }
         }
+      } else if (strstr(inputText, "GPS Ready") == inputText) {
+        gpsReady = true;
+      } else if (strstr(inputText, "Call Ready") == inputText) {
+        callReady = true;
       }
     }
   }
@@ -138,16 +147,27 @@ bool PHN_Sim::readToken(const char *token, unsigned long timeoutMS) {
   return true;
 }
 
+bool PHN_Sim::enterPuk(const char* puk, const char* newPin) {
+  // Build the enter puk+pin command
+  char pukPin[50];
+  String pukPinStr;
+  pukPinStr += puk;
+  pukPinStr += ",";
+  pukPinStr += newPin;
+  pukPinStr.toCharArray(pukPin, sizeof(pukPin));
+  return enterPin(pukPin);
+}
+
 bool PHN_Sim::enterPin(const char* pin) {
   // Build the enter pin command
-  char command[13];
-  memcpy(command, "AT+CPIN=", 8);
-  strncpy(command+8, pin, 4);
-  command[12] = 0;
-  
-  if (sendATCommand(command)) {
-    // Wait for the 'Call Ready' Response
-    return readToken("Call Ready", 10000);
+  char command[50];
+  String commandStr;
+  commandStr += "AT+CPIN=";
+  commandStr += pin;
+  commandStr.toCharArray(command, sizeof(command));
+
+  if (sendATCommand(command) && (getPinStatus() == SIM_PIN_STATUS_READY)) {
+    return true;
   }
   return false;
 }
@@ -176,6 +196,16 @@ Date PHN_Sim::readDate() {
   return date;
 }
 
+int PHN_Sim::getRegStatus() {
+  char resp[50];
+  char *regArgs[2];
+  sendATCommand("AT+CREG?", resp, sizeof(resp));
+  if (getSimTextArgs(resp, regArgs, 2) == 2) {
+    return atoi(regArgs[1]);
+  }
+  return 0;
+}
+
 bool PHN_Sim::readProvider(char* buffer, int bufferLength) {
   char resp[50];
   char *provArgs[3];
@@ -193,21 +223,28 @@ bool PHN_Sim::readProvider(char* buffer, int bufferLength) {
 }
 
 float PHN_Sim::readBatteryLevel() {
-  char resp[20];
+  char resp[30];
   char *args[3];
-  if (sendATCommand("AT+CBC", resp, 20) && getSimTextArgs(resp, args, 3) == 3) {
-    return 0.01 * atoi(args[1]);
+  if (!sendATCommand("AT+CBC", resp, sizeof(resp))) {
+    return 0.0F;
   }
-  return 0.0;
+  if (getSimTextArgs(resp, args, 3) != 3) {
+    return 0.0;
+  }
+  return 0.01 * atoi(args[1]);
 }
 
 int PHN_Sim::readSignalLevel() {
-  char resp[20];
+  char resp[30];
   char *args[2];
-  uint8_t raw = 99;
-  if (sendATCommand("AT+CSQ", resp, 20) && getSimTextArgs(resp, args, 2) == 2) {
-    raw = atoi(args[0]);
+  if (!sendATCommand("AT+CSQ", resp, sizeof(resp))) {
+    return 0;
   }
+  if (getSimTextArgs(resp, args, 2) != 2) {
+    return 0;
+  }
+
+  uint8_t raw = atoi(args[0]);
   if (raw == 99) {
     return 0;
   } else if (raw == 0) {
@@ -250,6 +287,16 @@ int PHN_Sim::getCallStatus() {
 
 String PHN_Sim::getIncomingNumber() {
   return String(incomingNumber);
+}
+
+void PHN_Sim::sendDTMF(char character) {
+  if (character) {
+    char command[9];
+    memcpy(command, "AT+VTS=", 7);
+    command[7] = character;
+    command[8] = 0;
+    sendATCommand(command);
+  }
 }
 
 bool PHN_Sim::hasNewMessage() {
@@ -348,7 +395,7 @@ bool PHN_Sim::sendMessage(char* receiverAddress, char* messageText) {
 bool PHN_Sim::writeATCommand(const char* command) {
   // Before executing anything, flush the serial with an update
   update();
-  
+
   // Execute the command, retry as needed
   uint8_t retryIdx, readIdx;
   for (retryIdx = 0; retryIdx < SIM_ATCOMMAND_TRYCNT; retryIdx++) {
@@ -360,7 +407,7 @@ bool PHN_Sim::writeATCommand(const char* command) {
     if (!waitRead()) {
       continue;
     }
-  
+
     // Try reading back the echo from the SIM, and validate
     readIdx = 0;
     while (command[readIdx] && waitRead()) {
@@ -371,7 +418,7 @@ bool PHN_Sim::writeATCommand(const char* command) {
     if (command[readIdx]) {
       continue;
     }
-  
+
     // Read the two newline characters (\r\n) as well
     if (!waitRead() || Serial1.read() != '\r')
       continue;
@@ -381,6 +428,7 @@ bool PHN_Sim::writeATCommand(const char* command) {
     // Success!
     return true;
   }
+
   return false;
 }
 
@@ -395,13 +443,16 @@ bool PHN_Sim::sendATCommand(const char* command, char* respBuffer, uint16_t resp
 bool PHN_Sim::sendATCommand(const char* command, char* respBuffer, uint16_t respBufferLength, long timeout) {
   if (!writeATCommand(command)) {
     // Failure to communicate the command
-    Serial.println("Command got no response!");
+    //Serial.println("Command got no response!");
     return false;
   }
 
-  // Read the response from the command
+  // Prepare a buffer for storing the last bytes for checking for OK/ERROR status
   const int statusBufferLen = 9;
   char statusBuffer[statusBufferLen+1];
+  memset(statusBuffer, 0, sizeof(statusBuffer));
+
+  // Read the response from the command  
   uint16_t length = 0;
   bool ok = false, error = false;
   while (waitAvailable(Serial1, timeout)) {
@@ -455,10 +506,10 @@ bool PHN_Sim::sendATCommand(const char* command, char* respBuffer, uint16_t resp
     // Delimit end of String with a NULL character
     respBuffer[length] = 0;
   }
-
+  
   // Debug
   if (!error && !ok) {
-    Serial.println("NO RESULTCODE!");
+    //Serial.println("NO RESULTCODE!");
   }
   return ok;
 }
@@ -481,25 +532,26 @@ int PHN_Sim::getSimTextArgs(char *text, char **args, int argCount) {
       break;
     }
     if (text[textIndex] == '"') {
-      args[argCount++] = text+(++textIndex);
+      args[argCount++] = text+textIndex+1;
       // Read argument up till next '"'
-      do {
+      while (text[++textIndex]) {
         if (text[textIndex] == '"') {
           text[textIndex++] = 0;
           break;
         }
-      } while (text[++textIndex]);
+      }
     } else {
       args[argCount++] = text+(textIndex);
     }
     // Move to the end of the current argument (after ',' or '\r')
-    do {
+    while (text[++textIndex]) {
       if (text[textIndex] == ',' || text[textIndex] == '\r') {
         text[textIndex++] = 0;
         break;
       }
-    } while (text[++textIndex]);
+    }
   }
+
   return argCount;
 }
 

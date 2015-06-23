@@ -265,6 +265,8 @@ class PHN_Display : public PHN_WidgetContainer {
   void drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, color_t color);
   /// Fills a rectangle at [x, y] with dimensions [w, h]
   void fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, color_t color);
+  /// Fills a rectangle at [x, y] with dimensions [w, h], the outside set to a 1-pixel wide border
+  void fillBorderRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, color_t color, color_t borderColor);
   /// Draws a rounded rectangle at [x, y] with dimensions [w, h] with the rounded radius
   void drawRoundRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t radius, color_t color);
   /// Fills a rounded rectangle at [x, y] with dimensions [w, h] with the rounded radius

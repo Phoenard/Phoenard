@@ -319,8 +319,8 @@ void PHN_TextBox::update() {
 
 void PHN_TextBox::draw() {
   // Draw background color and grid
-  display.fillRect(x+1, y+1, textAreaWidth-1, height-2, color(FOREGROUND));
-  display.drawRect(x, y, textAreaWidth+1, height, color(FRAME));
+  display.fillRect(x+1, y+1, textAreaWidth-2, height-2, color(FOREGROUND));
+  display.drawRect(x, y, textAreaWidth, height, color(FRAME));
   
   // Draw text
   drawTextFromTo(0, this->length, false);

@@ -80,6 +80,7 @@ writePixels	KEYWORD2
 writePixelLines	KEYWORD2
 drawRect	KEYWORD2
 fillRect	KEYWORD2
+fillBorderRect	KEYWORD2
 drawTriangle	KEYWORD2
 fillTriangle	KEYWORD2
 drawCircle	KEYWORD2
