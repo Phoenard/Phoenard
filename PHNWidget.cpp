@@ -109,6 +109,7 @@ void PHN_Widget::draw_validate() {
     drawn = true;
     draw();
   } else if (drawn) {
+    drawn = false;
     fillWidgetArea(color(BACKGROUND));
   }
 }
