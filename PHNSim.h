@@ -119,6 +119,8 @@ public:
   // Read SIM general information
   /// Reads the SIM network registration status
   int getRegStatus();
+  /// Checks if the SIM has a connection with a network (is registered)
+  bool isConnected();
   /// Reads the current data according to the SIM
   Date readDate();
   /// Reads the SIM provider name

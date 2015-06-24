@@ -211,6 +211,11 @@ int PHN_Sim::getRegStatus() {
   return 0;
 }
 
+bool PHN_Sim::isConnected() {
+  int status = getRegStatus();
+  return (status == 1) || (status == 5);
+}
+
 bool PHN_Sim::readProvider(char* buffer, int bufferLength) {
   char resp[50];
   char *provArgs[3];
