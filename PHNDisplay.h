@@ -142,6 +142,8 @@ class PHN_Display : public PHN_WidgetContainer {
   PHN_Display();
   /// Put the LCD-screen to sleep or wake it up again for reducing power consumption
   void setSleeping(bool sleeping);
+  /// Changes the brightness of the LCD LED backlight, level being 0 - 256
+  void setBacklight(int level);
   /// Updates the touch input, then all widgets attached to the display
   void update();
   /// Updates only the touch input, use this instead of update() to save code if not using widgets

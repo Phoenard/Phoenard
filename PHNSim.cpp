@@ -280,6 +280,10 @@ void PHN_Sim::acceptCall() {
   callStatus = SIM_CALL_STATUS_CALLING;
 }
 
+bool PHN_Sim::isCalled() {
+  return getCallStatus() == SIM_CALL_STATUS_CALLED;
+}
+
 int PHN_Sim::getCallStatus() {
   update();
   return callStatus;

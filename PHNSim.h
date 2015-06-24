@@ -141,6 +141,8 @@ public:
   void endCall();
   /// Accepts the call
   void acceptCall();
+  /// Checks whether the SIM is being called, used getCallStatus()
+  bool isCalled();
   /// Gets the calling status
   int getCallStatus();
   /// Gets the number of the person calling this SIM
