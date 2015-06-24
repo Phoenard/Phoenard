@@ -153,11 +153,6 @@ boolean isScreenTouched() {
   return pressure >= PHNDisplayHW::PRESSURE_THRESHOLD;
 }
 
-boolean isSelectPressed() {
-  //return !(PIND & _BV(PD5));
-  return !digitalRead(SELECT_PIN);
-}
-
 /** ========================================================== **/
 
 TestResult testScreen() {

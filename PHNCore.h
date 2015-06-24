@@ -52,6 +52,9 @@ static const uint8_t SELECT_PIN = 38;
 #define SELECT_IN     PIND
 #define SELECT_MASK   _BV(PD7)
 
+/* Macro to check if the SELECT button is pressed */
+#define isSelectPressed()  ((SELECT_IN & SELECT_MASK) != SELECT_MASK)
+
 /* SPI SS/MOSI/MISO/SCK registers */
 #define SPI_DDR        DDRB
 #define SPI_PORT       PORTB
