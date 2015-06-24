@@ -107,6 +107,8 @@ public:
   void begin();
   /// Shuts off the SIM
   void end();
+  /// Resets all SIM AT parameters to the factory defaults
+  void reset();
   /// Receives SIM status codes, call routinely to keep up to date
   void update();
   /// Checks if the SIM is currently turned on

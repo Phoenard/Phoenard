@@ -63,6 +63,10 @@ void PHN_Sim::end() {
   }
 }
 
+void PHN_Sim::reset() {
+  writeATCommand("AT&F");
+}
+
 bool PHN_Sim::isOn() {
   return digitalRead(SIM_DTRS_PIN);
 }
