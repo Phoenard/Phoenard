@@ -404,7 +404,7 @@ bool PHN_Sim::sendMessage(char* receiverAddress, char* messageText) {
   }
 
   // Wait until the > token is read indicating SIM is ready for the message
-  readToken("\r\n> ", 100)
+  readToken("\r\n> ", 100);
 
   // Write the text message, with end token. Message is echo'd back by the SIM.
   // Response includes '+CMGS: 70', where 70 is the index of the message
