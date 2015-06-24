@@ -178,7 +178,7 @@ public:
   bool sendATCommand(const char* command, char* respBuffer, uint16_t respBufferLength);
   /// Sends a command and receives the response, returns whether it was successful
   bool sendATCommand(const char* command, char* respBuffer, uint16_t respBufferLength, long timeout);
-  /// Writes the command, handling non-responsiveness and retries
+  /// Writes the command, handling non-responsiveness and retries, not reading the full response
   bool writeATCommand(const char* command);
 
   /** @brief Reads the arguments sent in a sim text response message

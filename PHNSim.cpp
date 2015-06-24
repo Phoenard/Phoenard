@@ -50,7 +50,7 @@ void PHN_Sim::begin() {
     togglePower();
 
     // Wait until SIM responds
-    while (!writeATCommand("AT"));
+    while (!sendATCommand("AT"));
   }
 }
 
@@ -64,7 +64,8 @@ void PHN_Sim::end() {
 }
 
 void PHN_Sim::reset() {
-  writeATCommand("AT&F");
+  sendATCommand("AT&F");
+  sendATCommand("AT+CRC=1");
 }
 
 bool PHN_Sim::isOn() {
@@ -330,7 +331,7 @@ void PHN_Sim::deleteMessage(uint8_t messageIndex) {
 
 SimMessage PHN_Sim::readMessage(uint8_t messageIndex) {
   // Put into text mode
-  sendATCommand("AT+CMGF=1", 0, 0);
+  sendATCommand("AT+CMGF=1");
 
   // Set up a command to read the message
   char command[13] = "AT+CMGR=";
@@ -375,13 +376,16 @@ SimContact PHN_Sim::readContact(uint8_t contactIndex) {
 }
 
 bool PHN_Sim::sendMessage(char* receiverAddress, char* messageText) {
-  char command[200];
+  char command[300];
   int index;
 
   // Set to text message mode
-  writeATCommand("AT+CMGF=1");
+  if (!sendATCommand("AT+CMGF=1")) {
+    return false;
+  }
 
-  // Write the message start command containing the dest. address
+  // Write the message start command containing the receiver address
+  // No further response happens, use writeATCommand instead of sendATCommand
   index = 0;
   index += strcpy_count(command+index, "AT+CMGS=");
   command[index++] = '"';
@@ -390,9 +394,16 @@ bool PHN_Sim::sendMessage(char* receiverAddress, char* messageText) {
   command[index++] = '\r';
   command[index++] = '\n';
   command[index++] = 0;
-  writeATCommand(command);
+  if (!writeATCommand(command)) {
+    return false;
+  }
 
-  // Write the text message, with end token
+  // Wait until the > token is read indicating SIM is ready for the message
+  readToken("\r\n> ", 100)
+
+  // Write the text message, with end token. Message is echo'd back by the SIM.
+  // Response includes '+CMGS: 70', where 70 is the index of the message
+  // We are discarding this response here
   index = 0;
   index += strcpy_count(command+index, messageText);
   command[index++] = 0x1A;
