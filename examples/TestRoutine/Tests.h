@@ -147,9 +147,10 @@ void showMessage(const char* message) {
 }
 
 boolean isScreenTouched() {
-  uint16_t x, y, z1, z2;
-  PHNDisplayHW::readTouch(&x, &y, &z1, &z2);
-  return z1 != 0;
+  uint16_t x, y;
+  float pressure;
+  PHNDisplayHW::readTouch(&x, &y, &pressure);
+  return pressure >= PHNDisplayHW::PRESSURE_THRESHOLD;
 }
 
 boolean isSelectPressed() {
@@ -491,10 +492,10 @@ TestResult testHMC5883L() {
 
   // Perform a check to see if the measured data is within range
   for (int i = 0; i < 3; i++) {
-    if (mag_dev[i] >= 100) {
+    if (mag_dev[i] >= 200) {
       return TestResult(false, "Readings are unstable");
     }
-    if (mag_mean[i] >= 1000 || mag_mean[i] <= -1000) {
+    if (mag_mean[i] >= 2000 || mag_mean[i] <= -2000) {
       return TestResult(false, "Readings out of range/magnetic influence");
     }
   }
