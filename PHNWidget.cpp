@@ -104,7 +104,6 @@ bool PHN_Widget::isInvalidated() {
 }
 
 void PHN_Widget::draw_validate() {
-  invalidated = false;
   if (visible) {
     drawn = true;
     draw();
@@ -112,6 +111,7 @@ void PHN_Widget::draw_validate() {
     drawn = false;
     fillWidgetArea(color(BACKGROUND));
   }
+  invalidated = false;
 }
 
 PHN_WidgetContainer::PHN_WidgetContainer() {
