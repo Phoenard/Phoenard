@@ -111,9 +111,10 @@ void PHN_Sim::update() {
         callStatus = SIM_CALL_STATUS_BUSY;
         i += 3;
       } else if (strstr(inputText, "+CLIP: ") == inputText) {
-        // RING message received. Voice call?
+        // Caller information received.
+        // +CLIP: "+1234567890",145,"",,"",0
         char* args[1];
-        if (getSimTextArgs(inputText+8, args, 1)) {
+        if (getSimTextArgs(inputText+7, args, 1)) {
           // Voice call
           strcpy(incomingNumber, args[0]);
           callStatus = SIM_CALL_STATUS_CALLED;
@@ -308,8 +309,9 @@ int PHN_Sim::getCallStatus() {
   return callStatus;
 }
 
-String PHN_Sim::getIncomingNumber() {
-  return String(incomingNumber);
+const char* PHN_Sim::getIncomingNumber() {
+  update();
+  return incomingNumber;
 }
 
 void PHN_Sim::sendDTMF(char character) {
@@ -318,7 +320,7 @@ void PHN_Sim::sendDTMF(char character) {
     memcpy(command, "AT+VTS=", 7);
     command[7] = character;
     command[8] = 0;
-    sendATCommand(command);
+    sendATCommand(command, 0, 0, SIM_ATCOMMAND_DTFM_TIMEOUT);
   }
 }
 

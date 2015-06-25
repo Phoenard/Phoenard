@@ -38,16 +38,14 @@ THE SOFTWARE.
  *
  * Set the text size using setTextSize(int) before use.
  */
-class PHN_Label : public PHN_Widget {
+class PHN_Label : public PHN_Widget, public PHN_TextContainer {
  public:
   /// Changed constructor to invert the colors
   PHN_Label(void);
   /// Sets the text to be displayed
-  void setText(const char* text);
-  /// Sets the text to be displayed
-  void setText(String &text);
+  virtual void setTextRaw(const char* text, int textLen);
   /// Gets the text currently displayed
-  const char* text() { return (char*) this->textBuff.data; }
+  virtual const char* text() { return (char*) this->textBuff.data; }
   /// Sets whether a frame border is drawn
   const void setDrawFrame(bool draw) { drawFrame = draw; }
   virtual void update(void);

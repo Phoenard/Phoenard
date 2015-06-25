@@ -214,3 +214,31 @@ void PHN_WidgetContainer::setWidgetCapacity(int capacity) {
   widget_count = capacity;
   widget_values = newValues;
 }
+
+void PHN_WidgetTextContainer::setText(String textString) {
+  int len = textString.length();
+  char *textArr = new char[len+1];
+  textString.toCharArray(textArr, len+1);
+  setTextRaw(textArr, len);
+  delete[] textArr;
+}
+
+void PHN_WidgetTextContainer::setText(long valueText) {
+  char buff[15];
+  ltoa(valueText, buff, 10);
+  setText(buff);
+}
+
+void PHN_WidgetTextContainer::setText(double valueText) {
+  char buff[15];
+  dtostrf(valueText, 5, 3, buff);
+  setText(buff);
+}
+
+void PHN_WidgetTextContainer::setText(const char* text) {
+  setTextRaw(text, (int) strlen(text));
+}
+
+int PHN_WidgetTextContainer::textLength() {
+  return (int) strlen(text());
+}

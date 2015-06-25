@@ -32,6 +32,7 @@ THE SOFTWARE.
 
 #include "PHNDisplayHardware.h"
 #include "PHNPalette.h"
+#include "PHNTextContainer.h"
 
 /** \name Widget color indices
  * @brief Widget color palette index constants for styling widgets
@@ -216,6 +217,33 @@ protected:
   bool invalidated;
   //! Visibility state of the widget
   bool visible;
+};
+
+/**
+@brief Abstraction for a widget that can store and update text
+
+Makes it easier to set the text of any text-based widget to, for example, a number
+or an Arduino-type String.
+*/
+class PHN_WidgetTextContainer {
+ public:
+   /// Sets the new text to display using an Arduino type String
+   void setText(String textString);
+   /// Sets the new text to display using an integer value
+   void setText(long valueText);
+   /// Sets the new text to display using a float value
+   void setText(double valueText);
+   /// Sets the new text to display using a null-terminated String
+   void setText(const char* text);
+
+   /// Sets the new text to display using a buffer and length
+   virtual void setTextRaw(const char* text, int textLen);
+
+   /// Gets the text displayed
+   virtual const char* text();
+
+   /// Gets the length of the text displayed
+   virtual int textLength();
 };
 
 #endif

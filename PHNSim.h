@@ -40,9 +40,11 @@ THE SOFTWARE.
 #define SIM_PWR_DELAY 1500
 
 // AT Command timeout in MS.
-#define SIM_ATCOMMAND_TIMEOUT 600
+#define SIM_ATCOMMAND_TIMEOUT 500
 // AT Send Text message timeout in MS
 #define SIM_ATCOMMAND_SENDTEXT_TIMEOUT 8000
+// AT Send DTFM message timeout in MS
+#define SIM_ATCOMMAND_DTFM_TIMEOUT 1500
 // Total amount of times an AT Command will be executed
 // If set to 1, no retries are performed.
 #define SIM_ATCOMMAND_TRYCNT 3
@@ -151,7 +153,7 @@ public:
   /// Gets the calling status
   int getCallStatus();
   /// Gets the number of the person calling this SIM
-  String getIncomingNumber();
+  const char* getIncomingNumber();
   /// Sends a DTMF tone number, does nothing when character is NULL
   void sendDTMF(char character);
 

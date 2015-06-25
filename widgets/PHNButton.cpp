@@ -25,7 +25,7 @@ THE SOFTWARE.
 
 #include "PHNButton.h"
 
-void PHN_Button::setText(const char* text) {
+void PHN_Button::setTextRaw(const char* text, int textLen) {
   setImage(TEXT_Image(text));
 }
 

@@ -51,7 +51,7 @@ THE SOFTWARE.
  * It automatically calculates the width and height to fit the text. Make sure you have set the text size
  * earlier, otherwise the results are unexpected.
  */
-class PHN_TextBox : public PHN_Widget {
+class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
  public:
   /// Initializes some defaults
   PHN_TextBox(void);
@@ -65,12 +65,6 @@ class PHN_TextBox : public PHN_Widget {
   int textSize(void) { return this->_textSize; }
   /// Sets whether the scrollbar is displayed
   void setScrollbarVisible(bool visible);
-  /// Sets the text displayed
-  void setText(const char* text);
-  /// Gets the text displayed
-  const char* text(void) { return (char*) textBuff.data; }
-  /// Gets the length of the text displayed
-  const int textLength(void) { return this->length; }
   /// Gets the scrollbar widget used to scroll text
   PHN_Scrollbar &scrollbar(void) { return scroll; }
   /// Ensures the character specified is displayed
@@ -94,7 +88,10 @@ class PHN_TextBox : public PHN_Widget {
   void invalidate(int startPosition);
   /// Invalidates the text between two positions
   void invalidate(int startPosition, int endPosition);
-  
+
+  virtual void setTextRaw(const char* text, int textLen);
+  virtual int textLength(void) { return this->length; }
+  virtual const char* text(void) { return (char*) textBuff.data; }
   virtual void update(void);
   virtual void draw(void);
  private:

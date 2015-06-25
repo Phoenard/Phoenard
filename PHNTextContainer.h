@@ -23,41 +23,40 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include "DataCopyBuffer.h"
+/** @file
+@brief Holds the PHN_TextContainer class used to dynamically access text using various datatypes.
+*/
 
-DataCopyBuffer::DataCopyBuffer(const void* data, int dataSize) {
-  this->data = NULL;
-  set(data, dataSize);
-}
+#ifndef _PHN_TEXTCONTAINER_H_
+#define _PHN_TEXTCONTAINER_H_
 
-DataCopyBuffer::~DataCopyBuffer() {
-  free(data);
-}
+#include <Arduino.h>
 
-void DataCopyBuffer::growToFit(int newDataSize) {
-  if (this->dataSize >= newDataSize) return;
-  this->dataSize = newDataSize;
-  this->data = realloc(this->data, this->dataSize);
-}
+/**
+@brief Abstraction for a widget that can store and update text
 
-void DataCopyBuffer::resize(int newDataSize) {
-  if (this->dataSize == newDataSize) return;
-  this->dataSize = newDataSize;
-  this->data = realloc(this->data, this->dataSize);
-}
+Makes it easier to set the text of any text-based widget to, for example, a number
+or an Arduino-type String.
+*/
+class PHN_TextContainer {
+ public:
+   /// Sets the new text to display using an Arduino type String
+   void setText(String textString);
+   /// Sets the new text to display using an integer value
+   void setText(long valueText);
+   /// Sets the new text to display using a float value
+   void setText(double valueText);
+   /// Sets the new text to display using a null-terminated String
+   void setText(const char* text);
 
-void DataCopyBuffer::set(const void* data, int dataSize) {
-  free(this->data);
-  this->dataSize = dataSize;
-  this->data = malloc(dataSize);
-  memcpy(this->data, data, dataSize);
-}
+   /// Sets the new text to display using a buffer and length
+   virtual void setTextRaw(const char* text, int textLen);
 
-void DataCopyBuffer::setTextRaw(const char* text, int textLen) {
-  set(text, textLen+1);
-}
+   /// Gets the text displayed
+   virtual const char* text();
 
-DataCopyBuffer& DataCopyBuffer::operator=( const DataCopyBuffer& other ) {
-  set(other.data, other.dataSize);
-  return *this;
-}
+   /// Gets the length of the text displayed
+   virtual int textLength();
+};
+
+#endif

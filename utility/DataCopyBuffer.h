@@ -29,6 +29,7 @@ THE SOFTWARE.
  */
 
 #include <Arduino.h>
+#include "PHNTextContainer.h"
 
 #ifndef _DATA_COPY_BUFFER_H_
 #define _DATA_COPY_BUFFER_H_
@@ -40,7 +41,7 @@ THE SOFTWARE.
  * memory the size and freeing all has to be maintained. That is what this class solves.
  * Memory can be easily allocated/resized and destroyed as the class is used.
  */
-class DataCopyBuffer {
+class DataCopyBuffer : public PHN_TextContainer {
 public:
   /// Creates a new buffer without any data
   DataCopyBuffer() : data(NULL), dataSize(0) {}
@@ -54,13 +55,13 @@ public:
   void growToFit(int newDataSize);
   /// Sets new data to be stored, the data is copied into this buffer
   void set(const void* data, int dataSize);
-  /// Sets the new data as a String
-  void setText(const char* data);
-  /// Accesses the data as a String
-  char* text() const { return (char*) data; }
   /// Assigns data from one buffer to another
   DataCopyBuffer& operator=( const DataCopyBuffer& other );
 
+  // Implementation for PHN_TextContainer
+  virtual char* text() { return (char*) data; }
+  virtual void setTextRaw(const char* text, int textLen);
+  
   void* data;
   int dataSize;
 };

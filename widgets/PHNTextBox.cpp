@@ -47,8 +47,8 @@ void PHN_TextBox::setScrollbarVisible(bool visible) {
   invalidate();
 }
 
-void PHN_TextBox::setText(const char* text) {
-  length = min(textBuff.dataSize-1, (int) strlen(text));
+void PHN_TextBox::setTextRaw(const char* text, int textLen) {
+  length = min(textBuff.dataSize-1, textLen);
   memcpy(textBuff.data, text, sizeof(char) * length);
   textBuff.text()[length] = 0;
   updateScrollLimit();

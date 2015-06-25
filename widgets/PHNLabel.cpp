@@ -30,21 +30,9 @@ PHN_Label::PHN_Label() {
   drawFrame = false;
 }
 
-void PHN_Label::setText(const char* text) {
-  int txtLen = strlen(text);
-  bool lenChange = txtLen != (int) strlen(this->text());
-  this->textBuff.set(text, txtLen + 1);
-  if (lenChange) {
-    invalidate();
-  } else {
-    quickDraw = true;
-  }
-}
-
-void PHN_Label::setText(String &text) {
-  bool lenChange = text.length() != strlen(this->text());
-  this->textBuff.resize(text.length() + 1);
-  text.toCharArray((char*) this->textBuff.data, this->textBuff.dataSize);
+void PHN_Label::setTextRaw(const char* text, int textLen) {
+  bool lenChange = textLen != this->textLength();
+  this->textBuff.set(text, textLen + 1);
   if (lenChange) {
     invalidate();
   } else {

@@ -42,22 +42,22 @@ THE SOFTWARE.
  * if the user clicked the button. Touch input is handled automatically as long as you update
  * the display routinely as well.
  */
-class PHN_Button : public PHN_Widget {
+class PHN_Button : public PHN_Widget, public PHN_TextContainer {
 public:
   /// Gets a state image set, where index 0=normal, 1=pressed, 2=clicked
   const PHN_Image &image(int index) { return images[index]; }
   /// Sets a state image, where index 0=normal, 1=pressed, 2=clicked
   const void setImage(int index, const PHN_Image &image) { images[index] = image; }
-  /// Sets the button text, replacing any state images
-  void setText(const char* text);
   /// Sets an image for all three states, using default colors to draw with
   void setImage(const PHN_Image &image);
   /// Change for individual states what colors are used, where index 0=normal, 1=pressed, 2=clicked
   const void setImagePalette(int index, const PHN_Palette &palette) { images[index].setPalette(palette); }
-  
+
+  virtual void setTextRaw(const char* text, int textLen);
+  virtual const char* text() { return ""; }
   virtual void draw(void);
   virtual void update(void);
-  
+
 private:
   PHN_Image images[3];
 };
