@@ -366,11 +366,11 @@ SimMessage PHN_Sim::readMessage(uint8_t messageIndex) {
 
   // Allocate the message to return
   SimMessage message;
-  
+
   // Split the response arguments
   // If this fails, message will be left all-0
-  message.valid = getSimTextArgs(resp, args, 5) >= 5;
-  if (message.valid) {
+  message.valid = getSimTextArgs(resp, args, 5) == 5;
+  if (message.valid) {    
     // Parse the text arguments
     message.index = messageIndex;
     message.read = !strcmp(args[0], "REC READ");
@@ -557,42 +557,44 @@ bool PHN_Sim::sendATCommand(const char* command, char* respBuffer, uint16_t resp
   return ok;
 }
 
-int PHN_Sim::getSimTextArgs(char *text, char **args, int argCount) {
-  int maxArgs = argCount;
-  uint16_t textIndex = 0;
-  argCount = 0;
+unsigned char PHN_Sim::getSimTextArgs(char *text, char **args, unsigned char maxArgs) {
+  unsigned char argCount = 0;
+  bool isInArg = false;
 
   // Text format:
   // 12,35,"hello world",12:23:23.55\r\nPayload
 
   // Go by the characters, claiming arguments
-  while (argCount < maxArgs && text[textIndex]) {
-    // Find the start of the current argument
-    if (text[textIndex] == '\n') {
-      // Newline mode: everything after this is the payload data
-      args[argCount++] = text+textIndex+1;
-      // Exit the entire loop: we are done reading
+  while (argCount < maxArgs && *text) {
+    // Newline mode: everything after this is the payload data
+    if (*text == '\n') {
+      args[argCount++] = text+1;
       break;
     }
-    if (text[textIndex] == '"') {
-      args[argCount++] = text+textIndex+1;
-      // Read argument up till next '"'
-      while (text[++textIndex]) {
-        if (text[textIndex] == '"') {
-          text[textIndex++] = 0;
-          break;
-        }
-      }
-    } else {
-      args[argCount++] = text+(textIndex);
+
+    // Read quoted arguments fully
+    if (*text == '"') {
+      args[argCount++] = text+1;
+      while (*(++text) && (*text != '"'));
+      *(text++) = 0;
+      isInArg = true;
+      continue;
     }
-    // Move to the end of the current argument (after ',' or '\r')
-    while (text[++textIndex]) {
-      if (text[textIndex] == ',' || text[textIndex] == '\r') {
-        text[textIndex++] = 0;
-        break;
-      }
+
+    // Store newly acquired arguments
+    if (!isInArg) {
+      isInArg = true;
+      args[argCount++] = text;
+      continue;
     }
+
+    // Waiting until the current argument is finished
+    if (*text == ',' || *text == '\r') {
+      *text = 0;
+      isInArg = false;
+    }
+
+    text++;
   }
 
   return argCount;

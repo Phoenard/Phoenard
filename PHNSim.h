@@ -195,7 +195,7 @@ public:
    * Return value indicates the amount of arguments read
    * Warning: alters the input text argument!
    */
-  int getSimTextArgs(char *text, char **args, int argCount);
+  unsigned char getSimTextArgs(char *text, char **args, unsigned char maxArgs);
   /// Reads a DATE argument from received response
   Date readDate(char *text);
  private:
