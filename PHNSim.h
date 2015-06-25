@@ -58,7 +58,6 @@ THE SOFTWARE.
 #define SIM_CALL_STATUS_CALLING 1
 #define SIM_CALL_STATUS_CALLED 2
 #define SIM_CALL_STATUS_BUSY 3
-#define SIM_CALL_STATUS_NOCARRIER 4
 
 /// A single message contact
 typedef struct SimContact {
@@ -141,8 +140,10 @@ public:
   // Calling
   /// Initiates a call
   void call(const char* address);
-  /// Ends the current call, or cancels a call
+  /// Ends the current call, or cancels a call silently
   void endCall();
+  /// Rejects an incoming call by stating you are busy
+  void rejectCall();
   /// Accepts the call
   void acceptCall();
   /// Checks whether the SIM is being called, used getCallStatus()

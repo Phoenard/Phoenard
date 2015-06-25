@@ -565,6 +565,13 @@ void PHN_Display::updateWidgets() {
   PHN_WidgetContainer::updateWidgets(true, true, false);
 }
 
+void PHN_Display::invalidate(void) {
+  int cnt = widgetCount();
+  while (cnt--) {
+    widget(cnt)->invalidate();
+  }
+}
+
 void PHN_Display::updateTouch() {
   uint16_t touch_x, touch_y;
 

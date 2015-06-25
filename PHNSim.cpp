@@ -64,8 +64,12 @@ void PHN_Sim::end() {
 }
 
 void PHN_Sim::reset() {
+  // Reset to factory defaults
   sendATCommand("AT&F");
+  // Turn on extended +CRING information
   sendATCommand("AT+CRC=1");
+  // Turn on the incoming call information readout
+  sendATCommand("AT+CLIP=1");
 }
 
 bool PHN_Sim::isOn() {
@@ -100,7 +104,7 @@ void PHN_Sim::update() {
       inputText = inputBuffer+i;
       if (strstr(inputText, "NO CARRIER") == inputText) {
         // No carrier call status update
-        callStatus = SIM_CALL_STATUS_NOCARRIER;
+        callStatus = SIM_CALL_STATUS_NONE;
         i += 9;
       } else if (strstr(inputText, "BUSY") == inputText) {
         // Busy call status update
@@ -276,17 +280,22 @@ void PHN_Sim::call(const char* address) {
   cmd[address_len+3] = ';';
   cmd[address_len+4] = 0;
   
-  if (sendATCommand(cmd, 0, 0))
+  if (sendATCommand(cmd))
     callStatus = SIM_CALL_STATUS_CALLING;
 }
 
 void PHN_Sim::endCall() {
-  sendATCommand("ATH", 0, 0);
+  sendATCommand("ATH");
+  callStatus = SIM_CALL_STATUS_NONE;
+}
+
+void PHN_Sim::rejectCall() {
+  sendATCommand("AT+GSMBUSY");
   callStatus = SIM_CALL_STATUS_NONE;
 }
 
 void PHN_Sim::acceptCall() {
-  sendATCommand("ATA", 0, 0);
+  sendATCommand("ATA");
   callStatus = SIM_CALL_STATUS_CALLING;
 }
 

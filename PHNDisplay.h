@@ -150,6 +150,8 @@ class PHN_Display : public PHN_WidgetContainer {
   void updateTouch();
   /// Updates only the widgets, assuming no touch. Use this when the ADC is used for something else.
   void updateWidgets();
+  /// Invalidates all added widgets, forcing them to redraw upon the next update
+  void invalidate(void);
   /// Gets the width of the display - height when screen is rotated 90/270 degrees
   uint16_t width();
   /// Gets the height of the display - width when screen is rotated 90/270 degrees
