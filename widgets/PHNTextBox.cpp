@@ -14,6 +14,7 @@ PHN_TextBox::PHN_TextBox() {
   this->dragStart = -1;
   this->setTextSize(2);
   this->setMaxLength(100);
+  this->scroll.setRange(0, 0);
 }
 
 void PHN_TextBox::setDimension(int rows, int columns) {
