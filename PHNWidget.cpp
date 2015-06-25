@@ -151,9 +151,15 @@ void PHN_WidgetContainer::updateWidgets(bool update, bool draw, bool forceRedraw
     for (int i = 0; i < widget_count; i++) {
       PHN_Widget *w = widget_values[i];
       bool invalidated = forceRedraw || w->isInvalidated();
-      if (invalidated)
+
+      // Redraw all child widgets that are invalidated, first
+      w->updateWidgets(false, true, false);
+
+      // Then redraw the main widget and all (visible) child widgets again if invalidated
+      if (invalidated) {
         w->draw_validate();
-      w->updateWidgets(false, true, invalidated);
+        w->updateWidgets(false, true, true);
+      }
     }
   }
 }
