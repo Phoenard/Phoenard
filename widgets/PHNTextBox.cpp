@@ -111,6 +111,13 @@ void PHN_TextBox::updateScrollLimit() {
 }
 
 void PHN_TextBox::setSelectionRange(int position, int length) {
+  // Protection against selection past the limit
+  if (position >= this->length) {
+    position = this->length;
+    length = 0;
+  }
+
+  // If unchanged, do nothing
   if (position == selStart && length == selLength) {
     return;
   }
@@ -179,12 +186,12 @@ void PHN_TextBox::setSelection(const char* selectionText) {
 
   // Now enter the actual text
   int len = min((int) strlen(selectionText), (int) (textBuff.dataSize-length+selLength));
-  char* text = (char*) textBuff.data;
+  char* text = textBuff.text();
   bool appended = (selLength == 0 && selStart == length);
-  
-  // If nothing is set, do nothing
-  if (!len) return;
 
+  // If nothing is set, do nothing
+  if (!len && (selLength == 0)) return;
+  
   // Shift everything after the selection to the right
   memmove(text+selStart+len, text+selEnd, length-selEnd);
 
@@ -367,13 +374,11 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
 
   Viewport old = display.getViewport();
   display.setViewport(x+_textSize+1, y+_textSize+1, width, height);
-  display.setTextColor(color(CONTENT), color(FOREGROUND));
 
   // Draw selection highlight, cursor and text
   int row = -scrollOffset;
   int col = 0;
   int x, y;
-  bool bgDrawn = false;
   bool charSel;
   cursor_x = -1;
   cursor_y = -1;
@@ -400,32 +405,31 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
       // Only do drawing operations in the selected range
       if (i >= charStart && i <= charEnd) {
         charSel = i >= selStart && i < (selStart+selLength);
-        
+
         // Fill the current row and all rows below with background color
-        if (drawBackground) {
-          if (charEnd < length) {
-            // End selection exists, draw a background rectangle one at a time
-            if (!charSel)
-              display.fillRect(x - 1, y, chr_w+1, chr_h, color(FOREGROUND));
-          } else if (!bgDrawn) {
-            bgDrawn = true;
-            if (col == 0) {
-              display.fillRect(-1, y, cols*chr_w, chr_h*(rows-row)+1, color(FOREGROUND));
-            } else {
-              display.fillRect(x-1, y, (cols-col)*chr_w+1, chr_h, color(FOREGROUND));
-              display.fillRect(-1, y+chr_h, cols*chr_w+1, chr_h*(rows-row-1), color(FOREGROUND));
-            }
+        if (drawBackground && charEnd >= length) {
+          // If last character of current line, clear right of character
+          if ((i == length) || (text[i] == '\n')) {
+            display.fillRect(x-1, y, (cols-col)*chr_w+1, chr_h, color(FOREGROUND));
+          }
+
+          // If last character of all text, wipe the remaining rows
+          if (i == length) {
+            display.fillRect(-1, y+chr_h, cols*chr_w+1, chr_h*(rows-row-1), color(FOREGROUND));
           }
         }
 
         // Only do drawing when not a newline
         if (text[i] != '\n' && text[i]) {
-          // Draw highlight box
-          if (charSel)
-            display.fillRect(x - 1, y, chr_w+1, chr_h, color(HIGHLIGHT));
+          // Update text color based on selection highlight
+          color_t bgColor = color(charSel ? HIGHLIGHT : FOREGROUND);
+          display.setTextColor(color(CONTENT), bgColor);
 
-          // Draw text
+          // Draw text with a border for highlight updates
+          int border_s = _textSize>>1;
           display.drawChar(x, y, text[i], _textSize);
+          display.fillRect(x-border_s, y, border_s, chr_h, bgColor);
+          display.fillRect(x+chr_w-_textSize, y, border_s, chr_h, bgColor);
         }
       }
     }
