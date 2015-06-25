@@ -49,6 +49,9 @@ void PHN_Sim::begin() {
   if (!isOn()) {
     togglePower();
 
+    // Wait until the sim turns on
+    while (!sim.isOn());
+
     // Wait until SIM responds
     while (!sendATCommand("AT"));
   }
@@ -58,8 +61,8 @@ void PHN_Sim::end() {
   // Turn the SIM off of it is currently on
   if (isOn()) {
     togglePower();
-    // Wait until the 'power down' message
-    readToken("NORMAL POWER DOWN", 1000);
+    // Wait until the sim is no longer on
+    while (sim.isOn());
   }
 }
 
