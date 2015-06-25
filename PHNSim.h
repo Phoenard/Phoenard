@@ -165,7 +165,7 @@ public:
   /// Deletes a message from the inbox
   void deleteMessage(uint8_t messageIndex);
   /// Sends a text message
-  bool sendMessage(char* receiverAddress, char* messageText);
+  bool sendMessage(const char* receiverAddress, const char* messageText);
   /// Checks whether a new message is available
   bool hasNewMessage();
   /// Reads the message received latest

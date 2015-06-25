@@ -399,7 +399,7 @@ SimContact PHN_Sim::readContact(uint8_t contactIndex) {
   return contact;
 }
 
-bool PHN_Sim::sendMessage(char* receiverAddress, char* messageText) {
+bool PHN_Sim::sendMessage(const char* receiverAddress, const char* messageText) {
   char command[300];
   int index;
 
