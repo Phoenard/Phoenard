@@ -50,17 +50,13 @@ static uint8_t spiRec(void) {
   return SPDR;
 }
 
-/* Macro to skip some received bytes; used for inlining */
-#define spiSkip_inline(count)  ({ \
-  uint8_t cnt = count; \
-  do { \
-    spiRec(); \
-  } while (--cnt); \
-})
-
-/* Skipping received bytes using successive calls to spiRec() */
-static void spiSkip(uint8_t count) {
-  spiSkip_inline(count);
+/* Reads in a specific amount of bytes, returning the last byte read */
+static uint8_t spiRecNr(uint8_t count) {
+  uint8_t v;
+  do {
+    v = spiRec();
+  } while (--count);
+  return v;
 }
 
 /* send command and return error code.  Return zero for OK */
@@ -119,8 +115,7 @@ void card_setEnabled(uint8_t enabled) {
 
   /* Wait for ~74 clock cycles, then set chip-select back LOW */
   if (enabled) {
-    /* Note: inlined because using spiSkip negatively impacts bootloader size */
-    spiSkip_inline(10);
+    spiRecNr(10);
     SD_CS_PORT &= ~SD_CS_MASK;
   }
 }
@@ -379,7 +374,7 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
     SPSR &= ~((1 << SPI2X) | (1 <<SPR1) | (1 << SPR0));
 
     /* must supply min of 74 clock cycles with CS high. */
-    spiSkip(10);
+    spiRecNr(10);
 
     /* CHIP SELECT of the card LOW indefinitely */
     SD_CS_PORT &= ~SD_CS_MASK;
@@ -398,10 +393,8 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
       card_notSDHCBlockShift = 9; /* SD1 Is never a SDHC card */
     } else {
       /* Card type: SD2
-       * only need last byte of r7 response
-       * Skip first 3 bytes */
-      spiSkip(3);
-      if (spiRec() != 0XAA) return 0;
+       * Read the 4 bytes of response, work with last byte read */
+      if (spiRecNr(4) != 0XAA) return 0;
       capacity_arg = 0X40000000;
       card_notSDHCBlockShift = 0; /* SD2 CAN be a SDHC card */
     }
@@ -419,9 +412,6 @@ uint8_t file_open(const char* filename, const char* ext, uint8_t mode) {
     if (!card_notSDHCBlockShift) {
       if (card_command(SDMINFAT::CMD58, 0, 0XFF)) return 0;
       if ((spiRec() & 0XC0) != 0XC0) card_notSDHCBlockShift = 9;
-
-      /* discard rest of ocr - contains allowed voltage range */
-      spiSkip(3);
     }
 
     /* Set SPI SCK Speed */
@@ -762,32 +752,34 @@ void file_append_byte(char b) {
 }
 
 /* Reads a single line of HEX data from a HEX file */
-uint8_t file_read_hex_line(uint8_t* buff) {
-  uint8_t length = 0;
-  uint8_t found_data_start = 0;
+void file_read_hex_line(char* buff) {
+  uint8_t data_ctr = 0;
+  buff--;
   while (file_position < file_size) {
     /* Read the next byte, handle block incrementing */
     char c = *file_read(1);
-    if (found_data_start) {
-      /* Read the data until a char before the 0-range is read */
+    if (data_ctr) {
+      data_ctr++;
+
+      /* Read the data until a char before the 0-F range is read */
       if (c < '0') break;
-      
-      /* Start of a new byte, set to an initial 0x0 */
-      if (!(length & 0x1)) *buff = 0x0;
-      
+
+      /* Start of a new byte, increment and set to an initial 0x00 */
+      if (!(data_ctr & 0x1)) {
+        *(++buff) = 0x00;
+      }
+
       /* Convert the character into HEX, put it into the buffer */
       *buff <<= 4;
       if (c & 0x40) {
         c -= ('A' - '0') - 10;
       }
-      *buff += (c - '0') & 0xF;
-      if (length++ & 0x1) buff++;
+      *buff |= (c - '0') & 0xF;
     } else {
-      /* Wait for : to be received */
-      found_data_start = (c == ':');
+      /* Set to 1 when : is received, starting the reading */
+      data_ctr = (c == ':');
     }
   }
-  return length;
 }
 
 /* 
@@ -795,27 +787,27 @@ uint8_t file_read_hex_line(uint8_t* buff) {
  * Make sure to leave 4 bytes available for the address, length and record type fields
  * A maximum of 123 bytes of data can be written per line
  */
-void file_append_hex_line(uint8_t* buff, uint8_t len, uint32_t address, unsigned char recordType) {
+void file_append_hex_line(char* buff, uint8_t len, uint16_t address, unsigned char recordType) {
   /* Append data at the first 4 bytes */
   buff[0] = len;
-  buff[1] = (unsigned char) (address >> 8);
-  buff[2] = (unsigned char) (address & 0xFF);
+  buff[1] = (address >> 8);
+  buff[2] = (address & 0xFF);
   buff[3] = recordType;
   len += 4;
   len <<= 1;
 
   /* Start actual writing */
   file_append_byte(':');
-  unsigned int crc = 0;
+  char crc = 0;
   do {
-    uint8_t data;
+    char data;
     if (len) {
       /* Did not reach end, write data byte and handle CRC */
       data = *(buff++);
       crc += data;
     } else {
       /* Reached end, write CRC */
-      data = (~crc + 1) & 0xFF;
+      data = (~crc + 1);
     }
 
     /*
@@ -824,7 +816,7 @@ void file_append_hex_line(uint8_t* buff, uint8_t len, uint32_t address, unsigned
      * more space for LCD/Bootloader logic!
      */
     do {
-      unsigned char c = (data & 0xF0) >> 4;
+      char c = (data & 0xF0) >> 4;
       data <<= 4;
 
       if (c >= 10) {
