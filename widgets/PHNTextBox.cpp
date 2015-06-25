@@ -264,13 +264,13 @@ void PHN_TextBox::update() {
       if (text[i] == '\r')
         continue;
 
-      if (text[i] == '\n' || col >= cols) {
+      if (col >= cols) {
         row++;
         col = 0;
       }
       if (row == posRow) {
         x = this->x + _textSize + 1 + col * chr_w;
-        if (pos.x <= x+(chr_w>>1)) {
+        if ((text[i] == '\n') || (pos.x <= x+(chr_w>>1))) {
           pressedIdx = i;
           break;
         } else if (col == (cols-1)) {
@@ -278,8 +278,12 @@ void PHN_TextBox::update() {
           break;
         }
       }
-      if (text[i] != '\n')
+      if (text[i] == '\n') {
+        row++;
+        col = 0;
+      } else {
         col++;
+      }
     }
     if (display.isTouchDown()) {
       // Drag start
@@ -363,7 +367,7 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
 
   Viewport old = display.getViewport();
   display.setViewport(x+_textSize+1, y+_textSize+1, width, height);
-  display.setTextColor(color(CONTENT));
+  display.setTextColor(color(CONTENT), color(FOREGROUND));
 
   // Draw selection highlight, cursor and text
   int row = -scrollOffset;
@@ -378,7 +382,7 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
     if (text[i] == '\r')
       continue;
 
-    if (text[i] == '\n' || col >= cols) {
+    if (col >= cols) {
       row++;
       col = 0;
     }
@@ -389,6 +393,7 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
       if (i == selStart && !selLength) {
         // Set up cursor
         cursor_x = display.getViewport().x + x + 1 - _textSize - (_textSize>>1);
+        
         cursor_y = display.getViewport().y + y;
       }
       
@@ -424,8 +429,13 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
         }
       }
     }
-    if (text[i] != '\n')
+    
+    if (text[i] == '\n') {
+      row++;
+      col = 0;
+    } else {
       col++;
+    }
   }
 
   // Update scroll maximum based on the amount of rows

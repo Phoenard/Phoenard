@@ -807,11 +807,44 @@ void PHN_Display::drawChar(uint16_t x, uint16_t y, char c, uint8_t size) {
 }
 
 void PHN_Display::drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, uint8_t size) {
+  // Read character data from FLASH into memory
+  uint8_t c[5];
+  memcpy_P(c, (void*) font_char, 5);
+  drawCharRAM(x, y, c, size);
+}
+
+void PHN_Display::drawCharRAM(uint16_t x, uint16_t y, const uint8_t* font_data, uint8_t size) {
   // If transparent background, make use of a (slower) cube drawing algorithm
   // For non-transparent backgrounds, make use of the faster 1-bit image drawing function
   if (textOpt.text_hasbg) {
-    // Use standard internal minimal drawing function
-    PHNDisplay16Bit::writeFont_1bit(x, y, size, font_char, textOpt.textbg, textOpt.textcolor);
+    // Use a scale-based drawing function which is quite a bit faster
+    // This is almost equivalent to the below function, except we don't handle viewport/rotation in there
+    // It had to be copied over, making use of goTo instead of the internal setCursor.
+    //PHNDisplay16Bit::writeFont_1bit(x, y, size, font_char, textOpt.textbg, textOpt.textcolor);
+
+    // Draw the read pixel data
+    const uint8_t width = 8;
+    const uint8_t height = 5;
+    uint8_t pix_dat = 0, dy, dx, si = 0, d = 0;
+    uint8_t l = height * size;
+    for (dy = 0; dy < l; dy++) {
+      goTo(x, y, 1);
+      x++;
+
+      pix_dat = *font_data;
+      for (dx = 0; dx < width; dx++) {
+        /* Draw SCALE pixels for each pixel in a line */
+        PHNDisplay16Bit::writePixels((pix_dat & 0x1) ? textOpt.textcolor : textOpt.textbg, size);
+        /* Next pixel data bit */
+        pix_dat >>= 1;
+      }
+
+      // Read next byte as needed
+      if (++si >= size) {
+        si = 0;
+        font_data++;
+      }
+    }
   } else {
     // Draw in vertical 'dot' chunks for each 5 columns
     // Empty (0) data 'blocks' are skipped leaving them 'transparent'
@@ -819,7 +852,7 @@ void PHN_Display::drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, 
     uint8_t line;
     uint16_t pcount;
     for (cx =0; cx<5; cx++) {
-      line = pgm_read_byte(font_char++);
+      line = *(font_data++);
       cy = 0;
       while (line) {
         if (line & 0x1) {
