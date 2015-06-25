@@ -382,12 +382,54 @@ SimMessage PHN_Sim::readMessage(uint8_t messageIndex) {
     message.read = !strcmp(args[0], "REC READ");
     strcpy(message.sender.address, args[1]);
     strcpy(message.sender.name, args[2]);
-    strcpy(message.text, args[4]);
     message.date = readDate(args[3]);
-    
+
     // Use address as name if there is no name
     if (message.sender.name[0] == 0) {
       strcpy(message.sender.name, message.sender.address);
+    }
+    
+    // If the entire message consists of HEX characters, convert to ASCII
+    char* msgText = args[4];
+    int msgLen = strlen(msgText);
+    bool allHex = (msgLen >= 2);
+    for (int i = 0; (i < msgLen) && allHex; i++) {
+      allHex = (msgText[i] >= 48) && (msgText[i] <= 70);
+    }
+    if (allHex) {
+      unsigned char data_ctr = 1;
+      char *buff = message.text-1;
+      for (int i = 0; i < msgLen; i++) {
+        // Skip every 2 first bytes
+        if (!(i & 0x2)) continue;
+
+        // Read the new byte
+        char c = msgText[i];
+
+        // Start of a new byte, increment and set to an initial 0x00
+        data_ctr++;
+        if (!(data_ctr & 0x1)) {
+          *(++buff) = 0x00;
+        }
+
+        // Convert the character into HEX, put it into the buffer
+        *buff <<= 4;
+        if (c & 0x40) {
+          c -= ('A' - '0') - 10;
+        }
+        *buff |= (c - '0') & 0xF;
+        
+        // For 'weird' unreadable ASCII characters, replace with ???
+        if ((data_ctr & 0x1) && ((*buff >= 127) || (*buff <= 8))) {
+          *buff = '?';
+        }
+      }
+      
+      // Make sure we null-terminate
+      *(++buff) = 0;
+    } else {
+      // Just copy it over
+      strcpy(message.text, msgText);
     }
   }
   return message;
