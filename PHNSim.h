@@ -122,6 +122,8 @@ public:
   int getRegStatus();
   /// Checks if the SIM has a connection with a network (is registered)
   bool isConnected();
+  /// Checks whether a (valid) SIM card is inserted
+  bool isSimCardInserted();
   /// Reads the current data according to the SIM
   Date readDate();
   /// Reads the SIM provider name

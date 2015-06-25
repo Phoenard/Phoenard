@@ -197,6 +197,14 @@ int PHN_Sim::getPinStatus() {
   return SIM_PIN_STATUS_ERROR;
 }
 
+bool PHN_Sim::isSimCardInserted() {
+  char resp[20];
+  if (!sendATCommand("AT+CSMINS?", resp, sizeof(resp))) {
+    return false;
+  }
+  return resp[2] == '1';
+}
+
 Date PHN_Sim::readDate() {
   Date date;
   char resp[40];
