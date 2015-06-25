@@ -141,8 +141,8 @@ void PHN_WidgetContainer::updateWidgets(bool update, bool draw, bool forceRedraw
     for (int i = 0; i < widget_count; i++) {
       PHN_Widget *w = widget_values[i];
       if (w->isVisible()) {
-        w->updateWidgets(true, false, false);
         w->update();
+        w->updateWidgets(true, false, false);
       }
     }
   }
@@ -151,9 +151,9 @@ void PHN_WidgetContainer::updateWidgets(bool update, bool draw, bool forceRedraw
     for (int i = 0; i < widget_count; i++) {
       PHN_Widget *w = widget_values[i];
       bool invalidated = forceRedraw || w->isInvalidated();
-      w->updateWidgets(false, true, invalidated);
       if (invalidated)
         w->draw_validate();
+      w->updateWidgets(false, true, invalidated);
     }
   }
 }

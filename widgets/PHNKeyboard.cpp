@@ -25,11 +25,6 @@ THE SOFTWARE.
 
 #include "PHNKeyboard.h"
 
-PHN_Keyboard::PHN_Keyboard() {
-  this->pressedIdx = -1;
-  this->clickedIdx = -1;
-}
-
 void PHN_Keyboard::setDimension(int rows, int columns) {
   this->rows = rows;
   this->cols = columns;
@@ -82,11 +77,14 @@ char PHN_Keyboard::clickedKey() {
 }
 
 void PHN_Keyboard::update() {
+  // Don't do anything now when invalidated
+  if (invalidated) return;
+
+  // Update key input
   int oldPressedIdx = pressedIdx;
-  
   pressedIdx = -1;
   for (int i = 0; i < count; i++) {
-    updateCell(i, invalidated);
+    updateCell(i, false);
   }
   if (pressedIdx != oldPressedIdx) {
     updateCell(pressedIdx, true);
@@ -99,7 +97,11 @@ void PHN_Keyboard::update() {
 }
 
 void PHN_Keyboard::draw() {
-  // Drawing is done during the update phase
+  pressedIdx = -1;
+  clickedIdx = -1;
+  for (int i = 0; i < count; i++) {
+    updateCell(i, true);
+  }
 }
 
 void PHN_Keyboard::updateCell(int idx, bool drawCell) {
