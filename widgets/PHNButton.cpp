@@ -29,10 +29,21 @@ void PHN_Button::setTextRaw(const char* text, int textLen) {
   setImage(TEXT_Image(text));
 }
 
+void PHN_Button::setImage(int index, const PHN_Image &image) {
+  images[index] = image;
+  invalidate();
+}
+
+void PHN_Button::setImagePalette(int index, const PHN_Palette &palette) {
+  images[index].setPalette(palette);
+  invalidate();
+}
+
 void PHN_Button::setImage(const PHN_Image &image) {
   for (unsigned char i = 0; i < 3; i++) {
     images[i] = image;
   }
+  invalidate();
 }
 
 void PHN_Button::draw() {

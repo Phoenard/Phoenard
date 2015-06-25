@@ -171,6 +171,13 @@ void PHN_TextBox::backspace() {
 }
 
 void PHN_TextBox::setSelection(const char* selectionText) {
+  // Handle backspace characters here
+  while (*selectionText == '\b') {
+    backspace();
+    selectionText++;
+  }
+
+  // Now enter the actual text
   int len = min((int) strlen(selectionText), (int) (textBuff.dataSize-length+selLength));
   char* text = (char*) textBuff.data;
   bool appended = (selLength == 0 && selStart == length);
