@@ -73,6 +73,8 @@ void PHN_Sim::reset() {
   sendATCommand("AT+CRC=1");
   // Turn on the incoming call information readout
   sendATCommand("AT+CLIP=1");
+  // Automatically receive messages when SMS is received
+  sendATCommand("AT+CNMI=3,1");
 }
 
 bool PHN_Sim::isOn() {
@@ -123,6 +125,7 @@ void PHN_Sim::update() {
           callStatus = SIM_CALL_STATUS_CALLED;
         }
       } else if (strstr(inputText, "+CMTI: ") == inputText) {
+        // +CMTI: "SM",11
         // Text message received
         // Read arguments
         char* args[2];
@@ -381,6 +384,11 @@ SimMessage PHN_Sim::readMessage(uint8_t messageIndex) {
     strcpy(message.sender.name, args[2]);
     strcpy(message.text, args[4]);
     message.date = readDate(args[3]);
+    
+    // Use address as name if there is no name
+    if (message.sender.name[0] == 0) {
+      strcpy(message.sender.name, message.sender.address);
+    }
   }
   return message;
 }

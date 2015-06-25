@@ -252,9 +252,9 @@ void PHN_TextBox::update() {
     } else {
       scrollWidth = 0;
     }
-    textAreaWidth = (width - scrollWidth);
+    textAreaWidth = (width - scrollWidth + 1);
     cols = (textAreaWidth-2) / chr_w;
-    scroll.setBounds(x+textAreaWidth, y, scrollWidth, height);
+    scroll.setBounds(x+textAreaWidth-1, y, scrollWidth, height);
   }
 
   // Handle Touch selection changes

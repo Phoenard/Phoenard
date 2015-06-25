@@ -83,7 +83,7 @@ typedef struct SimMessage {
   SimContact sender;
   Date date;
   bool read;
-  char text[201];
+  char text[140*2+1];
   uint8_t index;
 
   operator bool() const { 

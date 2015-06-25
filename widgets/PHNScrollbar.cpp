@@ -29,9 +29,9 @@ void PHN_Scrollbar::setRange(int minValue, int maxValue) {
   if ((scrollMin != minValue) || (scrollMax != maxValue)) {
     scrollMin = minValue;
     scrollMax = maxValue;
-    setValue(value());
     invalidate();
   }
+  setValue(value());
 }
 
 void PHN_Scrollbar::setValue(int value) {
