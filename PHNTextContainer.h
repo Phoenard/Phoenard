@@ -43,6 +43,8 @@ class PHN_TextContainer {
    /// Sets the new text to display using an Arduino type String
    void setText(String textString);
    /// Sets the new text to display using an integer value
+   void setText(int valueText) { setText((long) valueText); }
+   /// Sets the new text to display using a long value
    void setText(long valueText);
    /// Sets the new text to display using a float value
    void setText(double valueText);

@@ -32,6 +32,7 @@ void PHN_Scrollbar::setRange(int minValue, int maxValue) {
     invalidate();
   }
   setValue(value());
+  valueChanged = true;
 }
 
 void PHN_Scrollbar::setValue(int value) {
@@ -87,17 +88,25 @@ void PHN_Scrollbar::updateBar(bool redrawing) {
   barWasPressed = barIsTouched;
   if (barIsTouched) {
     float fact;
+    int pos_a, pos_b, pos_v;
     if (longLayout) {
-      int xPos_a = x+height;
-      int xPos_b = x+width-height-barHandleSize;
-      fact = (float) (display.getTouch().x-xPos_a) / (float) (xPos_b-xPos_a);
+      pos_a = x+height;
+      pos_b = x+width-height-barHandleSize;
+      pos_v = display.getTouch().x;
     } else {
-      int yPos_a = y+width;
-      int yPos_b = y+height-width-barHandleSize;
-      fact = (float) (display.getTouch().y-yPos_a) / (float) (yPos_b-yPos_a);
-      fact = 1.0F - fact;
+      pos_a = y+width;
+      pos_b = y+height-width-barHandleSize;
+      pos_v = pos_a+pos_b-display.getTouch().y;
+    }
+    if (pos_v < pos_a) {
+      fact = -2.0F;
+    } else if (pos_v > pos_b) {
+      fact = 2.0F;
+    } else {
+      fact = (float) (pos_v-pos_a) / (float) (pos_b-pos_a);
     }
     if (scrollReversed) fact = 1.0F - fact;
+
     decrIsTouched = (fact < 0.0F);
     incrIsTouched = (fact > 1.0F);
     navIsPressed = decrIsTouched || incrIsTouched;
@@ -173,7 +182,7 @@ void PHN_Scrollbar::updateBar(bool redrawing) {
 
   // Draw the bar when forced and only when the bar is larger than 10
   if ((redrawing || barChanged || barPressChanged) && (barSize > 10)) {
-    int scrollPosFixed = scrollReversed ? (scrollMin - scrollPos) : scrollPos;
+    int scrollPosFixed = scrollReversed ? ((scrollMin+scrollMax)-scrollPos) : scrollPos;
     int prevSliderPos = this->sliderPos;
     this->sliderPos = (int) ((float) (barSize-barHandleSize) * (float) (scrollPosFixed-scrollStart) / (float)scrollDiff);
     if (longLayout) {
