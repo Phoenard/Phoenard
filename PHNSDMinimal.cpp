@@ -202,40 +202,43 @@ void volume_writeCache(uint32_t block) {
   /* don't write anything, ever, if volume is not initialized */
   if (!volume.isInitialized) return;
 
-write_block:
-
   /* don't allow write to first block - TODO: Can this be removed? */
   if (block == 0) return;
+  
+  while (true) {
 
-  /* use address if not SDHC card */
-  if (card_command(SDMINFAT::CMD24, block << card_notSDHCBlockShift, 0XFF)) goto fail;
-  spiSend(SDMINFAT::DATA_START_BLOCK);
+    /* use address if not SDHC card */
+    if (card_command(SDMINFAT::CMD24, block << card_notSDHCBlockShift, 0XFF)) goto fail;
+    spiSend(SDMINFAT::DATA_START_BLOCK);
 
-  /* Write data from buffer to SPI - optimized loop */
-  data = volume_cacheBuffer.data;
-  do {
-    SPDR = *data;
-    data++;
-    spiWait();
-  } while (data != data_end);
+    /* Write data from buffer to SPI - optimized loop */
+    data = volume_cacheBuffer.data;
+    do {
+      SPDR = *data;
+      data++;
+      spiWait();
+    } while (data != data_end);
 
-  spiRec();    /* dummy crc */
-  spiRec();    /* dummy crc */
+    spiRec();    /* dummy crc */
+    spiRec();    /* dummy crc */
 
-  /* Wait for programming of flash to complete */
-  if ((spiRec() & SDMINFAT::DATA_RES_MASK) != SDMINFAT::DATA_RES_ACCEPTED) goto fail;
-  if (!card_waitForData(SDMINFAT::DATA_IDLE_BLOCK)) goto fail;
-  if (card_command(SDMINFAT::CMD13, 0, 0XFF)) goto fail;
-  if (spiRec()) goto fail;
+    /* Wait for programming of flash to complete */
+    if ((spiRec() & SDMINFAT::DATA_RES_MASK) != SDMINFAT::DATA_RES_ACCEPTED) goto fail;
+    if (!card_waitForData(SDMINFAT::DATA_IDLE_BLOCK)) goto fail;
+    if (card_command(SDMINFAT::CMD13, 0, 0XFF)) goto fail;
+    if (spiRec()) goto fail;
 
-  /* Also write out a mirror block if specified */
-  if (volume_cacheFATMirror) {
-    volume_cacheFATMirror = 0;
-    block += volume.blocksPerFat;
-    goto write_block;
+    /* Also write out a mirror block if specified */
+    if (volume_cacheFATMirror) {
+      volume_cacheFATMirror = 0;
+      block += volume.blocksPerFat;
+    } else {
+      /* Finished writing */
+      break;
+    }
   }
   return;
-  
+
 fail:
   volume.isInitialized = 0;
 }
