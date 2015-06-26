@@ -137,10 +137,7 @@ void PHN_Keyboard::updateCell(int idx, bool drawCell) {
       display.drawRect(cx, cy, cw, cellH, color(FRAME));
       display.setTextColor(color(CONTENT), key_color);
 
-      if (txt[0] == '\b') {
-        // Backspace shown as a <--
-        display.drawStringMiddle(cx, cy, cw, cellH, "<-");
-      } else if (txt[0] == '\t') {
+      if (txt[0] == '\t') {
         // Tab character, show 'TAB'
         display.drawStringMiddle(cx, cy, cw, cellH, "TAB");
       } else if (txt[0] == '\n') {
