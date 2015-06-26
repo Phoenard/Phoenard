@@ -55,8 +55,8 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
  public:
   /// Initializes some defaults
   PHN_TextBox(void);
-  /// Updates the width and height of the textbox to fit the rows and columns specified
-  void setDimension(int rows, int columns);
+  /// Updates the width and height of the textbox to fit the columns and rows specified
+  void setDimension(int columns, int rows);
   /// Sets the font size of the text
   void setTextSize(int size);
   /// Sets the maximum length of the text that can be displayed

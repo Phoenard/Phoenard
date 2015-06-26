@@ -47,8 +47,8 @@ THE SOFTWARE.
  */
 class PHN_Keyboard : public PHN_Widget {
  public:
-  /// Sets the amount of rows and columns in the grid
-  void setDimension(int rows, int columns);
+  /// Sets the amount of columns and rows in the grid
+  void setDimension(int columns, int rows);
   /// Sets the horizontal and vertical spacing between buttons
   void setSpacing(int spacing);
   /// Sets the horizontal and vertical spacing between buttons

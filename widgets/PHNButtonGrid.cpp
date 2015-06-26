@@ -32,7 +32,7 @@ PHN_ButtonGrid::PHN_ButtonGrid() {
   this->deleteAddedWidgets = true;
 }
 
-void PHN_ButtonGrid::setDimension(int rows, int columns) {
+void PHN_ButtonGrid::setDimension(int columns, int rows) {
   this->rows = rows;
   this->cols = columns;
   setupCells();
@@ -70,7 +70,7 @@ void PHN_ButtonGrid::setupCells() {
   for (row = 0; row < rows; row++) {
     c_x = x;
     for (col = 0; col < cols; col++) {
-      button(row, col).setBounds(c_x, c_y, cellW, cellH);
+      button(col, row).setBounds(c_x, c_y, cellW, cellH);
       c_x += cellW + spacW;
     }
     c_y += cellH + spacH;
@@ -107,7 +107,7 @@ int PHN_ButtonGrid::getClickedIndex() {
   return -1;
 }
 
-int PHN_ButtonGrid::getIndex(int row, int col) {
+int PHN_ButtonGrid::getIndex(int col, int row) {
   if (row == -1 || col == -1) return -1;
   return col + row * cols;
 }

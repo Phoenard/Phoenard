@@ -17,7 +17,7 @@ PHN_TextBox::PHN_TextBox() {
   this->scroll.setRange(0, 0);
 }
 
-void PHN_TextBox::setDimension(int rows, int columns) {
+void PHN_TextBox::setDimension(int columns, int rows) {
   // Use the known column/row/scrollbar states to calculate the bounds
   if (rows > 1) {
     // Multiple rows - vertical scrollbar

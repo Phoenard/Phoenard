@@ -25,7 +25,7 @@ THE SOFTWARE.
 
 #include "PHNKeyboard.h"
 
-void PHN_Keyboard::setDimension(int rows, int columns) {
+void PHN_Keyboard::setDimension(int columns, int rows) {
   this->rows = rows;
   this->cols = columns;
   this->count = (int) rows * (int) columns;

@@ -54,8 +54,8 @@ class PHN_ButtonGrid : public PHN_Widget {
  public:
   /// Basic constructor to set the initial rows/columns to 0
   PHN_ButtonGrid(void);
-  /// Sets the amount of rows and columns in the grid
-  void setDimension(int rows, int columns);
+  /// Sets the amount of columns and rows in the grid
+  void setDimension(int columns, int rows);
   /// Sets the horizontal and vertical spacing between buttons
   void setSpacing(int spacing);
   /// Sets the horizontal and vertical spacing between buttons
@@ -67,7 +67,7 @@ class PHN_ButtonGrid : public PHN_Widget {
   /// Accesses a single button in the grid by index
   PHN_Button &button(int index) { return *((PHN_Button*) widget(index)); }
   /// Accesses a single button in the grid by column and row
-  PHN_Button &button(int row, int column) { return button(getIndex(row, column)); }
+  PHN_Button &button(int columns, int row) { return button(getIndex(column, row)); }
 
   /// Gets the column of the cell pressed, -1 if none is pressed
   int getTouchedColumn(void);
@@ -87,7 +87,7 @@ class PHN_ButtonGrid : public PHN_Widget {
   virtual void draw(void);
  protected:
   int cols, rows, count, cellW, cellH, spacW, spacH;
-  int getIndex(int row, int col);
+  int getIndex(int col, int row);
  private:
   void setupCells();
 };
