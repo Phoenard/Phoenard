@@ -100,7 +100,6 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
   void updateScrollLimit(void);
   void updateScrollLimit(int col, int row);
   PHN_Scrollbar scroll;
-  bool scrollVisible;
   int scrollOffset;
   int rows, cols;
   int chr_w, chr_h;

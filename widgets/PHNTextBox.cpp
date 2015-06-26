@@ -9,19 +9,21 @@ PHN_TextBox::PHN_TextBox() {
   this->invalidateEnd = -1;
   this->cursor_x = -1;
   this->cursor_y = -1;
+  this->cursor_blinkLast = millis();
   this->scrollOffset = 0;
-  this->scrollVisible = true;
   this->dragStart = -1;
   this->setTextSize(2);
   this->setMaxLength(100);
   this->scroll.setRange(0, 0);
+  this->scroll.setVisible(false);
+  this->addWidget(this->scroll);
 }
 
 void PHN_TextBox::setDimension(int columns, int rows) {
   // Use the known column/row/scrollbar states to calculate the bounds
   int width = columns*chr_w+2*_textSize+2;
   int height = rows*chr_h+2*_textSize+2;
-  if (scrollVisible) {
+  if (scroll.isVisible()) {
     if (rows > 1) {
       // Multiple rows - vertical scrollbar
       width += chr_h+1;
@@ -49,7 +51,7 @@ void PHN_TextBox::setTextSize(int size) {
 
 void PHN_TextBox::setScrollbar(bool visible) {
   // Update the scroll visible property - invalidate to refresh
-  scrollVisible = visible;
+  scroll.setVisible(visible);
   invalidate();
 }
 
@@ -257,21 +259,17 @@ void PHN_TextBox::invalidate(int startPosition, int endPosition) {
 void PHN_TextBox::update() {
   // Update scrollbar layout changes
   if (invalidated) {
-    // Remove scrollbar up-front
-    removeWidget(scroll);
-    
     // Update row count
     rows = (height-2) / (chr_h);
-    
+
     // Update width and column count, applying this to the scrollbar
     int scrollWidth;
-    if (scrollVisible) {
+    if (scroll.isVisible()) {
       if (rows > 1) {
         scrollWidth = chr_h+3;
       } else {
         scrollWidth = height*2+3;
       }
-      addWidget(scroll);
     } else {
       scrollWidth = 0;
     }
