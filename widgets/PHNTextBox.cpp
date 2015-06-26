@@ -14,15 +14,24 @@ PHN_TextBox::PHN_TextBox() {
   this->dragStart = -1;
   this->setTextSize(2);
   this->setMaxLength(100);
+  
+  // Default scrollbar properties
   this->scroll.setRange(0, 0);
   this->scroll.setVisible(false);
   this->addWidget(this->scroll);
+  
+  // Default backspace button properties
+  this->backspaceBtn.setText("\b");
+  this->backspaceBtn.setVisible(false);
+  this->addWidget(this->backspaceBtn);
 }
 
 void PHN_TextBox::setDimension(int columns, int rows) {
   // Use the known column/row/scrollbar states to calculate the bounds
   int width = columns*chr_w+2*_textSize+2;
   int height = rows*chr_h+2*_textSize+2;
+  
+  // Adjust width for a visible scrollbar
   if (scroll.isVisible()) {
     if (rows > 1) {
       // Multiple rows - vertical scrollbar
@@ -31,6 +40,11 @@ void PHN_TextBox::setDimension(int columns, int rows) {
       // Only a single row with scrollbar on the right
       width += height*2+1;
     }
+  }
+  
+  // Adjust width for a visible backspace button
+  if (backspaceBtn.isVisible()) {
+    width += _textSize*20+5;
   }
   setSize(width, height);
 }
@@ -50,8 +64,12 @@ void PHN_TextBox::setTextSize(int size) {
 }
 
 void PHN_TextBox::showScrollbar(bool visible) {
-  // Update the scroll visible property - invalidate to refresh
   scroll.setVisible(visible);
+  invalidate();
+}
+
+void PHN_TextBox::showBackspace(bool visible) {
+  backspaceBtn.setVisible(visible);
   invalidate();
 }
 
@@ -262,21 +280,28 @@ void PHN_TextBox::update() {
     // Update row count
     rows = (height-2) / (chr_h);
 
-    // Update width and column count, applying this to the scrollbar
-    int scrollWidth;
+    // Update width and column count, applying this to the UI
+    int scrollWidth = 0;
+    int backspaceWidth = 0;
+    int backspaceHeight = (rows==1) ? height : (chr_h+2*_textSize+2);
     if (scroll.isVisible()) {
       if (rows > 1) {
         scrollWidth = chr_h+3;
       } else {
         scrollWidth = height*2+3;
       }
-    } else {
-      scrollWidth = 0;
     }
-    textAreaWidth = (width - scrollWidth);
+    if (backspaceBtn.isVisible()) {
+      backspaceWidth = _textSize*20+5;
+    }
+    textAreaWidth = (width - scrollWidth - backspaceWidth);
     cols = (textAreaWidth-2) / chr_w;
     scroll.setBounds(x+textAreaWidth-1, y, scrollWidth, height);
+    backspaceBtn.setBounds(x+width-backspaceWidth+4, y, backspaceWidth-5, backspaceHeight);
   }
+
+  // Handle backspace clicks
+  if (backspaceBtn.isClicked()) backspace();
 
   // Handle Touch selection changes
   char* text = (char*) textBuff.data;

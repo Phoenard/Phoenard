@@ -30,6 +30,7 @@ THE SOFTWARE.
 
 #include "PHNWidget.h"
 #include "PHNScrollbar.h"
+#include "PHNButton.h"
 
 #ifndef _PHN_WIDGET_TEXT_H_
 #define _PHN_WIDGET_TEXT_H_
@@ -65,6 +66,8 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
   int textSize(void) { return this->_textSize; }
   /// Sets whether the scrollbar is displayed
   void showScrollbar(bool visible);
+  /// Sets whether a button to perform a backspace is displayed
+  void showBackspace(bool visible);
   /// Gets the scrollbar widget used to scroll text
   PHN_Scrollbar &scrollbar(void) { return scroll; }
   /// Ensures the character specified is displayed
@@ -100,6 +103,7 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
   void updateScrollLimit(void);
   void updateScrollLimit(int col, int row);
   PHN_Scrollbar scroll;
+  PHN_Button backspaceBtn;
   int scrollOffset;
   int rows, cols;
   int chr_w, chr_h;

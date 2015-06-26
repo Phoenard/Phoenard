@@ -83,19 +83,19 @@ void PHN_Widget::setColor(int colorId, color_t color) {
 }
 
 bool PHN_Widget::isTouched() {
-  return display.isTouched(x, y, width, height);
+  return isVisible() && display.isTouched(x, y, width, height);
 }
 bool PHN_Widget::isTouchEnter() {
-  return display.isTouchEnter(x, y, width, height);
+  return isVisible() && display.isTouchEnter(x, y, width, height);
 }
 bool PHN_Widget::isTouchLeave() {
-  return display.isTouchLeave(x, y, width, height);
+  return isVisible() && display.isTouchLeave(x, y, width, height);
 }
 bool PHN_Widget::isClicked() {
-  return display.isTouchClicked(x, y, width, height);
+  return isVisible() && display.isTouchClicked(x, y, width, height);
 }
 bool PHN_Widget::isTouchChange() {
-  return display.isTouchChange(x, y, width, height);
+  return isVisible() && display.isTouchChange(x, y, width, height);
 }
   
 void PHN_Widget::invalidate() {
