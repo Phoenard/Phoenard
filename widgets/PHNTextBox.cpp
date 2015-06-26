@@ -49,7 +49,7 @@ void PHN_TextBox::setTextSize(int size) {
   invalidate();
 }
 
-void PHN_TextBox::setScrollbar(bool visible) {
+void PHN_TextBox::showScrollbar(bool visible) {
   // Update the scroll visible property - invalidate to refresh
   scroll.setVisible(visible);
   invalidate();

@@ -114,7 +114,7 @@ removeWidget	KEYWORD2
 setTextBackground	KEYWORD2
 setTextColor	KEYWORD2
 setTextSize	KEYWORD2
-setScrollbar	KEYWORD2
+showScrollbar	KEYWORD2
 setMaxLength	KEYWORD2
 setDimension	KEYWORD2
 setSpacing	KEYWORD2

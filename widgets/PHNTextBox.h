@@ -64,7 +64,7 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
   /// Gets the font size of the text
   int textSize(void) { return this->_textSize; }
   /// Sets whether the scrollbar is displayed
-  void setScrollbar(bool visible);
+  void showScrollbar(bool visible);
   /// Gets the scrollbar widget used to scroll text
   PHN_Scrollbar &scrollbar(void) { return scroll; }
   /// Ensures the character specified is displayed
