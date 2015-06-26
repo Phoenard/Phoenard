@@ -19,13 +19,18 @@ PHN_TextBox::PHN_TextBox() {
 
 void PHN_TextBox::setDimension(int columns, int rows) {
   // Use the known column/row/scrollbar states to calculate the bounds
-  if (rows > 1) {
-    // Multiple rows - vertical scrollbar
-    setSize(columns*chr_w+chr_w+4, rows*chr_h+2);
-  } else {
-    // Only a single row
-    setSize((columns*chr_w)+chr_h+6, chr_h+2);
+  int width = columns*chr_w+2*_textSize+2;
+  int height = rows*chr_h+2*_textSize+2;
+  if (scrollVisible) {
+    if (rows > 1) {
+      // Multiple rows - vertical scrollbar
+      width += chr_h+1;
+    } else {
+      // Only a single row with scrollbar on the right
+      width += height*2+1;
+    }
   }
+  setSize(width, height);
 }
 
 void PHN_TextBox::setMaxLength(int length) {
@@ -42,7 +47,7 @@ void PHN_TextBox::setTextSize(int size) {
   invalidate();
 }
 
-void PHN_TextBox::setScrollbarVisible(bool visible) {
+void PHN_TextBox::setScrollbar(bool visible) {
   // Update the scroll visible property - invalidate to refresh
   scrollVisible = visible;
   invalidate();
@@ -65,25 +70,31 @@ bool PHN_TextBox::ensureVisible(int charPosition) {
     if (text[i] == '\r')
       continue;
 
-    if (text[i] == '\n' || col >= cols) {
+    if (text[i] == '\n' || (col >= cols)) {
       row++;
       col = 0;
     }
     if (i == charPosition) {
       break;
     }
+
     if (text[i] != '\n')
       col++;
   }
 
-  // Not found, scroll to it
+  // Go one row back for single-row text fields to properly show last character
+  if ((rows == 1) && (col == 0) && (text[charPosition-1] != '\n')) {
+    row--;
+  }
+
+  // Adjust scroll position
   int newScroll = scrollOffset;
-  if (row >= rows) {
-    // Scroll down the required amount of rows
-    newScroll = scrollOffset + row - rows + 1;
-  } else if (row < 0) {
+  if (row < 0) {
     // Scroll up the required amount of rows
-    newScroll = scrollOffset + row;
+    newScroll += row;
+  } else if (row >= rows) {
+    // Scroll down the required amount of rows
+    newScroll += row - rows + 1;
   }
   scroll.setValue(newScroll);
   return newScroll != scrollOffset;
@@ -104,11 +115,22 @@ void PHN_TextBox::updateScrollLimit() {
     if (text[i] != '\n')
       col++;
   }
+  updateScrollLimit(col, row);
+}
+
+void PHN_TextBox::updateScrollLimit(int col, int row) {
   // Update scroll maximum based on the amount of rows
   int scrollMax = row - rows + 1;
-  if (col == cols)
-    scrollMax++;
-  scroll.setRange(max(0, scrollMax), 0);
+
+  // Ensure above 0
+  if (scrollMax < 0) scrollMax = 0;
+
+  // Handle inversion for single-row scrollbar
+  if (rows == 1) {
+    scroll.setRange(0, scrollMax);
+  } else {
+    scroll.setRange(scrollMax, 0);
+  }
 }
 
 void PHN_TextBox::setSelectionRange(int position, int length) {
@@ -174,6 +196,7 @@ void PHN_TextBox::backspace() {
     text[length] = 0;
     updateScrollLimit();
     setSelectionRange(selStart-1, 0);
+    ensureVisible(selStart);
     invalidate(selStart);
   }
 }
@@ -238,23 +261,23 @@ void PHN_TextBox::update() {
     removeWidget(scroll);
     
     // Update row count
-    rows = (height-2) / chr_h;
+    rows = (height-2) / (chr_h);
     
     // Update width and column count, applying this to the scrollbar
     int scrollWidth;
     if (scrollVisible) {
       if (rows > 1) {
-        scrollWidth = chr_h+2;
+        scrollWidth = chr_h+3;
       } else {
-        scrollWidth = height*2+2;
+        scrollWidth = height*2+3;
       }
       addWidget(scroll);
     } else {
       scrollWidth = 0;
     }
-    textAreaWidth = (width - scrollWidth + 1);
+    textAreaWidth = (width - scrollWidth);
     cols = (textAreaWidth-2) / chr_w;
-    scroll.setBounds(x+textAreaWidth, y, scrollWidth, height);
+    scroll.setBounds(x+textAreaWidth-1, y, scrollWidth, height);
   }
 
   // Handle Touch selection changes
@@ -338,9 +361,8 @@ void PHN_TextBox::update() {
 
 void PHN_TextBox::draw() {
   // Draw background color and grid
-  display.fillRect(x+1, y+1, textAreaWidth-2, height-2, color(FOREGROUND));
-  display.drawRect(x, y, textAreaWidth, height, color(FRAME));
-  
+  display.fillBorderRect(x, y, textAreaWidth, height, color(FOREGROUND), color(FRAME));
+
   // Draw text
   drawTextFromTo(0, this->length, false);
 }
@@ -360,7 +382,7 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
   // When all empty, just wipe the screen and reset
   if (!length) {
     scroll.setRange(0, 0);
-    display.fillRect(x+1, y+1, textAreaWidth-1, height-2, color(FOREGROUND));
+    display.fillRect(x+1, y+1, textAreaWidth-2, height-2, color(FOREGROUND));
     cursor_x = x+_textSize+1;
     cursor_y = y+_textSize+1;
     selStart = 0;
@@ -443,11 +465,7 @@ void PHN_TextBox::drawTextFromTo(int charStart, int charEnd, bool drawBackground
     }
   }
 
-  // Update scroll maximum based on the amount of rows
-  int scrollMax = row - rows + scrollOffset + 1;
-  if (col == cols)
-    scrollMax++;
-  scroll.setRange(max(0, scrollMax), 0);
+  updateScrollLimit(col, row + scrollOffset);
 
   // Restore viewport
   display.setViewport(old);

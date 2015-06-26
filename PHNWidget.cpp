@@ -32,8 +32,7 @@ PHN_Widget::PHN_Widget() {
   this->width = 64;
   this->height = 64;
   this->invalidated = true;
-  this->visible = true;
-  this->drawn = false;
+  this->visible = 0x1;
   this->colors = WIDGET_DEFAULT_COLORS;
 }
 
@@ -61,14 +60,18 @@ void PHN_Widget::fillWidgetArea(color_t color) {
 }
 
 void PHN_Widget::setVisible(bool visible) {
-  if (this->visible != visible) {
-    this->visible = visible;
+  if (isVisible() != visible) {
+    if (visible) {
+      this->visible |= 0x1;
+    } else {
+      this->visible &= ~0x1;
+    }
     invalidate();
   }
 }
 
 bool PHN_Widget::isVisible() {
-  return visible;
+  return (visible & 0x1) == 0x1;
 }
 
 void PHN_Widget::setColor(int colorId, color_t color) {
@@ -104,11 +107,11 @@ bool PHN_Widget::isInvalidated() {
 }
 
 void PHN_Widget::draw_validate() {
-  if (visible) {
-    drawn = true;
+  if (visible & 0x1) {
+    visible |= 0x2;
     draw();
-  } else if (drawn) {
-    drawn = false;
+  } else if (visible & 0x2) {
+    visible &= ~0x2;
     fillWidgetArea(color(BACKGROUND));
   }
   invalidated = false;

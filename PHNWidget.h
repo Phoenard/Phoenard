@@ -211,12 +211,10 @@ protected:
   //@}
   //! A palette of colors set for the widget
   PHN_Palette colors;
-  //! Drawn state of the widget
-  bool drawn;
+  //! Draw state flags of the widget (0=invisible, 1=visible, 2=drawn)
+  unsigned char visible;
   //! Invalidated state of the widget
   bool invalidated;
-  //! Visibility state of the widget
-  bool visible;
 };
 
 #endif

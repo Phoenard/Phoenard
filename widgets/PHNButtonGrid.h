@@ -67,7 +67,7 @@ class PHN_ButtonGrid : public PHN_Widget {
   /// Accesses a single button in the grid by index
   PHN_Button &button(int index) { return *((PHN_Button*) widget(index)); }
   /// Accesses a single button in the grid by column and row
-  PHN_Button &button(int columns, int row) { return button(getIndex(column, row)); }
+  PHN_Button &button(int column, int row) { return button(getIndex(column, row)); }
 
   /// Gets the column of the cell pressed, -1 if none is pressed
   int getTouchedColumn(void);

@@ -64,7 +64,7 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
   /// Gets the font size of the text
   int textSize(void) { return this->_textSize; }
   /// Sets whether the scrollbar is displayed
-  void setScrollbarVisible(bool visible);
+  void setScrollbar(bool visible);
   /// Gets the scrollbar widget used to scroll text
   PHN_Scrollbar &scrollbar(void) { return scroll; }
   /// Ensures the character specified is displayed
@@ -98,6 +98,7 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
   void drawTextFromTo(int charStart, int charEnd, bool drawBackground);
   void drawCursor(bool visible);
   void updateScrollLimit(void);
+  void updateScrollLimit(int col, int row);
   PHN_Scrollbar scroll;
   bool scrollVisible;
   int scrollOffset;
