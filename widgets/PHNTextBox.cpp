@@ -278,7 +278,7 @@ void PHN_TextBox::update() {
   // Update scrollbar layout changes
   if (invalidated) {
     // Update row count
-    rows = (height-2) / (chr_h);
+    rows = (height-2) / (chr_h+_textSize);
 
     // Update width and column count, applying this to the UI
     int scrollWidth = 0;
@@ -295,7 +295,7 @@ void PHN_TextBox::update() {
       backspaceWidth = _textSize*20+5;
     }
     textAreaWidth = (width - scrollWidth - backspaceWidth);
-    cols = (textAreaWidth-2) / chr_w;
+    cols = (textAreaWidth-2*_textSize-2) / chr_w;
     scroll.setBounds(x+textAreaWidth-1, y, scrollWidth, height);
     backspaceBtn.setBounds(x+width-backspaceWidth+4, y, backspaceWidth-5, backspaceHeight);
   }
