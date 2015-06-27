@@ -39,6 +39,8 @@ PHN_Widget::PHN_Widget() {
 PHN_Widget::~PHN_Widget() {
   // Clear any child widgets in the destructor...
   clearSilent();
+  // Make sure to de-register this widget from the Display
+  display.removeWidget(*this);
 }
 
 void PHN_Widget::setBounds(int x, int y, int width, int height) {
@@ -55,8 +57,8 @@ void PHN_Widget::setSize(int width, int height) {
   invalidate();
 }
 
-void PHN_Widget::fillWidgetArea(color_t color) {
-  display.fillRect(x, y, width, height, color);
+void PHN_Widget::undraw() {
+  display.fillRect(x, y, width, height, color(BACKGROUND));
 }
 
 void PHN_Widget::setVisible(bool visible) {
@@ -68,6 +70,18 @@ void PHN_Widget::setVisible(bool visible) {
     }
     invalidate();
   }
+}
+
+void PHN_Widget::setDrawingEnabled(bool drawing) {
+  if (drawing) {
+    visible &= ~0x4;
+  } else {
+    visible |= 0x4;
+  }
+}
+
+bool PHN_Widget::isDrawingEnabled() {
+  return (visible & 0x4) != 0x4;
 }
 
 bool PHN_Widget::isVisible() {
@@ -107,14 +121,16 @@ bool PHN_Widget::isInvalidated() {
 }
 
 void PHN_Widget::draw_validate() {
-  if (visible & 0x1) {
-    visible |= 0x2;
-    draw();
-  } else if (visible & 0x2) {
-    visible &= ~0x2;
-    fillWidgetArea(color(BACKGROUND));
+  if ((visible & 0x4) != 0x4) {
+    if (visible & 0x1) {
+      visible |= 0x2;
+      draw();
+    } else if (visible & 0x2) {
+      visible &= ~0x2;
+      undraw();
+    }
+    invalidated = false;
   }
-  invalidated = false;
 }
 
 PHN_WidgetContainer::PHN_WidgetContainer() {
@@ -213,8 +229,7 @@ void PHN_WidgetContainer::setWidgetCapacity(int capacity) {
   // Properly 'undraw' (and delete) widgets outside the capacity range
   for (int i = capacity; i < widget_count; i++) {
       PHN_Widget *w = widget_values[i];
-      w->setVisible(false);
-      if (w->isInvalidated()) w->draw_validate();
+      if ((w->visible & 0x3) && !(w->visible & 0x4)) w->undraw();
       if (deleteAddedWidgets) delete w;
   }
 

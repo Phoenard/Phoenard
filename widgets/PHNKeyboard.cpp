@@ -60,12 +60,7 @@ void PHN_Keyboard::setKeys(const char* keyChars) {
 }
 
 void PHN_Keyboard::clearKeys() {
-  // Erase all current keys
-  for (int i = 0; i < this->count; i++) {
-    this->updateCell(i, false, true);
-  }
-
-  // Reset
+  this->undraw();
   this->formatIdx = 0;
   this->formatCnt = 0;
   this->formatChars.resize(0);
@@ -191,6 +186,12 @@ void PHN_Keyboard::draw() {
   clickedIdx = -1;
   for (int i = 0; i < count; i++) {
     updateCell(i, true, false);
+  }
+}
+
+void PHN_Keyboard::undraw() {
+  for (int i = 0; i < this->count; i++) {
+    this->updateCell(i, true, true);
   }
 }
 

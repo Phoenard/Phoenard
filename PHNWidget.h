@@ -73,7 +73,7 @@ class PHN_Widget;
  */
 class PHN_WidgetContainer {
  public:
-  //! @brief Constructor for a new widget container
+  /// Constructor for a new widget container
   PHN_WidgetContainer(void);
 
   /** @brief Updates all the widgets contained
@@ -146,21 +146,21 @@ class PHN_Widget : public PHN_WidgetContainer {
    friend class PHN_WidgetContainer;
 
  public:
-  //! @brief Constructor for a new widget, initializing all fields to the default values
+  /// Constructor for a new widget, initializing all fields to the default values
   PHN_Widget();
-  //! @brief Destructor for a widget, clearing any child widgets and freeing memory
+  /// Destructor for a widget, clearing any child widgets and freeing memory
   virtual ~PHN_Widget();
-  //! @brief Gets the x-coordinate of the widget
+  /// Gets the x-coordinate of the widget
   const int getX(void) { return x; }
-  //! @brief Gets the y-coordinate of the widget
+  /// Gets the y-coordinate of the widget
   const int getY(void) { return y; }
-  //! @brief Gets the width of the widget
+  /// Gets the width of the widget
   const int getWidth(void) { return width; }
-  //! @brief Gets the height of the widget
+  /// Gets the height of the widget
   const int getHeight(void) { return height; }
-  //! @brief Sets the new bounds (x, y, width, height) of the widget
+  /// Sets the new bounds (x, y, width, height) of the widget
   void setBounds(int x, int y, int width, int height);
-  //! @brief Sets the size (width, height) of the widget
+  /// Sets the size (width, height) of the widget
   void setSize(int width, int height);
   /** @brief Sets a style color for this widget
    * 
@@ -177,32 +177,38 @@ class PHN_Widget : public PHN_WidgetContainer {
    */
   const color_t color(int colorId) { return colors.get(colorId); }
 
-  //! @brief Gets whether the widget is touched down by the user
+  /// Gets whether the widget is touched down by the user
   bool isTouched();
-  //! @brief Gets whether the user's touch input entered the widget
+  /// Gets whether the user's touch input entered the widget
   bool isTouchEnter();
-  //! @brief Gets whether the user's touch input left the widget
+  /// Gets whether the user's touch input left the widget
   bool isTouchLeave();
-  //! @brief Gets whether the user clicked, entered or left the widget
+  /// Gets whether the user clicked, entered or left the widget
   bool isTouchChange();
-  //! @brief Gets whether the user clicked (pressed and released) the widget
+  /// Gets whether the user clicked (pressed and released) the widget
   bool isClicked();
-  
-  //! @brief Fills the area of this widget with a color
-  void fillWidgetArea(color_t color);
-  //! @brief Sets whether the widget is displayed and updated
+
+  /// Sets whether the widget is displayed and updated
   void setVisible(bool visible);
-  //! @brief Gets whether the widget is displayed and updated
+  /// Gets whether the widget is displayed and updated
   bool isVisible(void);
-  //! @brief Invalidated the widget, causing it to be re-drawn at a later time
+
+  /// Sets whether the widget is drawn and undrawn
+  void setDrawingEnabled(bool drawing);
+  /// Gets whether the widget is drawn and undrawn
+  bool isDrawingEnabled(void);
+
+  /// Invalidated the widget, causing it to be re-drawn at a later time
   void invalidate(void);
-  //! @brief Checks whether the widget is invalidated and needs to be redrawn
+  /// Checks whether the widget is invalidated and needs to be redrawn
   bool isInvalidated(void);
-  //! @brief Draws the widget if invalidated, clearing the invalidated state
+  /// Draws the widget if invalidated, clearing the invalidated state
   void draw_validate();
-  //! @brief Draw function routine, where widgets must perform drawing
+  /// Clear draw function routine, where widgets perform un-drawing (to background)
+  virtual void undraw(void);
+  /// Draw function routine, where widgets must perform drawing
   virtual void draw(void) = 0;
-  //! @brief Update function routine, where widget logic must be performed
+  /// Update function routine, where widget logic must be performed
   virtual void update(void) = 0;
 protected:
   //! \name Widget bounds
@@ -211,7 +217,7 @@ protected:
   //@}
   //! A palette of colors set for the widget
   PHN_Palette colors;
-  //! Draw state flags of the widget (0=invisible, 1=visible, 2=drawn)
+  //! Draw state flags of the widget (0=invisible, 0x1=visible, 0x2=drawn, 0x4=draw_disabled)
   unsigned char visible;
   //! Invalidated state of the widget
   bool invalidated;

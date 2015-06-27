@@ -83,6 +83,7 @@ class PHN_Keyboard : public PHN_Widget {
   /// Obtains the key character clicked, NULL when there is none
   char clickedKey();
 
+  virtual void undraw(void);
   virtual void update(void);
   virtual void draw(void);
  private:
