@@ -62,12 +62,16 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
   void setTextSize(int size);
   /// Sets the maximum length of the text that can be displayed
   void setMaxLength(int length);
+  /// Gets the maximum length of the text that can be displayed
+  const int maxLength() { return (textBuff.dataSize - 1); }
   /// Gets the font size of the text
   int textSize(void) { return this->_textSize; }
   /// Sets whether the scrollbar is displayed
   void showScrollbar(bool visible);
   /// Sets whether a button to perform a backspace is displayed
   void showBackspace(bool visible);
+  /// Sets whether the cursor is displayed
+  void showCursor(bool visible);
   /// Gets the scrollbar widget used to scroll text
   PHN_Scrollbar &scrollbar(void) { return scroll; }
   /// Ensures the character specified is displayed
@@ -116,8 +120,9 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
   int invalidateStart, invalidateEnd;
   bool invalidateAppended;
   int cursor_x, cursor_y;
+  bool cursor_visible;
   bool cursor_blinkVisible;
-  long cursor_blinkLast;
+  unsigned long cursor_blinkLast;
   DataCopyBuffer textBuff;
 };
 

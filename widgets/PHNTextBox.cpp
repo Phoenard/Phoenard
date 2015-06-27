@@ -9,7 +9,8 @@ PHN_TextBox::PHN_TextBox() {
   this->invalidateEnd = -1;
   this->cursor_x = -1;
   this->cursor_y = -1;
-  this->cursor_blinkLast = millis();
+  this->cursor_blinkLast = 0;
+  this->cursor_visible = true;
   this->scrollOffset = 0;
   this->dragStart = -1;
   this->setTextSize(2);
@@ -80,6 +81,10 @@ void PHN_TextBox::setTextRaw(const char* text, int textLen) {
   updateScrollLimit();
   setSelectionRange(length, 0);
   invalidate();
+}
+
+void PHN_TextBox::showCursor(bool visible) {
+  cursor_visible = visible;
 }
 
 bool PHN_TextBox::ensureVisible(int charPosition) {
@@ -305,7 +310,7 @@ void PHN_TextBox::update() {
 
   // Handle Touch selection changes
   char* text = (char*) textBuff.data;
-  if (display.isTouched(x+_textSize+1, y+_textSize+1, cols*chr_w, rows*chr_h)) {
+  if (cursor_visible && display.isTouched(x+_textSize+1, y+_textSize+1, cols*chr_w, rows*chr_h)) {
     PressPoint pos = display.getTouch();
     int posRow = (pos.y-(this->y+_textSize+1)) / chr_h;
 
@@ -368,11 +373,20 @@ void PHN_TextBox::update() {
 
   // Partial redraws
   if (!invalidated) {
+    // Redraw parts of changed text
     if (invalidateStart != -1) {
-      // Redraw parts of changed text
       drawTextFromTo(invalidateStart, invalidateEnd, !invalidateAppended);
-    } else if ((millis() - cursor_blinkLast) >= PHN_WIDGET_TEXT_BLINKINTERVAL) {
-      // Blink the cursor
+    }
+
+    // Handle cursor blinking
+    bool updateCursor = false;
+    if ((millis() - cursor_blinkLast) >= PHN_WIDGET_TEXT_BLINKINTERVAL) {
+      updateCursor = true;
+    }
+    if (!cursor_visible) {
+      updateCursor = cursor_blinkVisible;
+    }
+    if (updateCursor) {
       cursor_blinkLast = millis();
       drawCursor(!cursor_blinkVisible);
     }

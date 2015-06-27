@@ -116,6 +116,7 @@ setTextColor	KEYWORD2
 setTextSize	KEYWORD2
 showScrollbar	KEYWORD2
 showBackspace	KEYWORD2
+showCursor	KEYWORD2
 setMaxLength	KEYWORD2
 setDimension	KEYWORD2
 setSpacing	KEYWORD2
