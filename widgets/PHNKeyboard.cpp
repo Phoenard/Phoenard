@@ -25,6 +25,16 @@ THE SOFTWARE.
 
 #include "PHNKeyboard.h"
 
+// Maximum length you can use as a name for a keyboard format
+const int MAX_FORMAT_NAME_LENGTH = 15;
+// Character used to indicate the 'change format' key
+const char CHANGE_FMT_KEY = '\f';
+
+PHN_Keyboard::PHN_Keyboard() {
+  this->formatIdx = 0;
+  this->formatCnt = 0;
+}
+
 void PHN_Keyboard::setDimension(int columns, int rows) {
   this->rows = rows;
   this->cols = columns;
@@ -45,18 +55,85 @@ void PHN_Keyboard::setSpacing(int spacingW, int spacingH) {
 }
 
 void PHN_Keyboard::setKeys(const char* keyChars) {
-  this->keyChars.setText(keyChars);
+  clearKeys();
+  addKeys(keyChars);
+}
+
+void PHN_Keyboard::clearKeys() {
+  // Erase all current keys
+  for (int i = 0; i < this->count; i++) {
+    this->updateCell(i, false, true);
+  }
+
+  // Reset
+  this->formatIdx = 0;
+  this->formatCnt = 0;
+  this->formatChars.resize(0);
+}
+
+void PHN_Keyboard::addKeys(const char* keyChars) {
+  addKeys("", keyChars);
+}
+
+void PHN_Keyboard::addKeys(const char* formatName, const char* keyChars) {
+  // Add keys to format mapping
+  int txtLen = (this->count+1);
+  int charsLen = strlen(keyChars);
+  char* charBuff;
+  this->formatCnt++;
+  this->formatChars.resize(this->formatCnt * txtLen);
+  charBuff = this->formatChars.text()+(this->formatCnt-1)*txtLen;
+  memcpy(charBuff, keyChars, txtLen);
+
+  // Pad end of the String with '\r' characters to show an empty space there
+  if (charsLen < txtLen) {
+    memset(charBuff+charsLen, '\r', txtLen-charsLen-1);
+  }
+
+  // Make sure to null-terminate!
+  charBuff[txtLen-1] = 0;
+
+  // Add format name to format name mapping
+  const char fmtLen = (MAX_FORMAT_NAME_LENGTH+1);
+  char fmtName[fmtLen];
+  memcpy(fmtName, formatName, fmtLen-1);
+  fmtName[fmtLen-1] = 0;
+  this->formatNames.resize(this->formatCnt * fmtLen);
+  memcpy(this->formatNames.text() + (this->formatCnt-1)*fmtLen, formatName, fmtLen);
+
+  // Redraw later
   invalidate();
 }
 
-void PHN_Keyboard::setSpecial(const char* specialText) {
-  this->specialText.setText(specialText);
+void PHN_Keyboard::nextFormat() {
+  setFormatIndex((this->formatIdx + 1) % this->formatCnt);
+}
 
-  // Refresh any keys that show this text
-  if (!invalidated) {
-    for (int i = 0; i < count; i++) {
-      if (key(i) == '\a') updateCell(i, true);
+void PHN_Keyboard::setFormatIndex(int index) {
+  if (this->formatIdx != index) {
+    // Some format changes require the previous format to be partially erased
+    // This prevents glitched keys being displayed
+    for (int i = 0; i < this->count; i++) {
+      char key_old = fmt_key(this->formatIdx, i);
+      char key_old_next = fmt_key(this->formatIdx, i+1);
+      char key_new = fmt_key(index, i);
+      char key_new_next = fmt_key(index, i+1);
+      
+      // Change from non-empty to empty requires erasing
+      if ((key_old != key_new) && (key_new == '\r')) {
+        updateCell(i, true, true);
+      }
+
+      // Change from double-key to single-key requires erasing
+      if ((key_old==key_old_next) && (key_new!=key_new_next)) {
+        updateCell(i, true, true);
+        updateCell(i+1, true, true);
+      }
     }
+
+    // Update and redraw the keys
+    this->formatIdx = index;
+    invalidate();
   }
 }
 
@@ -68,12 +145,19 @@ void PHN_Keyboard::setupCells() {
   invalidate();
 }
 
+char PHN_Keyboard::fmt_key(int fmtIndex, int index) {
+  const char* chars = this->formatChars.text() + (fmtIndex*(this->count+1));
+  return chars[index];
+}
+
+char PHN_Keyboard::key(int index) {
+  return fmt_key(this->formatIdx, index);
+}
+
 char PHN_Keyboard::clickedKey() {
-   if (this->clickedIdx == -1) {
-     return 0;
-   } else {
-     return key(this->clickedIdx);
-   }
+   char c = (this->clickedIdx == -1) ? 0 : key(this->clickedIdx);
+   if (c == CHANGE_FMT_KEY) c = 0;;
+   return c;
 }
 
 void PHN_Keyboard::update() {
@@ -84,15 +168,21 @@ void PHN_Keyboard::update() {
   int oldPressedIdx = pressedIdx;
   pressedIdx = -1;
   for (int i = 0; i < count; i++) {
-    updateCell(i, false);
+    updateCell(i, false, false);
   }
   if (pressedIdx != oldPressedIdx) {
-    updateCell(pressedIdx, true);
-    updateCell(oldPressedIdx, true);
+    updateCell(pressedIdx, true, false);
+    updateCell(oldPressedIdx, true, false);
   }
   clickedIdx = -1;
   if (oldPressedIdx != -1 && !display.isTouched()) {
     clickedIdx = oldPressedIdx;
+    
+    // When clicking the format button, go to the next format
+    // Only do this if multiple formats exist
+    if ((key(this->clickedIdx) == CHANGE_FMT_KEY) && (this->formatCnt > 1)) {
+      nextFormat();
+    }
   }
 }
 
@@ -100,20 +190,21 @@ void PHN_Keyboard::draw() {
   pressedIdx = -1;
   clickedIdx = -1;
   for (int i = 0; i < count; i++) {
-    updateCell(i, true);
+    updateCell(i, true, false);
   }
 }
 
-void PHN_Keyboard::updateCell(int idx, bool drawCell) {
+void PHN_Keyboard::updateCell(int idx, bool drawCell, bool eraseCell) {
   // Ignore these
-  if (idx == -1) return;
-  
+  if (idx == -1 || idx >= count) return;
+
   // Get the cell coordinates and other information
   int row = idx / cols;
   int col = idx % cols;
   int cy = this->y + row * (cellH + spacH);
   int cx = this->x + col * (cellW + spacW);
   int cw = cellW;
+  int ch = cellH;
   char txt[2] = {key(idx), 0};
 
   // If text is the same as the character before, it is one key
@@ -125,32 +216,39 @@ void PHN_Keyboard::updateCell(int idx, bool drawCell) {
     if (key(idx+i) != txt[0]) break;
     cw += cellW + spacW;
   }
+  
+  // Compute the key round rectangle radius to use from the cell width/height
+  int rect_rad = 2 * min(cellW/5, cellH/8);
 
   // Update as needed
-  bool isTouched = display.isTouched(cx, cy, cw, cellH);
+  bool isTouched = display.isTouched(cx, cy, cw, ch);
   if (drawCell) {
     if (txt[0] == '\r') {
       // Transparent 'open space' character
+    } else if (eraseCell) {
+      // Draw a black rectangle over it to erase the key
+      display.fillRect(cx, cy, cw, ch, color(BACKGROUND));
     } else {
       color_t key_color = color(isTouched ? HIGHLIGHT : FOREGROUND);
-      display.fillRect(cx, cy, cw, cellH, key_color);
-      display.drawRect(cx, cy, cw, cellH, color(FRAME));
+      display.fillRoundRect(cx, cy, cw, ch, rect_rad, key_color);
+      display.drawRoundRect(cx, cy, cw, ch, rect_rad, color(FRAME));
+
       display.setTextColor(color(CONTENT), key_color);
 
       if (txt[0] == '\t') {
         // Tab character, show 'TAB'
-        display.drawStringMiddle(cx, cy, cw, cellH, "TAB");
+        display.drawStringMiddle(cx, cy, cw, ch, "TAB");
       } else if (txt[0] == '\n') {
         // Newline character, show 'ENTER'
-        display.drawStringMiddle(cx, cy, cw, cellH, "ENTER");
-      } else if (txt[0] == '\a') {
-        // This character is used to show 'special' text
-        // This text is set using the setSpecial function
-        // Common function is to show a mode toggle here
-        display.drawStringMiddle(cx, cy, cw, cellH, specialText.text());
+        display.drawStringMiddle(cx, cy, cw, ch, "ENTER");
+      } else if (txt[0] == CHANGE_FMT_KEY) {
+        // This character is used to show the next format name text
+        // When this is pressed, the next format is selected
+        int txtIdx = ((this->formatIdx+1)%this->formatCnt)*(MAX_FORMAT_NAME_LENGTH+1);
+        display.drawStringMiddle(cx, cy, cw, ch, this->formatNames.text() + txtIdx);
       } else {
         // Regular ASCII character
-        display.drawStringMiddle(cx, cy, cw, cellH, txt);
+        display.drawStringMiddle(cx, cy, cw, ch, txt);
       }
     }
   }

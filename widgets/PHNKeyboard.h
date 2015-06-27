@@ -41,12 +41,21 @@ THE SOFTWARE.
  * to initiate a key-press. This functionality can be useful to add
  * a field where the user can enter text or numeric input.
  *
+ * This keyboard supports multiple formats. You can add multiple
+ * key layout using addKeys() also specifying the name of the format.
+ * By adding '\f' keys to the layout, the user can switch layouts using
+ * the keyboard. In place of these keys, the next format to switch to
+ * is displayed. For simple operation it is sufficient to use setKeys()
+ * with the character mapping to use, ignoring the multi-format support.
+ *
  * Setup the dimension, spacing and keys of this widget before use.
  * For key buttons spanning multiple keys, use the same character in
  * a row in the key mapping.
  */
 class PHN_Keyboard : public PHN_Widget {
  public:
+  /// Initializes a new Keyboard
+  PHN_Keyboard();
   /// Sets the amount of columns and rows in the grid
   void setDimension(int columns, int rows);
   /// Sets the horizontal and vertical spacing between buttons
@@ -55,10 +64,20 @@ class PHN_Keyboard : public PHN_Widget {
   void setSpacing(int spacingW, int spacingH);
   /// Sets all the character keys to display
   void setKeys(const char* keyChars);
-  /// Sets a special string token to display for /a keys
-  void setSpecial(const char* specialText);
+  /// Adds a new keyboard format selectable using the \f key
+  void addKeys(const char* keyChars);
+  /// Adds a new keyboard format selectable using the \f key
+  void addKeys(const char* formatName, const char* keyChars);
+  /// Clears all key formats added
+  void clearKeys();
+  /// Gets the currently used format index
+  int formatIndex() const { return this->formatIdx; }
+  /// Sets the currently used format index
+  void setFormatIndex(int index);
+  /// Switches the keyboard to the next key format
+  void nextFormat();
   /// Obtains the character for a given key index
-  char key(int index) const { return ((char*) keyChars.data)[index]; }
+  char key(int index);
   /// Obtains the key character index clicked, -1 when there is none
   int clickedIndex() const { return this->clickedIdx; }
   /// Obtains the key character clicked, NULL when there is none
@@ -68,12 +87,15 @@ class PHN_Keyboard : public PHN_Widget {
   virtual void draw(void);
  private:
   void setupCells();
-  void updateCell(int idx, bool drawCell);
-  DataCopyBuffer keyChars;
-  DataCopyBuffer specialText;
+  char fmt_key(int fmtIndex, int index);
+  void updateCell(int idx, bool drawCell, bool eraseCell);
+  DataCopyBuffer formatChars;
+  DataCopyBuffer formatNames;
   unsigned char cols, rows;
   unsigned char cellW, cellH, spacW, spacH;
   int count;
+  int formatCnt;
+  int formatIdx;
   int pressedIdx;
   int clickedIdx;
 };
