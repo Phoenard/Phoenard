@@ -757,38 +757,48 @@ void PHN_Display::printMem(const uint8_t* font_char) {
   write(' ');
 }
 
-void PHN_Display::drawStringMiddle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const char* text) {
+TextBounds PHN_Display::computeMiddleBounds(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const char* text) {
+  TextBounds bounds;
 
   // Calculate the total amount of rows and columns the text displays
-  unsigned int textCols = 0;
-  unsigned int textCols_tmp = 0;
-  unsigned int textRows = 1;
+  unsigned int textWidth = 0;
+  unsigned int textWidth_tmp = 0;
+  unsigned int textHeight = 8;
+  unsigned int textSize = 2;
   const char* text_p = text;
   while (*text_p) {
     if (*text_p == '\n') {
-      textRows++;
-      if (textCols_tmp > textCols) textCols = textCols_tmp;
-      textCols_tmp = 0;
+      textHeight += 8;
+      textWidth_tmp = 0;
     } else {
-      textCols_tmp++;
+      textWidth_tmp += 6;
+      if (textWidth_tmp > textWidth) {
+        textWidth = textWidth_tmp;
+      }
     }
     text_p++;
   }
-  if (textCols_tmp > textCols) textCols = textCols_tmp;
 
-  // Draw text at an appropriate size to fit the rectangle
-  unsigned int textsize = 1;
-  while ((textCols * (textsize+1) * 6 + 2) < width && (textRows * (textsize+1) * 8 + 2) < height) {
-    textsize++;
+  // Find an appropriate size to fit the rectangle
+  while ((textWidth*textSize+2) < width && (textHeight*textSize+2) < height) {
+    textSize++;
   }
-  
-  // Find offset to use to draw in the middle
-  unsigned int textWidth = textCols * textsize * 6;
-  unsigned int textHeight = textRows * textsize * 8;
-  unsigned text_x = x + ((width - textWidth) >> 1);
-  unsigned text_y = y + ((height - textHeight) >> 1);
-  setTextSize(textsize);
-  setCursor(text_x, text_y);
+  textSize--;
+
+  // Find the bounds of the piece of text at this size
+  bounds.size = textSize;
+  bounds.w = textWidth * textSize;
+  bounds.h = textHeight * textSize;
+  bounds.x = x + ((width - bounds.w) >> 1);
+  bounds.y = y + ((height - bounds.h) >> 1);
+
+  return bounds;
+}
+
+void PHN_Display::drawStringMiddle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const char* text) {
+  TextBounds bounds = computeMiddleBounds(x, y, width, height, text);
+  setTextSize(bounds.size);
+  setCursor(bounds.x, bounds.y);
   print(text);
 }
 

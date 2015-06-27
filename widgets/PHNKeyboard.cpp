@@ -232,23 +232,43 @@ void PHN_Keyboard::updateCell(int idx, bool drawCell, bool eraseCell) {
       color_t key_color = color(isTouched ? HIGHLIGHT : FOREGROUND);
       display.fillRoundRect(cx, cy, cw, ch, rect_rad, key_color);
       display.drawRoundRect(cx, cy, cw, ch, rect_rad, color(FRAME));
-
       display.setTextColor(color(CONTENT), key_color);
 
+      // Find the text to display here
+      const char* displayedText;
       if (txt[0] == '\t') {
         // Tab character, show 'TAB'
-        display.drawStringMiddle(cx, cy, cw, ch, "TAB");
+        displayedText = "TAB";
       } else if (txt[0] == '\n') {
         // Newline character, show 'ENTER'
-        display.drawStringMiddle(cx, cy, cw, ch, "ENTER");
+        displayedText = (cw > cellW) ? "^ENTER" : "^";
       } else if (txt[0] == CHANGE_FMT_KEY) {
         // This character is used to show the next format name text
         // When this is pressed, the next format is selected
         int txtIdx = ((this->formatIdx+1)%this->formatCnt)*(MAX_FORMAT_NAME_LENGTH+1);
-        display.drawStringMiddle(cx, cy, cw, ch, this->formatNames.text() + txtIdx);
+        displayedText = this->formatNames.text() + txtIdx;
       } else {
         // Regular ASCII character
-        display.drawStringMiddle(cx, cy, cw, ch, txt);
+        displayedText = txt;
+      }
+
+      // Find the bounds for displaying this text
+      TextBounds bounds = display.computeMiddleBounds(cx, cy, cw, ch, displayedText);
+
+      // For the newline key, we need to either show an arrow or arrow with text
+      // The arrow (\n) can not be displayed with the standard print function
+      if (txt[0] == '\n') {
+        while (*displayedText) {
+          char c = *(displayedText++);
+          if (c == '^') c = '\n';
+          display.drawChar(bounds.x, bounds.y, c, bounds.size);
+          bounds.x += 6*bounds.size;
+        }
+      } else {
+        // Draw it
+        display.setTextSize(bounds.size);
+        display.setCursor(bounds.x, bounds.y);
+        display.print(displayedText);
       }
     }
   }

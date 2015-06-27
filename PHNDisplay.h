@@ -79,6 +79,12 @@ typedef struct {
   bool text_hasbg;
 } TextOptions;
 
+/// Struct to hold the information for drawing text inside an area
+typedef struct {
+  uint8_t size;
+  uint16_t x, y, w, h;
+} TextBounds;
+
 /// Struct to hold the header information of the LCD image format
 typedef struct {
     uint8_t bpp;
@@ -328,6 +334,15 @@ class PHN_Display : public PHN_WidgetContainer {
   void drawCharRAM(uint16_t x, uint16_t y, const uint8_t* font_data, uint8_t s = 1);
   /// Draws a String of characters at [x, y] of an optional size specified
   void drawString(uint16_t x, uint16_t y, const char* text, uint8_t s = 1);
+
+  /**@brief Computes the bounds of a piece of text to fit it inside an area
+   *
+   * This function is used by the drawStringMiddle() function to find the bounds.
+   * If you need to do something special with this data aside from just drawing
+   * text, you can make use of this function.
+   */
+  TextBounds computeMiddleBounds(uint16_t x, uint16_t y, uint16_t width, uint16_t height, const char* text);
+
   /**@brief Draws a String of characters in the area [x, y, width, height]
    *
    * Draws the text in the middle of the rectangular area specified.
