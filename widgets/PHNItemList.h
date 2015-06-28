@@ -36,6 +36,15 @@ THE SOFTWARE.
 /// Defines the delay between automatically scrolling up/down when touching
 #define ITEMLIST_AUTO_SCROLL_DELAY 200
 
+/// Structure that stores the parameters for the draw function
+typedef struct ItemParam {
+  int x, y, w, h;
+  int index;
+  int relativeIndex;
+  bool selected;
+  color_t color;
+} ItemParam;
+
 /**
  * @brief The item list widget shows a list of items
  *
@@ -51,7 +60,7 @@ THE SOFTWARE.
  * such as this:
  * itemList.setDrawFunction(drawMyItem);
  *
- * void drawMyItem(int x, int y, int w, int h, int index, boolean selected) {
+ * void drawMyItem(ItemParam &p) {
  *   
  * }
  * 
@@ -72,7 +81,7 @@ class PHN_ItemList : public PHN_Widget {
   /// Gets the amount of items displayed per page
   int pageSize() const { return _pageSize; }
   /// Sets the draw function to use for the items
-  void setDrawFunction(void (*drawFunction)(int, int, int, int, int, boolean));
+  void setDrawFunction(void (*drawFunction)(ItemParam&));
   /// Sets the index of the selected item
   void setSelectedIndex(int selectedIndex);
   /// Gets the index of the selected item
@@ -81,6 +90,8 @@ class PHN_ItemList : public PHN_Widget {
   bool selectionChanged() const { return _selectedChanged; }
   /// Gets the index of the first item displayed
   int firstIndex() { return scroll.value(); }
+  /// Gets whether the first index was changed
+  bool isScrolled() { return scroll.isValueChanged(); }
 
   /// Forces a particular item to be re-drawn
   void drawItem(int index);
@@ -90,11 +101,12 @@ class PHN_ItemList : public PHN_Widget {
 
  private:
   PHN_Scrollbar scroll;
-  void (*_drawFunc)(int, int, int, int, int, boolean);
+  void (*_drawFunc)(ItemParam&);
   int _itemCount, _pageSize;
   int _selectedIndex, _drawnSelIndex;
   int _itemW, _itemH;
   bool _selectedChanged;
+  bool _invalidateLater;
   unsigned long lastScrollTime;
 };
 

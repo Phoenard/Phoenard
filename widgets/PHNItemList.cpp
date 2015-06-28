@@ -25,13 +25,12 @@ THE SOFTWARE.
 
 #include "PHNItemList.h"
 
-static void itemlist_default_draw_func(int x, int y, int w, int h, int index, boolean selected) {
-  color_t bgcolor = (selected ? YELLOW : WHITE);
+static void itemlist_default_draw_func(ItemParam &p) {
   char text[7];
-  itoa(index+1, text, 10);
-  display.setTextColor(BLACK, bgcolor);
-  display.fillRect(x, y, w, h, bgcolor);
-  display.drawStringMiddle(x, y, w, h, text);
+  itoa(p.index+1, text, 10);
+  display.setTextColor(BLACK, p.color);
+  display.fillRect(p.x, p.y, p.w, p.h, p.color);
+  display.drawStringMiddle(p.x, p.y, p.w, p.h, text);
 }
 
 PHN_ItemList::PHN_ItemList() {
@@ -50,7 +49,7 @@ void PHN_ItemList::setPageSize(int itemsPerPage) {
   invalidate();
 }
 
-void PHN_ItemList::setDrawFunction(void (*drawFunction)(int, int, int, int, int, boolean)) {
+void PHN_ItemList::setDrawFunction(void (*drawFunction)(ItemParam&)) {
   _drawFunc = drawFunction;
   invalidate();
 }
@@ -70,11 +69,17 @@ void PHN_ItemList::setSelectedIndex(int selectedIndex) {
 void PHN_ItemList::drawItem(int index) {
   int k = (index-scroll.value());
   if (k >= 0 && k < _pageSize) {
-    bool selected = (index == _selectedIndex);
-    int x = this->x+1;
-    int y = this->y+1+k*(_itemH+1);
+    ItemParam p;
+    p.relativeIndex = k;
+    p.index = index;
+    p.selected = (index == _selectedIndex);
+    p.color = color(p.selected ? HIGHLIGHT : FOREGROUND);
+    p.x = this->x+1;
+    p.y = this->y+1+k*(_itemH+1);
+    p.w = _itemW;
+    p.h = _itemH;
     if (index >= 0 && index < _itemCount) {
-      _drawFunc(x, y, _itemW, _itemH, index, selected);
+      _drawFunc(p);
     } else {
       display.fillRect(x, y, _itemW, _itemH, color(BACKGROUND));
     }
@@ -87,8 +92,11 @@ void PHN_ItemList::update() {
     _itemW = (width-_itemH);
     scroll.setBounds(x+_itemW+1, y, _itemH+2, 1+_pageSize*(_itemH+1));
     scroll.setRange(max(0, _itemCount-_pageSize), 0);
+  } else if (_invalidateLater) {
+    invalidate();
   }
   _selectedChanged = false;
+  _invalidateLater = false;
 
   // Use touch input to update the selected index
   bool autoScrollUp = false;
@@ -112,11 +120,6 @@ void PHN_ItemList::update() {
     lastScrollTime = millis();
   }
 
-  // Invalidate when scroll changes
-  if (scroll.isValueChanged()) {
-    invalidate();
-  }
-
   // Check that the selected index is within the scrollable range
   int idx_first = scroll.value();
   int idx_last = idx_first+_pageSize-1;
@@ -126,12 +129,18 @@ void PHN_ItemList::update() {
     setSelectedIndex(idx_last);
   }
 
-  // Perform partial redraws when selection changes here
-  if (!invalidated && _drawnSelIndex != _selectedIndex) {
-    drawItem(_drawnSelIndex);
-    drawItem(_selectedIndex);
+  // Invalidate when scroll changes
+  // Do so the next update so the user can prepare the items first
+  if (scroll.isValueChanged()) {
+    _invalidateLater = true;
+  } else {
+    // Perform partial redraws when selection changes here
+    if (!invalidated && _drawnSelIndex != _selectedIndex) {
+      drawItem(_drawnSelIndex);
+      drawItem(_selectedIndex);
+    }
+    _drawnSelIndex = _selectedIndex;
   }
-  _drawnSelIndex = _selectedIndex;
 }
 
 void PHN_ItemList::draw() {
