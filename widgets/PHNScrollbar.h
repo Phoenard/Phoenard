@@ -42,7 +42,7 @@ THE SOFTWARE.
 class PHN_Scrollbar : public PHN_Widget {
  public:
   /// Initializes the value to the pure minimum
-  PHN_Scrollbar(void) : scrollPos(-32767) {}
+  PHN_Scrollbar(void) : scrollMin(0), scrollMax(0), scrollPos(0) {}
   /// Sets the minimum and maximum scrolling range
   void setRange(int minValue, int maxValue);
   /// Sets the scrollbar value
@@ -50,12 +50,13 @@ class PHN_Scrollbar : public PHN_Widget {
   /// Gets the scrollbar value
   const int value(void) { return scrollPos; }
   /// Gets whether the value was changed since the last update
-  const bool isValueChanged(void) { return valueChanged; }
+  bool isValueChanged(void) const { return valueChanged; }
 
   virtual void draw(void);
   virtual void update(void);
  private:
   void updateBar(bool redrawing);
+  void drawArrow(int x, int y, int w, int h, int direction, bool highlight);
   int scrollPos, scrollMin, scrollMax;
   int sliderPos;
   bool barWasPressed;

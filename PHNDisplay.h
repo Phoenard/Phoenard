@@ -80,9 +80,13 @@ typedef struct {
 } TextOptions;
 
 /// Struct to hold the information for drawing text inside an area
-typedef struct {
+typedef struct TextBounds {
   uint8_t size;
   uint16_t x, y, w, h;
+
+  bool operator == (const TextBounds &o) {
+    return size==o.size && x==o.x && y==o.y && w==o.w && h==o.h;
+  }
 } TextBounds;
 
 /// Struct to hold the header information of the LCD image format

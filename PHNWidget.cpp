@@ -160,8 +160,8 @@ void PHN_WidgetContainer::updateWidgets(bool update, bool draw, bool forceRedraw
     for (int i = 0; i < widget_count; i++) {
       PHN_Widget *w = widget_values[i];
       if (w->isVisible()) {
-        w->update();
         w->updateWidgets(true, false, false);
+        w->update();
       }
     }
   }

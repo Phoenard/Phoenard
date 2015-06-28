@@ -38,3 +38,4 @@ THE SOFTWARE.
 #include "widgets/PHNScrollbar.cpp"
 #include "widgets/PHNTextBox.cpp"
 #include "widgets/PHNKeyboard.cpp"
+#include "widgets/PHNNumberBox.cpp"

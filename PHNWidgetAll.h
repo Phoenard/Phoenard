@@ -35,3 +35,4 @@ THE SOFTWARE.
 #include "widgets/PHNScrollbar.h"
 #include "widgets/PHNTextBox.h"
 #include "widgets/PHNKeyboard.h"
+#include "widgets/PHNNumberBox.h"
