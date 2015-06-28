@@ -124,8 +124,10 @@ public:
   bool isConnected();
   /// Checks whether a (valid) SIM card is inserted
   bool isSimCardInserted();
-  /// Reads the current data according to the SIM
-  Date readDate();
+  /// Get the current date according to the SIM
+  Date getDate();
+  /// Sets a new date stored and updated by the SIM
+  void setDate(Date newDate);
   /// Reads the SIM provider name
   bool readProvider(char* buffer, int bufferLength);
   /// Reads the battery level ranging 0.0 (empty) to 1.0 (full)
@@ -196,8 +198,11 @@ public:
    * Warning: alters the input text argument!
    */
   unsigned char getSimTextArgs(char *text, char **args, unsigned char maxArgs);
-  /// Reads a DATE argument from received response
+
+  /// Reads a DATE argument from received response (note: alters text buffer)
   Date readDate(char *text);
+  /// Writes a DATE argument to an output buffer
+  void writeDate(char* buffer, Date date);
  private:
   int latestInbox;
   int callStatus;

@@ -211,12 +211,21 @@ bool PHN_Sim::isSimCardInserted() {
   return resp[2] == '1';
 }
 
-Date PHN_Sim::readDate() {
+void PHN_Sim::setDate(Date newDate) {
+  char command[50];
+  strcpy(command, "AT+CCLK=");
+  writeDate(command+8, newDate);
+  Serial.println(command);
+  sendATCommand(command);
+}
+
+Date PHN_Sim::getDate() {
   Date date;
   char resp[40];
   char* args[1];
-  if (sendATCommand("AT+CCLK?", resp, 40) && getSimTextArgs(resp, args, 1) == 1)
+  if (sendATCommand("AT+CCLK?", resp, 40) && getSimTextArgs(resp, args, 1) == 1) {
     date = readDate(args[0]);
+  }
   return date;
 }
 
@@ -653,22 +662,39 @@ unsigned char PHN_Sim::getSimTextArgs(char *text, char **args, unsigned char max
   return argCount;
 }
 
-Date PHN_Sim::readDate(char *text) {
-  Date date;
+/*
+ * Date parsing logic
+ * Format: "14/06/28,20:58:18+00"
+ */
 
-  // Parse the date (14/03/07 and 14:37:59+04)
-  char *dateArgs[2];
-  if (getSimTextArgs(text, dateArgs, 2) == 2) {
-    // Yr/Mt/Dy - null terminate parts and parse
-    dateArgs[0][2] = 0; dateArgs[0][5] = 0; dateArgs[0][8] = 0;
-    date.year = atoi(dateArgs[0]);
-    date.month = atoi(dateArgs[0]+3);
-    date.day = atoi(dateArgs[0]+6);
-    // HH:MM:SS+TZ - null terminate parts and parse
-    dateArgs[1][2] = 0; dateArgs[1][5] = 0; dateArgs[1][8] = 0;
-    date.hour = atoi(dateArgs[1]);
-    date.minute = atoi(dateArgs[1]+3);
-    date.second = atoi(dateArgs[1]+6);
+Date PHN_Sim::readDate(char *text) {
+  // Skip the first "-character if available
+  if (*text == '\"') text++;
+
+  // Allocate a temporary copy to write in
+  char buff_arr[21];
+  char* buff = buff_arr;
+  memcpy(buff, text, 20);
+
+  // Read the first 6 arguments
+  Date date;
+  for (int i = 0; i < 6; i++) {
+    buff[2] = 0;
+    date[i] = atoi(buff);
+    buff += 3;
   }
   return date;
+}
+
+void PHN_Sim::writeDate(char* buffer, Date date) {
+  // Fill the buffer with the output format
+  strcpy(buffer, "\"00/00/00,00:00:00+00\"");
+
+  // Fill in the details
+  for (int i = 0; i < 6; i++) {
+    char valueText[4];
+    itoa(date[i], valueText, 10);
+    unsigned char len = strlen(valueText);
+    memcpy(buffer+3+i*3-len, valueText, len);
+  }
 }

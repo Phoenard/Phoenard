@@ -61,7 +61,7 @@ public:
   /// Sets the current value
   void setValue(int value);
   /// Gets the current value
-  int value() { return _value; }
+  int value() { return scroll.value(); }
   /// Gets whether the value was changed
   bool isValueChanged() const { return _valueChanged; }
   /// Sets whether the value wraps around
@@ -89,7 +89,7 @@ private:
   TextBounds getTextBounds();
   void drawText(TextBounds bounds);
 
-  int _minValue, _maxValue, _value;
+  int _minValue, _maxValue;
   bool _valueChanged;
   char _lastWrapAround;
   int scrollWidth;

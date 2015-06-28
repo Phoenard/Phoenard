@@ -132,6 +132,7 @@ setColor	KEYWORD2
 setLineCount	KEYWORD2
 setLineColor	KEYWORD2
 setAutoClear	KEYWORD2
+setWrapAround	KEYWORD2
 addValue	KEYWORD2
 addValues	KEYWORD2
 isClicked	KEYWORD2

@@ -27,6 +27,7 @@ THE SOFTWARE.
 
 PHN_NumberBox::PHN_NumberBox() {
   wrapAround = false;
+  _valueChanged = true;
   setRange(-0x7FFE, 0x7FFE);
   display.addWidget(scroll);
 }
@@ -37,7 +38,7 @@ void PHN_NumberBox::setTextRaw(const char* text, int textLen) {
 }
 
 void PHN_NumberBox::addValue(int increment) {
-  setValue(_value + increment);
+  setValue(value() + increment);
 }
 
 void PHN_NumberBox::setValue(int value) {
@@ -57,18 +58,14 @@ void PHN_NumberBox::setValue(int value) {
       value = _minValue;
     }
   }
-  // Handle value changes here
-  if (_value != value) {
-    _value = value;
-    _valueChanged = true;
-    textDirty = true;
-    scroll.setValue(value);
-
+  scroll.setValue(value);
+  if (scroll.isValueChanged()) {
     // Update text when the value changes
     // Update the text silently without causing redrawing
-    if (_valueChanged) {
-      textBuff.setText(_value);
-    }
+    textBuff.setText(value);
+
+    // Notify changed - causes a redraw next update
+    _valueChanged = true;
   }
 }
 
@@ -78,7 +75,7 @@ void PHN_NumberBox::setRange(int minValue, int maxValue) {
   }
   _minValue = minValue;
   _maxValue = maxValue;
-  _value = constrain(_value, minValue, maxValue);
+  setValue(constrain(value(), minValue, maxValue));
   scroll.setRange(minValue-1, maxValue+1);
 }
 
@@ -102,13 +99,15 @@ void PHN_NumberBox::update() {
     // If value was changed, redraw the text next
     textDirty = true;
   }
+
+  // Reset state
   _valueChanged = false;
   _lastWrapAround = 0;
 
   // Update input from the scrollbar
-  if (scroll.isValueChanged()) {
-    setValue(scroll.value());
-  }
+  // This makes sure to detect changes
+  // As well, it handles wrap-around logic
+  setValue(scroll.value());
 
   // Redraw text only
   if (textDirty) {
@@ -130,7 +129,5 @@ void PHN_NumberBox::drawText(TextBounds bounds) {
   this->lastTextBounds = bounds;
   this->textDirty = false;
   display.setTextColor(color(CONTENT), color(FOREGROUND));
-  display.setTextSize(bounds.size);
-  display.setCursor(bounds.x, bounds.y);
-  display.print(text());
+  display.drawString(bounds.x, bounds.y, text(), bounds.size);
 }
