@@ -33,6 +33,7 @@ PHN_Scrollbar	KEYWORD1
 PHN_TextBox	KEYWORD1
 PHN_Keyboard	KEYWORD1
 PHN_NumberBox	KEYWORD1
+PHN_ItemList	KEYWORD1
 
 #######################################
 # Namespaces (KEYWORD1)
