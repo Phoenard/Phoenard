@@ -77,7 +77,6 @@ void PHN_Scrollbar::updateBar(bool redrawing) {
   bool scrollVisible = (barSize > 10);
   bool barIsTouched = false;
   char scrollIncr = 0;
-  bool navIsPressed = false;
   bool barPressChanged = false;
   bool barChanged = valueChanged;
 
@@ -108,22 +107,33 @@ void PHN_Scrollbar::updateBar(bool redrawing) {
     } else if (pos_v > pos_b) {
       scrollIncr = 1;
     }
-    navIsPressed = (scrollIncr != 0);
-    if (!navIsPressed && scrollVisible) {
+    if ((scrollIncr==0) && scrollVisible) {
       float fact = (float) (pos_v-pos_a) / (float) (pos_b-pos_a);
       setValue(scrollStart + (int) (scrollDiff * fact));
       barChanged |= valueChanged;
     }
   }
 
-  // Refresh the scroll increment buttons
-  if (barPressChanged) {
+  // Reset scroll timer while buttons are not pressed down
+  unsigned long time = millis();
+  bool scrollChanged = (scrollIncr != prevScroll);
+  if (scrollIncr == 0 || scrollChanged) scrollTime = time;
+
+  // Check if auto-scrolling is active
+  bool autoScroll = false;
+  if ((time - scrollTime) >= SCROLL_AUTO_DELAY) {
+    scrollTime = time - SCROLL_AUTO_DELAY + SCROLL_AUTO_TICK_DELAY;
+    autoScroll = true;
+  }
+
+  // Perform incrementing here
+  if (scrollChanged || autoScroll) {
     setValue(value() + scrollIncr);
   }
 
   // Draw the arrow key buttons
-  if (redrawing || barPressChanged || (navIsPressed != navWasPressed)) {
-    navWasPressed = navIsPressed;
+  if (redrawing || barPressChanged || scrollChanged) {
+    prevScroll = scrollIncr;
     bool btn1_high = scrollIncr>0;
     bool btn2_high = scrollIncr<0;
     if (longLayout != scrollReversed) {

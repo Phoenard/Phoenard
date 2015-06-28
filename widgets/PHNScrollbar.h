@@ -33,6 +33,11 @@ THE SOFTWARE.
 #ifndef _PHN_SCROLLBAR_H_
 #define _PHN_SCROLLBAR_H_
 
+/// Time it takes to press the incr/decr buttons before automatically scrolling
+#define SCROLL_AUTO_DELAY 800
+/// Time it takes to increment or decrement while in auto-scrolling mode
+#define SCROLL_AUTO_TICK_DELAY 50
+
 /**
  * @brief Shows a scroll bar the user can drag
  *
@@ -59,8 +64,9 @@ class PHN_Scrollbar : public PHN_Widget {
   void drawArrow(int x, int y, int w, int h, int direction, bool highlight);
   int scrollPos, scrollMin, scrollMax;
   int sliderPos;
+  char prevScroll;
+  unsigned long scrollTime;
   bool barWasPressed;
-  bool navWasPressed;
   bool valueChanged;
 };
 
