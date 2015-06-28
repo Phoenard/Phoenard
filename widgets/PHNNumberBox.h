@@ -51,13 +51,34 @@ public:
   /// Initializer
   PHN_NumberBox();
   /// Sets the minimum and maximum range of the value
-  void setRange(int minValue, int maxValue) { scroll.setRange(minValue, maxValue); }
+  void setRange(int minValue, int maxValue);
+  /// Gets the range minimum value
+  int minValue() const { return _minValue; }
+  /// Gets the range maximum value
+  int maxValue() const { return _maxValue; }
+  /// Increments or decrements the value
+  void addValue(int increment);
   /// Sets the current value
   void setValue(int value);
   /// Gets the current value
-  int value() { return scroll.value(); }
+  int value() { return _value; }
   /// Gets whether the value was changed
-  bool isValueChanged() const { return valueChanged; }
+  bool isValueChanged() const { return _valueChanged; }
+  /// Sets whether the value wraps around
+  void setWrapAround(bool wrapAround);
+  /// Gets last wrap-around increment performed
+
+  /**@brief Gets the last wrap-around increment performed
+   * 
+   * When wrap-around is enabled, this value can be used to track
+   * the event of wrapping around.
+   *
+   * This function returns:
+   * +1 When the value is incremented and wrapped past the maximum
+   * -1 When the value is decremented and wrapped past the minimum
+   *  0 When no wrap-around events occurred
+   */
+  char wrapAroundIncrement() const { return _lastWrapAround; }
 
   virtual void setTextRaw(const char* text, int textLen);
   virtual const char* text() { return textBuff.text(); }
@@ -65,15 +86,18 @@ public:
   virtual void update(void);
 
 private:
-  void updateText();
   TextBounds getTextBounds();
   void drawText(TextBounds bounds);
+
+  int _minValue, _maxValue, _value;
+  bool _valueChanged;
+  char _lastWrapAround;
+  int scrollWidth;
+  bool wrapAround;
+  bool textDirty;
+  TextBounds lastTextBounds;
   DataCopyBuffer textBuff;
   PHN_Scrollbar scroll;
-  int scrollWidth;
-  TextBounds lastTextBounds;
-  bool textDirty;
-  bool valueChanged;
 };
 
 #endif

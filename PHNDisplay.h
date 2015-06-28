@@ -261,7 +261,17 @@ class PHN_Display : public PHN_WidgetContainer {
    * A direction of 0 is to the right, 1 down, 2 left and 3 up.
    */
   void drawStraightLine(uint16_t x, uint16_t y, uint16_t length, uint8_t direction, color_t color);
-  
+
+  /**@brief Draws a line at an angle between two radius's around the center point [x, y]
+   *
+   * Two points at r1 and r2 radius away from [x, y] are taken that form a line
+   * angled at the (radian) degree. This function can commonly be used
+   * to draw rotary dials, pointers or other rotating bars. Using a r1 of 0 results
+   * in a line drawn from the center. Using a negative value of r1 or r2 will
+   * draw the line in inverse of the angle.
+   */
+  void drawLineAngle(int x, int y, int r1, int r2, float angle, color_t color);
+
   /// Draws a straight line down starting at [x, y]
   void drawVerticalLine(uint16_t x, uint16_t y, uint16_t length, color_t color);
   /// Draws a straight line to the right starting at [x, y]

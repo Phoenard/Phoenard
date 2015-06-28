@@ -90,9 +90,5 @@ void PHN_Gauge::drawPointer(color_t color, bool fillBg) {
 }
 
 void PHN_Gauge::drawTickLine(int r1, int r2, float ang, color_t color) {
-  // Calculate angle, and from this the point to connect to
-  float angle = PI * (1.5 * ang - 1.25);
-  int c_x = x + 0.5 * width;
-  int c_y = y + 0.5 * width;
-  display.drawLine(c_x + r1 * cos(angle), c_y + r1 * sin(angle), c_x + r2 * cos(angle), c_y + r2 * sin(angle), color);
+  display.drawLineAngle(x + 0.5 * width, y + 0.5 * width, r1, r2, PI * (1.5 * ang - 1.25), color);
 }

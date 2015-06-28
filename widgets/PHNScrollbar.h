@@ -36,7 +36,7 @@ THE SOFTWARE.
 /// Time it takes to press the incr/decr buttons before automatically scrolling
 #define SCROLL_AUTO_DELAY 800
 /// Time it takes to increment or decrement while in auto-scrolling mode
-#define SCROLL_AUTO_TICK_DELAY 50
+#define SCROLL_AUTO_TICK_DELAY 30
 
 /**
  * @brief Shows a scroll bar the user can drag
@@ -50,6 +50,10 @@ class PHN_Scrollbar : public PHN_Widget {
   PHN_Scrollbar(void) : scrollMin(0), scrollMax(0), scrollPos(0) {}
   /// Sets the minimum and maximum scrolling range
   void setRange(int minValue, int maxValue);
+  /// Gets the range minimum value
+  int minValue() const { return scrollMin; }
+  /// Gets the range maximum value
+  int maxValue() const { return scrollMax; }
   /// Sets the scrollbar value
   void setValue(int value);
   /// Gets the scrollbar value

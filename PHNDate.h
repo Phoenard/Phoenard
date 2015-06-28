@@ -37,7 +37,11 @@ enum Month {JANUARY, FEBRUARY, MARCH, APRIL, MAY, JUNE,
 typedef struct Date {
   uint8_t year, month, day, hour, minute, second;
 
-  Date() : year(0), month(0), day(0), hour(12), minute(0), second(0) {
+  Date() : year(0), month(0), day(0), hour(12), minute(0), second(0) {}
+
+  /// Operator to access fields by index
+  uint8_t& operator[] (const int nIndex) {
+    return ((uint8_t*) this)[nIndex];
   }
 } Date;
 

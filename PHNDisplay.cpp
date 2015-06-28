@@ -477,6 +477,12 @@ void PHN_Display::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, color
   }
 }
 
+void PHN_Display::drawLineAngle(int x, int y, int r1, int r2, float angle, color_t color) {
+  float a_sin = sin(angle);
+  float a_cos = cos(angle);
+  display.drawLine(x + r1 * a_cos, y + r1 * a_sin, x + r2 * a_cos, y + r2 * a_sin, color);
+}
+
 void PHN_Display::fill(color_t color) {
   goTo(0, 0, 0);
   PHNDisplay16Bit::writePixels(color, getViewportArea());

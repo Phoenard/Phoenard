@@ -26,7 +26,8 @@ THE SOFTWARE.
 #include "PHNNumberBox.h"
 
 PHN_NumberBox::PHN_NumberBox() {
-  setRange(-0x7FFF, 0x7FFF);
+  wrapAround = false;
+  setRange(-0x7FFE, 0x7FFE);
   display.addWidget(scroll);
 }
 
@@ -35,21 +36,56 @@ void PHN_NumberBox::setTextRaw(const char* text, int textLen) {
   textDirty = true;
 }
 
-void PHN_NumberBox::setValue(int value) {
-  if (value == scroll.value()) {
-    return;
-  }
-  scroll.setValue(value);
-  updateText();
+void PHN_NumberBox::addValue(int increment) {
+  setValue(_value + increment);
 }
 
-void PHN_NumberBox::updateText() {
-  // Update the text silently without causing invalidation
-  bool wasInvalidated = textDirty;
-  setText(scroll.value());
-  if (!wasInvalidated) {
-    textDirty = false;
-    valueChanged = true;
+void PHN_NumberBox::setValue(int value) {
+  // Keep value within bounds, or perform wrap-around logic
+  if (value > _maxValue) {
+    if (wrapAround) {
+      _lastWrapAround = 1;
+      value = _minValue + (value - _maxValue) - 1;
+    } else {
+      value = _maxValue;
+    }
+  } else if (value < _minValue) {
+    if (wrapAround) {
+      _lastWrapAround = -1;
+      value = _maxValue - (value - _minValue) + 1;
+    } else {
+      value = _minValue;
+    }
+  }
+  // Handle value changes here
+  if (_value != value) {
+    _value = value;
+    _valueChanged = true;
+    textDirty = true;
+    scroll.setValue(value);
+
+    // Update text when the value changes
+    // Update the text silently without causing redrawing
+    if (_valueChanged) {
+      textBuff.setText(_value);
+    }
+  }
+}
+
+void PHN_NumberBox::setRange(int minValue, int maxValue) {
+  if (_minValue == minValue && _maxValue == maxValue) {
+    return;
+  }
+  _minValue = minValue;
+  _maxValue = maxValue;
+  _value = constrain(_value, minValue, maxValue);
+  scroll.setRange(minValue-1, maxValue+1);
+}
+
+void PHN_NumberBox::setWrapAround(bool wrapAround) {
+  if (this->wrapAround != wrapAround) {
+    this->wrapAround = wrapAround;
+    setRange(_minValue, _maxValue);
   }
 }
 
@@ -62,12 +98,16 @@ void PHN_NumberBox::update() {
     textDirty = false;
     scrollWidth = height;
     scroll.setBounds(x+width-scrollWidth, y, scrollWidth, height);
-  } else if (valueChanged) {
-    valueChanged = false;
+  } else if (_valueChanged) {
+    // If value was changed, redraw the text next
     textDirty = true;
   }
+  _valueChanged = false;
+  _lastWrapAround = 0;
+
+  // Update input from the scrollbar
   if (scroll.isValueChanged()) {
-    updateText();
+    setValue(scroll.value());
   }
 
   // Redraw text only
