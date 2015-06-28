@@ -82,7 +82,7 @@ void PHN_NumberBox::update() {
 }
 
 void PHN_NumberBox::draw() {
-  display.fillBorderRect(x, y, width-scrollWidth, height, color(FOREGROUND), color(FRAME));
+  display.fillBorderRect(x, y, width-scrollWidth+1, height, color(FOREGROUND), color(FRAME));
   drawText(getTextBounds());
 }
 
