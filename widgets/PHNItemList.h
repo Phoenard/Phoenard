@@ -79,6 +79,8 @@ class PHN_ItemList : public PHN_Widget {
   int selectedIndex() const { return _selectedIndex; }
   /// Checks whether the selected index was changed
   bool selectionChanged() const { return _selectedChanged; }
+  /// Gets the index of the first item displayed
+  int firstIndex() { return scroll.value(); }
 
   /// Forces a particular item to be re-drawn
   void drawItem(int index);

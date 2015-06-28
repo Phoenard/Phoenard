@@ -36,6 +36,7 @@ static void itemlist_default_draw_func(int x, int y, int w, int h, int index, bo
 
 PHN_ItemList::PHN_ItemList() {
   _drawFunc = itemlist_default_draw_func;
+  scroll.setRange(0, 0);
   addWidget(scroll);
 }
 
