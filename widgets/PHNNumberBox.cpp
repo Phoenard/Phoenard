@@ -52,7 +52,7 @@ void PHN_NumberBox::setValue(int value) {
   } else if (value < _minValue) {
     if (wrapAround) {
       _lastWrapAround = -1;
-      value = _maxValue - (value - _minValue) + 1;
+      value = _maxValue + (value - _minValue) + 1;
     } else {
       value = _minValue;
     }
