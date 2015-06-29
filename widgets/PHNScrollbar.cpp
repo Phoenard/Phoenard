@@ -93,7 +93,7 @@ void PHN_Scrollbar::updateBar(bool redrawing) {
   if (barIsTouched) {
     int pos_a, pos_b, pos_v;
     pos_a = btnHeight;
-    pos_b = btnWidth-btnHeight-barHandleSize;
+    pos_b = btnWidth-btnHeight;
     if (longLayout) {
       pos_v = display.getTouch().x-x;
     } else {
@@ -108,7 +108,7 @@ void PHN_Scrollbar::updateBar(bool redrawing) {
       scrollIncr = 1;
     }
     if ((scrollIncr==0) && scrollVisible) {
-      float fact = (float) (pos_v-pos_a) / (float) (pos_b-pos_a);
+      float fact = (float) (pos_v-pos_a) / (float) (pos_b-pos_a-barHandleSize);
       setValue(scrollStart + (int) (scrollDiff * fact));
       barChanged |= valueChanged;
     }
