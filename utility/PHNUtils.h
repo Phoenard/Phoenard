@@ -38,16 +38,20 @@ THE SOFTWARE.
 
 /// Gets how much RAM is still available
 int getFreeRAM(void);
+
 /// Allocates a new copy of a String on the heap
 char* allocateCopy(const char* src);
+
 /// Reverses the byte bit order
 uint8_t bit_reverse(uint8_t b);
 
 // Stream utility functions
 /// Reads a stream until no further reading is possible
 void flushRead(Stream &stream);
+
 /// Waits until a character becomes available to be read
 bool waitAvailable(Stream &stream, unsigned long timeoutMS);
+
 /**
  * @brief Flushes one stream to another and vice versa
  *
@@ -56,12 +60,22 @@ bool waitAvailable(Stream &stream, unsigned long timeoutMS);
  * Returns whether any form of communication occurred
  */
 bool flushTransfer(Stream &streamA, Stream &streamB);
+
 /**
  * @brief Copies one string to another, counting how many characters are copied
  *
  * The count is EXCLUDING the terminating null-character (is still copied)
  */
 int strcpy_count(char* destination, const char* source);
+
+/**@brief Shifts array elements forwards or backwards, settings the shift-out memory to NULL
+ *
+ * @param[in,out] ptr        The pointer to the block of memory to shift
+ * @param[in]     blockSize  The size of a single element in the array
+ * @param[in]     blockCount The amount of elements inside the array pointed at by ptr
+ * @param[in]     shiftCount The amount of times up or down the blocks should be shifted
+ */
+void shiftElements(void* ptr, int blockSize, int blockCount, int shiftCount);
 
 /* Utility classes are included here as they may use PHNUtils.h */
 #include "BufferedReadStream.h"

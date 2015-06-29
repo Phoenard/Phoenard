@@ -121,3 +121,22 @@ int strcpy_count(char* destination, const char* source) {
   } while (source[i++]);
   return i-1;
 }
+
+void shiftElements(void* ptr, int blockSize, int blockCount, int shiftCount) {
+  // Convert the index-space values to byte-space ranges, limit at total size
+  int totalSize = (blockSize * blockCount);
+  int shiftSize = (blockSize * shiftCount);
+  int shiftSizeAbs = abs(shiftSize);
+  if (shiftSizeAbs >= totalSize) {
+    shiftSize = shiftSizeAbs = totalSize;
+  }
+
+  // Calculate two array offset values for forward and backward shifting
+  int offset_a = (shiftSize >= 0) ? shiftSize : 0;
+  int offset_b = shiftSizeAbs - offset_a;
+
+  // Move the memory area in the buffer, set shifted-out areas to NULL
+  memmove((char*) ptr + offset_b, (char*) ptr + offset_a, (totalSize - shiftSizeAbs));
+  memset((char*) ptr + totalSize - offset_a, NULL, offset_a);
+  memset((char*) ptr, NULL, offset_b);
+}

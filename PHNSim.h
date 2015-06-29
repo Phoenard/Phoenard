@@ -63,12 +63,12 @@ THE SOFTWARE.
 
 /// A single message contact
 typedef struct SimContact {
-  SimContact() : valid(false) {}
+  SimContact() : valid(false), type(129) {}
   
   bool valid;
   int type;
-  char name[21];
-  char address[21];
+  char text[51];
+  char number[21];
   uint8_t index;
   
   operator bool() const { 

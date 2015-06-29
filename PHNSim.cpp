@@ -390,16 +390,10 @@ SimMessage PHN_Sim::getMessage(int messageIndex) {
     // Parse the text arguments
     message.index = messageIndex;
     message.read = !strcmp(args[0], "REC READ");
-    strcpy(message.sender.address, args[1]);
-    strcpy(message.sender.name, args[2]);
-    message.sender.type = 0;
+    strcpy(message.sender.number, args[1]);
+    strcpy(message.sender.text, args[2]);
     message.date = readDate(args[3]);
 
-    // Use address as name if there is no name
-    if (message.sender.name[0] == 0) {
-      strcpy(message.sender.name, message.sender.address);
-    }
-    
     // If the entire message consists of HEX characters, convert to ASCII
     char* msgText = args[4];
     int msgLen = strlen(msgText);
@@ -520,7 +514,16 @@ bool PHN_Sim::setContactBook(const char* bookName) {
 }
 
 int PHN_Sim::getContactCount() {
-  return getContactLimit(); //TODO: Find out how many actual entries there are through recursive!
+  // Response: +CPBS: "<storage>",<used>,<total>
+  char resp[50];
+  if (!sendATCommand("AT+CPBS?", resp, sizeof(resp))) {
+    return 0;
+  }
+  char* args[3];
+  if (getSimTextArgs(resp, args, 3) != 3) {
+    return false;
+  }
+  return atoi(args[1]);
 }
 
 SimContact PHN_Sim::getContact(int contactIndex) {
@@ -534,10 +537,10 @@ SimContact PHN_Sim::getContact(int contactIndex) {
   SimContact contact;
   contact.valid = sendATCommand(command, resp, 400) && getSimTextArgs(resp, args, 4) == 4;
   if (contact.valid) {
-    contact.index = atoi(args[0]);
-    strcpy(contact.address, args[1]);
+    contact.index = atoi(args[0])-this->bookOffset;
+    strcpy(contact.number, args[1]);
     contact.type = atoi(args[2]);
-    strcpy(contact.name, args[3]);
+    strcpy(contact.text, args[3]);
   }
   return contact;
 }
@@ -565,11 +568,11 @@ bool PHN_Sim::setContact(int contactIndex, SimContact contact) {
   parts[0] = "AT+CPBW=,";
   parts[1] = idxPart;
   parts[2] = ",\"";
-  parts[3] = contact.address;
+  parts[3] = contact.number;
   parts[4] = "\",";
   parts[5] = typePart;
   parts[6] = ",\"";
-  parts[7] = contact.name;
+  parts[7] = contact.text;
   parts[8] = "\"";
 
   // Concatenate into a single command and send

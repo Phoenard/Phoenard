@@ -35,6 +35,8 @@ static void itemlist_default_draw_func(ItemParam &p) {
 
 PHN_ItemList::PHN_ItemList() {
   _drawFunc = itemlist_default_draw_func;
+  _prevScroll = 0;
+  _currScroll = 0;
   scroll.setRange(0, 0);
   addWidget(scroll);
 }
@@ -141,6 +143,10 @@ void PHN_ItemList::update() {
     }
     _drawnSelIndex = _selectedIndex;
   }
+
+  // Refresh scroll change tracker
+  _prevScroll = _currScroll;
+  _currScroll = scroll.value();
 }
 
 void PHN_ItemList::draw() {

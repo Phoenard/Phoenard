@@ -90,8 +90,10 @@ class PHN_ItemList : public PHN_Widget {
   bool selectionChanged() const { return _selectedChanged; }
   /// Gets the index of the first item displayed
   int firstIndex() { return scroll.value(); }
+  /// Gets the index change that happened due to scrolling
+  int indexChange() { return (_currScroll - _prevScroll); }
   /// Gets whether the first index was changed
-  bool isScrolled() { return scroll.isValueChanged(); }
+  bool isScrolled() { return indexChange() != 0; }
 
   /// Forces a particular item to be re-drawn
   void drawItem(int index);
@@ -105,6 +107,7 @@ class PHN_ItemList : public PHN_Widget {
   int _itemCount, _pageSize;
   int _selectedIndex, _drawnSelIndex;
   int _itemW, _itemH;
+  int _prevScroll, _currScroll;
   bool _selectedChanged;
   bool _invalidateLater;
   unsigned long lastScrollTime;
