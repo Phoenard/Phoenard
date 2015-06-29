@@ -66,6 +66,7 @@ typedef struct SimContact {
   SimContact() : valid(false) {}
   
   bool valid;
+  int type;
   char name[21];
   char address[21];
   uint8_t index;
@@ -162,22 +163,32 @@ public:
   void sendDTMF(char character);
 
   // Text messages
-  /// Reads a message from the inbox
-  SimMessage readMessage(uint8_t messageIndex);
-  /// Deletes a message from the inbox
-  void deleteMessage(uint8_t messageIndex);
-  /// Sends a text message
-  bool sendMessage(const char* receiverAddress, const char* messageText);
   /// Checks whether a new message is available
   bool hasNewMessage();
-  /// Reads the message received latest
-  SimMessage readNewMessage();
+  /// Reads the message received last
+  SimMessage getNewMessage();
+  /// Reads a message from the message inbox
+  SimMessage getMessage(int messageIndex);
+  /// Deletes a message from the inbox
+  void deleteMessage(int messageIndex);
+  /// Sends a text message
+  bool sendMessage(const char* receiverAddress, const char* messageText);
 
   // Contacts
-  /// Gets how many contacts are stored by the SIM
-  uint8_t getContactsCount();
-  /// Reads the contact stored at the index
-  SimContact readContact(uint8_t contactIndex);
+  /// Switches to a different phone book to access contacts of
+  bool setContactBook(const char* bookName);
+  /// Gets how many valid contacts are stored in the current good book
+  int getContactCount();
+  /// Gets how many contacts can possibly be stored in the current book
+  int getContactLimit() const { return this->bookSize; }
+  /// Reads the contact stored at the index in the current book
+  SimContact getContact(int contactIndex);
+  /// Adds new contact information to the current book
+  bool addContact(SimContact contact);
+  /// Writes new contact information at the index in the current book
+  bool setContact(int contactIndex, SimContact contact);
+  /// Deletes the contact information at the index in the current book
+  bool deleteContact(int contactIndex);
 
   // AT Command handling routines
   // Return value indicates whether it was successful
@@ -206,6 +217,8 @@ public:
  private:
   int latestInbox;
   int callStatus;
+  int bookOffset, bookSize;
+  int bookNameLength, bookAddressLength;
   char incomingNumber[20];
   bool initialized;
   bool callReady, gpsReady; // Used when switching between call/gps mode

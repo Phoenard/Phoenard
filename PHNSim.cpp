@@ -38,6 +38,8 @@ void PHN_Sim::init() {
   pinMode(SIM_PWRKEY_PIN, OUTPUT);
   this->callStatus = SIM_CALL_STATUS_NONE;
   this->latestInbox = -1;
+  this->bookOffset = 1;
+  this->bookSize = 10;
   this->initialized = true;
   this->callReady = false;
   this->gpsReady = false;
@@ -132,7 +134,7 @@ void PHN_Sim::update() {
         if (getSimTextArgs(inputText+7, args, 2)) {
           // Receiving a new text message
           if (!strcmp(args[0], "SM")) {
-            latestInbox = atoi(args[1]);
+            latestInbox = atoi(args[1]) - 1;
           }
         }
       } else if (strstr(inputText, "GPS Ready") == inputText) {
@@ -215,7 +217,6 @@ void PHN_Sim::setDate(Date newDate) {
   char command[50];
   strcpy(command, "AT+CCLK=");
   writeDate(command+8, newDate);
-  Serial.println(command);
   sendATCommand(command);
 }
 
@@ -352,23 +353,23 @@ bool PHN_Sim::hasNewMessage() {
   return latestInbox != -1;
 }
 
-SimMessage PHN_Sim::readNewMessage() {
-  SimMessage message = readMessage(latestInbox);
+SimMessage PHN_Sim::getNewMessage() {
+  int idx = latestInbox;
   latestInbox = -1;
-  return message;
+  return getMessage(idx);
 }
 
-void PHN_Sim::deleteMessage(uint8_t messageIndex) {
+void PHN_Sim::deleteMessage(int messageIndex) {
   char command[15] = "AT+CMGD=";
-  itoa(messageIndex, command+8, 10);
-  int offset = (messageIndex < 10) ? 1 : 2;
+  itoa(messageIndex+1, command+8, 10);
+  int offset = ((messageIndex+1) < 10) ? 1 : 2;
   command[8+offset] = ',';
   command[8+offset+1] = '0';
   command[8+offset+2] = 0;
   sendATCommand(command, 0, 0);
 }
 
-SimMessage PHN_Sim::readMessage(uint8_t messageIndex) {
+SimMessage PHN_Sim::getMessage(int messageIndex) {
   // Put into text mode
   sendATCommand("AT+CMGF=1");
 
@@ -376,7 +377,7 @@ SimMessage PHN_Sim::readMessage(uint8_t messageIndex) {
   char command[13] = "AT+CMGR=";
   char resp[400];
   char *args[5];
-  itoa(messageIndex, command+8, 10);
+  itoa(messageIndex+1, command+8, 10);
   sendATCommand(command, resp, 400);
 
   // Allocate the message to return
@@ -391,6 +392,7 @@ SimMessage PHN_Sim::readMessage(uint8_t messageIndex) {
     message.read = !strcmp(args[0], "REC READ");
     strcpy(message.sender.address, args[1]);
     strcpy(message.sender.name, args[2]);
+    message.sender.type = 0;
     message.date = readDate(args[3]);
 
     // Use address as name if there is no name
@@ -444,23 +446,6 @@ SimMessage PHN_Sim::readMessage(uint8_t messageIndex) {
   return message;
 }
 
-SimContact PHN_Sim::readContact(uint8_t contactIndex) {
-  char command[13] = "AT+CPBR=";
-  char resp[200];
-  char *args[4];
-  itoa(contactIndex, command+8, 10);
-  sendATCommand(command, resp, 400);
-  
-  SimContact contact;
-  contact.valid = getSimTextArgs(resp, args, 4) >= 4;
-  if (contact.valid) {
-    contact.index = atoi(args[0]);
-    strcpy(contact.address, args[1]);
-    strcpy(contact.name, args[3]);
-  }
-  return contact;
-}
-
 bool PHN_Sim::sendMessage(const char* receiverAddress, const char* messageText) {
   char command[300];
   int index;
@@ -495,6 +480,111 @@ bool PHN_Sim::sendMessage(const char* receiverAddress, const char* messageText) 
   command[index++] = 0x1A;
   command[index++] = 0;
   return sendATCommand(command, 0, 0, SIM_ATCOMMAND_SENDTEXT_TIMEOUT);
+}
+
+bool PHN_Sim::setContactBook(const char* bookName) {
+  // Compose command to switch to a different contact book
+  char command[40];
+  int bookLen = strlen(bookName);
+  memcpy(command, "AT+CPBS=\"", 9);
+  memcpy(command+9, bookName, bookLen);
+  command[bookLen+9] = '\"';
+  command[bookLen+10] = 0;
+  if (!sendATCommand(command)) {
+    return false;
+  }
+  
+  // Next, request the information about this book (ranges)
+  char resp[50];
+  if (!sendATCommand("AT+CPBR=?", resp, sizeof(resp))) {
+    return false;
+  }
+  Serial.println(resp);
+  char* args[3];
+  if (getSimTextArgs(resp, args, 3) != 3) {
+    return false;
+  }
+
+  // Verify that the ranges are correct, and parse them
+  char* recordRange = args[0];
+  char* recordMid = strchr(recordRange, '-');
+  if (recordMid == NULL) {
+    return false;
+  }
+  recordRange[strlen(recordRange)-1] = 0;
+  recordMid[0] = 0;
+  bookOffset = atoi(recordRange+1);
+  bookSize = atoi(recordMid+1) - bookOffset + 1;
+  bookNameLength = atoi(args[1]);
+  bookAddressLength = atoi(args[2]);
+}
+
+int PHN_Sim::getContactCount() {
+  return getContactLimit(); //TODO: Find out how many actual entries there are through recursive!
+}
+
+SimContact PHN_Sim::getContact(int contactIndex) {
+  // Compose and send command to retrieve contact details
+  char resp[200];
+  char *args[4];
+  char command[13] = "AT+CPBR=";
+  itoa(contactIndex+this->bookOffset, command+8, 10);
+
+  // Parse details to a contact struct
+  SimContact contact;
+  contact.valid = sendATCommand(command, resp, 400) && getSimTextArgs(resp, args, 4) == 4;
+  if (contact.valid) {
+    contact.index = atoi(args[0]);
+    strcpy(contact.address, args[1]);
+    contact.type = atoi(args[2]);
+    strcpy(contact.name, args[3]);
+  }
+  return contact;
+}
+
+bool PHN_Sim::addContact(SimContact contact) {
+  return setContact(-1, contact);
+}
+
+bool PHN_Sim::setContact(int contactIndex, SimContact contact) {
+  //AT+CPBW=([index]),"[address]",[type],"[name]"
+
+  // Convert some things to a string array buffer
+  char idxPart[6];
+  char typePart[6];
+  if (contactIndex == -1) {
+    idxPart[0] = 0;
+  } else {
+    itoa(contactIndex+this->bookOffset, idxPart, 10);
+  }
+  itoa(contact.type, typePart, 10);
+
+  // Generate a list of Strings to concatenate
+  const int parts_count = 9;
+  const char* parts[parts_count];
+  parts[0] = "AT+CPBW=,";
+  parts[1] = idxPart;
+  parts[2] = ",\"";
+  parts[3] = contact.address;
+  parts[4] = "\",";
+  parts[5] = typePart;
+  parts[6] = ",\"";
+  parts[7] = contact.name;
+  parts[8] = "\"";
+
+  // Concatenate into a single command and send
+  char command[100];
+  for (int i = 0; i < parts_count; i++) {
+    strcat(command, parts[i]);
+  }
+  return sendATCommand(command);
+}
+
+bool PHN_Sim::deleteContact(int contactIndex) {
+  // Compose and send command to delete contact details
+  char command[13] = "AT+CPBW=";
+  itoa(contactIndex+this->bookOffset, command+8, 10);
+  return sendATCommand(command);
 }
 
 bool PHN_Sim::writeATCommand(const char* command) {
