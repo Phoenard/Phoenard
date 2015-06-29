@@ -95,6 +95,10 @@ void setup() {
     PHN_Settings_Save(SETTINGS_DEFAULT);
   }
 
+  // Turn on LED Pin 13
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
+
   // LCD Test
   startLCDTest();
 
