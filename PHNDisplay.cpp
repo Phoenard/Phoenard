@@ -140,16 +140,42 @@ void PHN_Display::setWrapMode(uint8_t mode) {
 }
 
 void PHN_Display::goTo(uint16_t x, uint16_t y) {
-  goTo(x, y, 0);
+  goTo(x, y, 0xFF);
 }
 
 void PHN_Display::goTo(uint16_t x, uint16_t y, uint8_t direction) {
   // Apply screen rotation transform to x/y
   x += _viewport.x;
   y += _viewport.y;
-  cgramFunc(&x, &y);
+
+  // Use the CGRAM transform function for the current screen rotation
+  // Make use of a switch statement so compiler can optimize it
+  switch (screenRot) {
+  case 0:
+    calcGRAMPosition_0(&x, &y);
+    break;
+  case 1:
+    calcGRAMPosition_1(&x, &y);
+    break;
+  case 2:
+    calcGRAMPosition_2(&x, &y);
+    break;
+  case 3:
+    calcGRAMPosition_3(&x, &y);
+    break;
+  }
+
   // Write to the display
-  PHNDisplayHW::setCursor(x, y, DIR_TRANSFORM[((direction + screenRot) & 0x3) | wrapMode]);
+  direction++;
+  if (direction) {
+    direction--;
+    direction += screenRot;
+    direction &= 0x3;
+    direction |= wrapMode;
+    PHNDisplayHW::setCursor(x, y, DIR_TRANSFORM[direction]);
+  } else {
+    PHNDisplayHW::setCursor(x, y, DIR_RIGHT);
+  }
 }
 
 void PHN_Display::resetViewport() {
@@ -420,59 +446,58 @@ void PHN_Display::drawStraightLine(uint16_t x, uint16_t y, uint16_t length, uint
   PHNDisplay16Bit::writePixels(color, length);
 }
 
-// bresenham's algorithm with optimizations
+// Make use of Bresenham's algorithm with straight-line boosts and minimal flash
 void PHN_Display::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, color_t color) {
+  int16_t dx, dy;
+  dx = x1 - x0;
+  dy = y1 - y0;
+  int16_t adx, ady;
+  adx = abs(dx);
+  ady = abs(dy);
+
   if (x0 == x1) {
-    if (y1 > y0) {
-      drawVerticalLine(x0, y0, (y1 - y0), color);
-    } else {
-      drawVerticalLine(x0, y1, (y0 - y1), color);
-    }
-    return;
-  }
-  if (y0 == y1) {
-    if (x1 > x0) {
-      drawHorizontalLine(x0, y0, (x1 - x0), color);
-    } else {
-      drawHorizontalLine(x1, y0, (x0 - x1), color);
-    }
+    drawVerticalLine(x0, min(y0, y1), ady, color);
     return;
   }
 
-  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
+  bool steep = ady > adx;
   if (steep) {
     swap(x0, y0);
     swap(x1, y1);
+    swap(adx, ady);
   }
-
   if (x0 > x1) {
     swap(x0, x1);
     swap(y0, y1);
   }
 
-  int16_t dx, dy;
-  dx = x1 - x0;
-  //dy = abs(y1 - y0);
-  dy = abs(y1 - y0);
+  if (y0 == y1) {
+    drawHorizontalLine(x0, y0, adx, color);
+    return;
+  }
 
-  int16_t err = dx / 2;
-  int16_t ystep;
+  int16_t err = adx;
+  int8_t ystep = (y0 < y1) ? 1 : -1;
 
-  if (y0 < y1) {
-    ystep = 1;
-  } else {
-    ystep = -1;}
-
-  for (; x0<=x1; x0++) {
-    if (steep) {
+  adx += adx;
+  ady += ady;
+  if (steep) {
+    for (; x0<=x1; x0++) {
       drawPixel(y0, x0, color);
-    } else {
-      drawPixel(x0, y0, color);
+      err -= ady;
+      if (err < 0) {
+        y0 += ystep;
+        err += adx;
+      }
     }
-    err -= dy;
-    if (err < 0) {
-      y0 += ystep;
-      err += dx;
+  } else {
+    for (; x0<=x1; x0++) {
+      drawPixel(x0, y0, color);
+      err -= ady;
+      if (err < 0) {
+        y0 += ystep;
+        err += adx;
+      }
     }
   }
 }
@@ -870,23 +895,31 @@ void PHN_Display::drawCharRAM(uint16_t x, uint16_t y, const uint8_t* font_data, 
   } else {
     // Draw in vertical 'dot' chunks for each 5 columns
     // Empty (0) data 'blocks' are skipped leaving them 'transparent'
-    uint8_t cx, cy;
-    uint8_t line;
-    uint16_t pcount;
-    for (cx =0; cx<5; cx++) {
-      line = *(font_data++);
-      cy = 0;
-      while (line) {
-        if (line & 0x1) {
-          for (pcount = 0; line & 0x1; pcount++) {
-            line >>= 1;
-          }
-          fillRect(x+cx*size, y+cy*size, size, size*pcount, textOpt.textcolor);
-          cy += pcount;
-        } else {
+    uint16_t cx, cy;
+    uint16_t cx_end = x+size*4;
+    uint16_t pcount = 0;
+    uint8_t line = *font_data;
+    color_t c = textOpt.textcolor;
+    cx = x;
+    cy = y;
+    for (;;) {
+      if (line & 0x1) {
+        do {
           line >>= 1;
-          cy++;
-        }
+          pcount += size;
+        } while (line & 0x1);
+        fillRect(cx, cy, size, pcount, c);
+        cy += pcount;
+        pcount = 0;
+      } else if (line) {
+        line >>= 1;
+        cy += size;
+      } else if (cx == cx_end) {
+        break;
+      } else {
+        line = *(++font_data);
+        cx += size;
+        cy = y;
       }
     }
   }

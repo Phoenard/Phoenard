@@ -66,19 +66,25 @@ void PHN_Scrollbar::update() {
 }
 
 void PHN_Scrollbar::updateBar(bool redrawing) {
+  // Scrollbar parameters for long (horizontal) and vertical layout
   bool longLayout = (width > height);
-  bool scrollReversed = (scrollMax < scrollMin);
-  int barSize = longLayout ? (width-height*2) : (height-width*2);
-  int scrollStart = min(scrollMin, scrollMax);
-  int scrollDiff = abs(scrollMax-scrollMin);
-  int barHandleSize = max(3, (scrollDiff==1) ? (barSize/2) : (barSize / scrollDiff));
   int btnWidth = longLayout ? width : height;
   int btnHeight = longLayout ? height : width;
-  bool scrollVisible = (barSize > 10);
-  bool barIsTouched = false;
+  int barSize = (btnWidth-btnHeight*2);
+
+  // Scroll limits and scroll reverse state from scroll range
+  bool scrollReversed = (scrollMax < scrollMin);
+  int scrollStart = scrollReversed ? scrollMax : scrollMin;
+  int scrollDiff = scrollReversed ? scrollMin : scrollMax;
   char scrollIncr = 0;
+  bool scrollVisible = (barSize > 10);
+  int barHandleSize = (barSize / (scrollDiff+1));
+  bool barIsTouched = false;
   bool barPressChanged = false;
   bool barChanged = valueChanged;
+
+  // Make sure bar handle is kept >= 3
+  if (barHandleSize < 3) barHandleSize = 3;
 
   // Reset value changed to false
   valueChanged = false;

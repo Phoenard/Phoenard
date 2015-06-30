@@ -92,6 +92,8 @@ const unsigned char LCD_REG_DATA[] = {
 };
 
 namespace PHNDisplayHW {
+  /* Stores the last-set Entry mod for optimization purposes */
+  uint8_t last_entry_dir = 0xFF;
 
   void init() {
     /* 
@@ -190,7 +192,14 @@ namespace PHNDisplayHW {
     /* Setup the CGRAM position to the specified x/y coordinate */
     writeRegister(LCD_CMD_GRAM_VER_AD, (WIDTH - 1) - x);
     writeRegister(LCD_CMD_GRAM_HOR_AD, (HEIGHT - 1) - y);
-    writeRegister(LCD_CMD_ENTRY_MOD, 0x1000 | direction);
+
+    /* Only write ENTRY_MOD when direction is changed */
+    if (last_entry_dir != direction) {
+      last_entry_dir = direction;
+      writeRegister(LCD_CMD_ENTRY_MOD, 0x1000 | direction);
+    }
+
+    /* Set to CGRAM mode to push pixels */
     writeCommand(LCD_CMD_RW_GRAM);
   }
 

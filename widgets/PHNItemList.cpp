@@ -160,9 +160,8 @@ void PHN_ItemList::draw() {
     display.drawHorizontalLine(x+1, lastY-1, _itemW, frameColor);
   }
   if (_itemCount < _pageSize) {
-    display.fillRect(x+1, lastY, _itemW, (_pageSize-_itemCount)*(_itemH+1)-1, color(BACKGROUND));
+    //display.fillRect(x+1, lastY, _itemW, (_pageSize-_itemCount)*(_itemH+1)-1, color(BACKGROUND));
   }
-  
 
   // Draw all visible items
   for (int i = scroll.value(); i < _itemCount; i++) {
