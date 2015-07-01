@@ -168,11 +168,11 @@ namespace PHNDisplayHW {
 
     /* Read in both bytes to complete the data */
     TFTLCD_RD_PORT = WR_READ_A;
-    delayMicroseconds(2);
+    delayMicroseconds(1);
     data = TFTLCD_DATA_IN << 8;
     TFTLCD_RD_PORT = WR_READ_B;
     TFTLCD_RD_PORT = WR_READ_A;
-    delayMicroseconds(2);
+    delayMicroseconds(1);
     data |= TFTLCD_DATA_IN;
     TFTLCD_RD_PORT = WR_READ_B;
 

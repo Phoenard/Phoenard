@@ -171,7 +171,7 @@ TestResult testScreen() {
 
   // Perform pixel read/write testing on the top pixel line
   // This tests every pixel and is slow, so doesn't test many pixels
-  const uint32_t total_lines = 100;
+  const uint32_t total_lines = 300;
   const uint32_t total_writes = PHNDisplayHW::WIDTH * total_lines;
   uint16_t color_write = 1;
   uint16_t color_read;
@@ -191,7 +191,12 @@ TestResult testScreen() {
     // Read the line back
     color_write = 0x5555;
     for (uint16_t x = 0; x < PHNDisplayHW::WIDTH; x++) {
-      color_read = PHNDisplay16Bit::readPixel(x, 0);
+      for (int i = 0; i < 5; i++) {
+        color_read = PHNDisplay16Bit::readPixel(x, 0);
+        if (color_read == color_write) {
+          break;
+        }
+      }
       if (color_read != color_write) {
         error_cnt++;
       }
@@ -209,39 +214,46 @@ TestResult testScreen() {
   Serial.print(" (");
   Serial.print(total_writes);
   Serial.println(" Writes)");
-  if (error_cnt) {
-    char respText[50];
-    itoa(error_cnt, respText, 10);
-    strcat(respText, " data read/write errors");
-    return TestResult(false, respText);
-  }
 
   // Perform full-line write testing within a viewport
   // This pushes out a huge amount of pixels in an attempt to get out of sync
   Serial.print("  Sync test: ");
   color_write = 0x55AA;
-  const uint32_t full_total_lines = 1000;
+  const uint32_t full_total_lines = 2000;
   const uint32_t full_total_pixels = (uint32_t) full_total_lines * (uint32_t) PHNDisplayHW::WIDTH;
   PHNDisplayHW::setViewport(0, 0, PHNDisplayHW::WIDTH-1, 0);
   PHNDisplayHW::setCursor(0, 0);
-  for (int i = 0; i < full_total_lines; i++) {
+  for (uint32_t i = 0; i < full_total_lines; i++) {
     color_write ^= 0xFFFF;
     color_write++;
     PHNDisplay16Bit::writePixels(color_write, PHNDisplayHW::WIDTH);
   }
   PHNDisplayHW::setViewport(0, 0, PHNDisplayHW::WIDTH-1, PHNDisplayHW::HEIGHT-1);
   color_read = PHNDisplay16Bit::readPixel(PHNDisplayHW::WIDTH-1, 0);
+
+  // Clear the top line again
+  PHNDisplay16Bit::drawLine(0, 0, PHNDisplayHW::WIDTH, DIR_RIGHT, BLACK);
+
   if (color_write != color_read) {
     Serial.print("Out of sync after ");
     Serial.print(full_total_pixels);
     Serial.print(" pixel writes");
-    return TestResult(false, "Pixel writing out of sync");
   } else {
     Serial.print("All ");
     Serial.print(full_total_pixels);
     Serial.println(" pixels written while staying synchronized");
   }
 
+  if (error_cnt) {
+    char respText[50];
+    itoa(error_cnt, respText, 10);
+    strcat(respText, " data read/write errors");
+    return TestResult(false, respText);
+  }
+  if (color_write != color_read) {
+    return TestResult(false, "Pixel writing out of sync");
+  }
+  
   return SUCCESS_RESULT;
 }
 
