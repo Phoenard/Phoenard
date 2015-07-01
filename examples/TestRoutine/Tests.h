@@ -171,7 +171,7 @@ TestResult testScreen() {
 
   // Perform pixel read/write testing on the top pixel line
   // This tests every pixel and is slow, so doesn't test many pixels
-  const uint32_t total_lines = 300;
+  const uint32_t total_lines = 200;
   const uint32_t total_writes = PHNDisplayHW::WIDTH * total_lines;
   uint16_t color_write = 1;
   uint16_t color_read;

@@ -180,21 +180,52 @@ void startLCDTest() {
   Serial.println("Press SELECT to continue...");
 
   // As a first test, show RGB colors on the screen to verify readout works as expected
-  display.fillRect(0, 0, 107, 240, RED);
-  display.fillRect(107, 0, 106, 240, GREEN);
-  display.fillRect(213, 0, 107, 240, BLUE);
+  display.fillRect(0, 0, 107, 120, RED);
+  display.fillRect(107, 0, 106, 120, GREEN);
+  display.fillRect(213, 0, 107, 120, BLUE);
   display.setCursor(30, 30);
   display.setTextColor(WHITE);
   display.setTextSize(3);
   display.print("LCD Test Screen");
   display.setTextSize(2);
-  display.setCursor(70, 100);
+  display.setCursor(70, 80);
   display.print("Press SELECT to");
-  display.setCursor(70, 120);
+  display.setCursor(70, 100);
   display.print("start the test");
   
+  // Black-White color gradient
+  color_t bw_gradient[320];
+  for (int i = 0; i <= 319; i++) {
+    uint8_t component = (uint8_t) ((float) i / 319.0 * 255.0);
+    bw_gradient[i] = PHNDisplayHW::color565(component, component, component);
+  }
+  
   // Wait for SELECT pressed
-  while (!isSelectPressed());
+  PHNDisplayHW::setViewport(0, 120, PHNDisplayHW::WIDTH-1, PHNDisplayHW::HEIGHT-1);
+  PHNDisplayHW::setCursor(0, 120, DIR_RIGHT);
+  while (!isSelectPressed()) {
+    // R/G/B pixels continuously drawn
+    for (int y = 0; y < 80; y++) {
+      PHNDisplay16Bit::writePixels(RED, 107);
+      PHNDisplay16Bit::writePixels(GREEN, 106);
+      PHNDisplay16Bit::writePixels(BLUE, 107);
+    }
+
+    // 8-bit alternating b/w colors drawn
+    uint8_t color_8 = 0x00;
+    for (uint16_t p = 0; p < (20*PHNDisplayHW::WIDTH); p++) {
+      PHNDisplay8Bit::writePixel(color_8);
+      color_8 ^= 0xFF;
+    }
+    
+    // 16-bit b-w gradient drawn
+    for (int y = 0; y < 20; y++) {
+      for (int x = 0; x < 320; x++) {
+        PHNDisplay16Bit::writePixel(bw_gradient[x]);
+      }
+    }
+  }
+  PHNDisplayHW::setViewport(0, 0, PHNDisplayHW::WIDTH-1, PHNDisplayHW::HEIGHT-1);
   
   // Wipe screen
   display.fill(BLACK);
