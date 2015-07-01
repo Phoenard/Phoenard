@@ -454,7 +454,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
   /* Set up the UI button icons and states */
   const unsigned char* button_icon[EDIT_IDX_NONE] = {
     edit_icon_changecolor_0, edit_icon_reset,  edit_icon_cancel,
-    edit_icon_delete,        edit_icon_charup, edit_icon_accept
+    edit_icon_delete,        edit_icon_rename, edit_icon_accept
   };
   unsigned char button_dirty[EDIT_IDX_NONE + 1];
   const char* button_title[EDIT_IDX_NONE] = {
