@@ -77,13 +77,13 @@ void PHN_ItemList::drawItem(int index) {
     p.selected = (index == _selectedIndex);
     p.color = color(p.selected ? HIGHLIGHT : FOREGROUND);
     p.x = this->x+1;
-    p.y = this->y+1+k*(_itemH+1);
-    p.w = _itemW;
-    p.h = _itemH;
+    p.y = this->y+1+k*_itemH;
+    p.w = _itemW-2;
+    p.h = _itemH-1;
     if (index >= 0 && index < _itemCount) {
       _drawFunc(p);
     } else {
-      display.fillRect(x, y, _itemW, _itemH, color(BACKGROUND));
+      display.fillRect(x, y, p.w, p.h, color(BACKGROUND));
     }
   }
 }
@@ -92,7 +92,7 @@ void PHN_ItemList::update() {
   if (invalidated) {
     _itemH = (height-2) / _pageSize;
     _itemW = (width-_itemH);
-    scroll.setBounds(x+_itemW+1, y, _itemH+2, 1+_pageSize*(_itemH+1));
+    scroll.setBounds(x+_itemW-1, y, _itemH+1, 1+_pageSize*_itemH);
     scroll.setRange(max(0, _itemCount-_pageSize), 0);
   } else if (_invalidateLater) {
     invalidate();
@@ -103,8 +103,8 @@ void PHN_ItemList::update() {
   // Use touch input to update the selected index
   bool autoScrollUp = false;
   bool autoScrollDown = false;
-  if (display.isTouched(x+1, y+1, _itemW, _pageSize*(_itemH+1))) {
-    int k = (display.getTouch().y-y-1) / (_itemH+1);
+  if (display.isTouched(x+1, y+1, _itemW-1, _pageSize*_itemH)) {
+    int k = (display.getTouch().y-y-1) / _itemH;
     autoScrollUp = (k == 0);
     autoScrollDown = (k==(_pageSize-1));
     setSelectedIndex(k + scroll.value());
@@ -152,15 +152,15 @@ void PHN_ItemList::update() {
 void PHN_ItemList::draw() {
   // Draw the frame for the items
   color_t frameColor = color(FRAME);
-  display.drawRect(x, y, _itemW+2, 1+_pageSize*(_itemH+1), frameColor);
+  display.drawRect(x, y, _itemW, 1+_pageSize*_itemH, frameColor);
   
   int lastY = y + 1;
   for (int i = 1; i < min(_pageSize, _itemCount+1); i++) {
-    lastY += _itemH + 1;
+    lastY += _itemH;
     display.drawHorizontalLine(x+1, lastY-1, _itemW, frameColor);
   }
   if (_itemCount < _pageSize) {
-    //display.fillRect(x+1, lastY, _itemW, (_pageSize-_itemCount)*(_itemH+1)-1, color(BACKGROUND));
+    display.fillRect(x+1, lastY, _itemW-2, (_pageSize-_itemCount)*_itemH-1, color(BACKGROUND));
   }
 
   // Draw all visible items
