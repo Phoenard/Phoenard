@@ -91,8 +91,18 @@ void setup() {
   isStationConnected = readToken(Serial, "Station OK", 200);
 
   // Reset EEPROM settings upon next reset
+  // This resets screen calibration and tells it to load the sketch list
   if (isStationConnected) {
-    PHN_Settings_Save(SETTINGS_DEFAULT);
+    PHN_Settings settings;
+    PHN_Settings_Load(settings);
+    settings.flags &= ~(SETTINGS_TOUCH_HOR_INV | SETTINGS_TOUCH_VER_INV);
+    settings.flags |= SETTINGS_DEFAULT_FLAGS;
+    settings.touch_hor_a = SETTINGS_DEFAULT_TOUCH_HOR_A;
+    settings.touch_hor_b = SETTINGS_DEFAULT_TOUCH_HOR_B;
+    settings.touch_ver_a = SETTINGS_DEFAULT_TOUCH_VER_A;
+    settings.touch_ver_b = SETTINGS_DEFAULT_TOUCH_VER_B;
+    memcpy(settings.sketch_toload, (char[]) SETTINGS_DEFAULT_SKETCH, 8);
+    PHN_Settings_Save(settings);
   }
 
   // Turn on LED Pin 13

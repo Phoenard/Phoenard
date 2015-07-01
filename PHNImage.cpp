@@ -50,9 +50,10 @@ PHN_Image::PHN_Image(const PHN_Image &value) {
 }
 
 void text_image_draw_func(int x, int y, int width, int height, PHN_Image &img) {
-  display.fillRect(x, y, width, height, img.color(0));
-  display.drawRect(x, y, width, height, img.color(1));
-  display.setTextColor(img.palette().get(2));
+  int rect_rad = min(width, height)/4;
+
+  display.fillBorderRoundRect(x, y, width, height, rect_rad, img.color(0), img.color(1));
+  display.setTextColor(img.color(2), img.color(0));
   display.drawStringMiddle(x, y, width, height, img.text());
 }
 

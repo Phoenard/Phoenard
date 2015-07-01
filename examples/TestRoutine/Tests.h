@@ -205,7 +205,10 @@ TestResult testScreen() {
   Serial.print(total_writes);
   Serial.println(" Writes)");
   if (error_cnt) {
-    return TestResult(false, "Data read/write error");
+    char respText[50];
+    itoa(error_cnt, respText, 10);
+    strcat(respText, " data read/write errors");
+    return TestResult(false, respText);
   }
   return SUCCESS_RESULT;
 }

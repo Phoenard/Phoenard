@@ -456,8 +456,8 @@ void PHN_Display::fillBorderRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
 
 // fill a rounded rectangle and draw a border
 void PHN_Display::fillBorderRoundRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t radius, color_t color, color_t borderColor) {
-  drawRoundRect(x+1, y+1, w-2, h-2, radius, borderColor);
   fillRoundRect(x, y, w, h, radius, color);
+  drawRoundRect(x, y, w, h, radius, borderColor);
 }
 
 void PHN_Display::drawVerticalLine(uint16_t x, uint16_t y, uint16_t length, color_t color) {
