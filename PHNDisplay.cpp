@@ -326,24 +326,30 @@ void PHN_Display::fillCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t
   int16_t ddF_y = -2 * r;
   int16_t x = 0;
   int16_t y = r;
-
+  int16_t x_len = 2*x+delta+1;
+  int16_t y_len = 2*y+delta+1;
+  uint8_t corner_a = cornername & 0x1;
+  uint8_t corner_b = cornername & 0x2;
+  
   while (x<y) {
     if (f >= 0) {
       y--;
+      y_len -= 2;
       ddF_y += 2;
       f += ddF_y;
     }
     x++;
+    x_len += 2;
     ddF_x += 2;
     f += ddF_x;
-  
-    if (cornername & 0x1) {
-      drawVerticalLine(x0+x, y0-y, 2*y+1+delta, color);
-      drawVerticalLine(x0+y, y0-x, 2*x+1+delta, color);
+    
+    if (corner_a) {
+      drawVerticalLine(x0+x, y0-y, y_len, color);
+      drawVerticalLine(x0+y, y0-x, x_len, color);
     }
-    if (cornername & 0x2) {
-      drawVerticalLine(x0-x, y0-y, 2*y+1+delta, color);
-      drawVerticalLine(x0-y, y0-x, 2*x+1+delta, color);
+    if (corner_b) {
+      drawVerticalLine(x0-x, y0-y, y_len, color);
+      drawVerticalLine(x0-y, y0-x, x_len, color);
     }
   }
 }
@@ -368,7 +374,11 @@ void PHN_Display::drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t
   int16_t ddF_y = -2 * r;
   int16_t x = 0;
   int16_t y = r;
-
+  uint8_t corner1 = cornername & 0x1;
+  uint8_t corner2 = cornername & 0x2;
+  uint8_t corner4 = cornername & 0x4;
+  uint8_t corner8 = cornername & 0x8;
+  uint8_t cornerAll = (cornername == 0xF);
 
   while (x<y) {
     if (f >= 0) {
@@ -379,21 +389,38 @@ void PHN_Display::drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t
     x++;
     ddF_x += 2;
     f += ddF_x;
-    if (cornername & 0x4) {
-      drawPixel(x0 + x, y0 + y, color);
-      drawPixel(x0 + y, y0 + x, color);
-    } 
-    if (cornername & 0x2) {
-      drawPixel(x0 + x, y0 - y, color);
-      drawPixel(x0 + y, y0 - x, color);
-    }
-    if (cornername & 0x8) {
-      drawPixel(x0 - y, y0 + x, color);
-      drawPixel(x0 - x, y0 + y, color);
-    }
-    if (cornername & 0x1) {
-      drawPixel(x0 - y, y0 - x, color);
-      drawPixel(x0 - x, y0 - y, color);
+
+    if (cornerAll) {
+      x0 += x;
+      drawPixel(x0, y0 + y, color);
+      drawPixel(x0, y0 - y, color);
+      x0 -= x + x;
+      drawPixel(x0, y0 + y, color);
+      drawPixel(x0, y0 - y, color);
+      x0 += x + y;
+      drawPixel(x0, y0 + x, color);
+      drawPixel(x0, y0 - x, color);
+      x0 -= y + y;
+      drawPixel(x0, y0 + x, color);
+      drawPixel(x0, y0 - x, color);
+      x0 += y;
+    } else {
+      if (corner4) {
+        drawPixel(x0 + x, y0 + y, color);
+        drawPixel(x0 + y, y0 + x, color);
+      } 
+      if (corner2) {
+        drawPixel(x0 + x, y0 - y, color);
+        drawPixel(x0 + y, y0 - x, color);
+      }
+      if (corner8) {
+        drawPixel(x0 - y, y0 + x, color);
+        drawPixel(x0 - x, y0 + y, color);
+      }
+      if (corner1) {
+        drawPixel(x0 - y, y0 - x, color);
+        drawPixel(x0 - x, y0 - y, color);
+      }
     }
   }
 }
