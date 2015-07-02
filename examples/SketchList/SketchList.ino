@@ -157,11 +157,6 @@ void loop() {
     memset(sketch_icon_dirty, 1, sizeof(sketch_icon_dirty));
   }
 
-  /* Pre-load the next block of file listing */
-  if (!sketches_reachedEnd) {
-    volume_cacheCurrentBlock(0);
-  }
-
   /*
    * General sketch list update loop starts here
    * All variables used in it are declared below.
