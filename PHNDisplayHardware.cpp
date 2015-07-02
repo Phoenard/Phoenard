@@ -34,6 +34,10 @@ THE SOFTWARE.
 #define INIT_DDR_MASK   (TFTLCD_CS_MASK | TFTLCD_RS_MASK | TFTLCD_WR_MASK | TFTLCD_RD_MASK | TFTLCD_RESET_MASK | EXSRAM_HOLD_MASK)
 #define INIT_PORT_MASK  (TFTLCD_RS_MASK | TFTLCD_WR_MASK | TFTLCD_RD_MASK | TFTLCD_RESET_MASK | EXSRAM_HOLD_MASK)
 
+/* Reset on/off toggle logic */
+#define RESET_A  (INIT_PORT_MASK & ~TFTLCD_RESET_MASK)
+#define RESET_B  (INIT_PORT_MASK |  TFTLCD_RESET_MASK) 
+
 /* Constants for fast reading/writing of data - not to be used for commands */
 #define WR_WRITE_A  (INIT_PORT_MASK & ~TFTLCD_WR_MASK)
 #define WR_WRITE_B  (INIT_PORT_MASK |  TFTLCD_WR_MASK)
@@ -100,26 +104,31 @@ namespace PHNDisplayHW {
      * Initialize backlight and data pin to output high
      * We can set the full port, since backlight is the only connected pin
      */
+    /* Initialize backlight and data pin to output high */
     TFTLCD_DATA_DDR = 0xFF;
-    TFTLCD_BL_DDR   = TFTLCD_BL_MASK;
-    TFTLCD_BL_PORT  = TFTLCD_BL_MASK;
+    TFTLCD_BL_DDR  = TFTLCD_BL_MASK;
+    TFTLCD_BL_PORT = TFTLCD_BL_MASK;
 
-    /* Initialize LCD port registers */
+    /* Initialize LCD control port register */
     DDRK  = INIT_DDR_MASK;
     PORTK = INIT_PORT_MASK;
 
-    /* Reset, wait until LCD is reset (and initialized) */
-    TFTLCD_RESET_PORT &= ~TFTLCD_RESET_MASK;
+    /* Reset screen */
+    TFTLCD_RESET_PORT = RESET_A;
     delay(2);
-    TFTLCD_RESET_PORT |=  TFTLCD_RESET_MASK;
-    delay(32);
+    TFTLCD_RESET_PORT = RESET_B;
+    delay(40);
 
     /* Initialize the LCD registers */
-    unsigned char i = 0;
+    const uint8_t *data = LCD_REG_DATA;
+    const uint8_t *data_end = LCD_REG_DATA + sizeof(LCD_REG_DATA);
+    int i = 0;
     do {
-      writeRegister(LCD_REG_DATA[i], *((unsigned int*) (LCD_REG_DATA + i + 1)));
-    } while ((i += 3) < sizeof(LCD_REG_DATA));
+      writeRegister(data[0], data[1] | (data[2] << 8));
+    } while ((data += 3) != data_end);
 
+    last_entry_dir = 0xFF;
+    
     /* Fill the screen with BLACK (0x00) */
     PHNDisplay8Bit::drawLine(0, 0, PIXELS, DIR_RIGHT, 0x00);
   }
@@ -168,11 +177,13 @@ namespace PHNDisplayHW {
 
     /* Read in both bytes to complete the data */
     TFTLCD_RD_PORT = WR_READ_A;
-    delayMicroseconds(1);
+    asm volatile ("nop\n");
+    asm volatile ("nop\n");
     data = TFTLCD_DATA_IN << 8;
     TFTLCD_RD_PORT = WR_READ_B;
     TFTLCD_RD_PORT = WR_READ_A;
-    delayMicroseconds(1);
+    asm volatile ("nop\n");
+    asm volatile ("nop\n");
     data |= TFTLCD_DATA_IN;
     TFTLCD_RD_PORT = WR_READ_B;
 
