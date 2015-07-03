@@ -125,8 +125,8 @@ void setup() {
     digitalWrite(SIM_PWRKEY_PIN, HIGH);
   }
 
-  doTest("Connector", testConnector);
   doTest("LCD Screen", testScreen);
+  doTest("Connector", testConnector);
   doTest("BMP180", testBMP180);
   doTest("MPU6050", testMPU6050);
   doTest("HMC5883L", testHMC5883L);

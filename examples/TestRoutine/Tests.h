@@ -163,97 +163,177 @@ TestResult testScreen() {
   Serial.print("  LCD Version ID: ");
   Serial.println(lcd_version, HEX);
   if (lcd_version == 0x0000) {
+    Serial.println("  No LCD version could be read out: no connection");
     return NOCONN_RESULT;
   }
   if (lcd_version != 0x9325 && lcd_version != 0x9328) {
+    // Diagnose the version ID
+    if ((lcd_version & 0xFF) == (lcd_version >> 8)) {
+      Serial.print("  Both version bytes are the same value (0x");
+      Serial.print(lcd_version & 0xFF, HEX);
+      Serial.println(")");
+      Serial.println("  This indicates a possibility that 16-bit data mode is used");
+      Serial.println("  Please verify that the 8-bit jumper resistor is in place");
+    }
+    // This can be true too...
+    Serial.println("  Please also check if all control pins are soldered correctly");
+
     return TestResult(false, "Unsupported screen or data pin error");
   }
 
-  // Perform pixel read/write testing on the top pixel line
-  // This tests every pixel and is slow, so doesn't test many pixels
-  const uint32_t total_lines = 200;
-  const uint32_t total_writes = PHNDisplayHW::WIDTH * total_lines;
-  uint16_t color_write = 1;
-  uint16_t color_read;
-  uint32_t error_cnt = 0;
-  for (int line = 0; line < total_lines; line++) {
-    // Wipe the line with all 0
-    PHNDisplay16Bit::drawLine(0, 0, PHNDisplayHW::WIDTH, DIR_RIGHT, 0x0000);
+  // Perform a register I/O Test using harmless LCD_CMD_GRAM_VER_AD
+  Serial.print("  Testing LCD register I/O... ");
+  const uint32_t total_reg_writes = 100000L;
+  for (uint32_t c = 0; c < total_reg_writes; c++) {
+    uint16_t w = c & 511;
+    PHNDisplayHW::writeRegister(LCD_CMD_GRAM_VER_AD, w);
+    uint16_t r = PHNDisplayHW::readRegister(LCD_CMD_GRAM_VER_AD);
+    if (w != r) {
+      Serial.print("Encountered LCD register I/O error after ");
+      Serial.print(c);
+      Serial.println(" register writes");
+      Serial.print("  Written: 0x");
+      Serial.print(w, HEX);
+      Serial.print("  Receive: 0x");
+      Serial.print(r, HEX);
+      Serial.println("  Screen will have to be replaced.");
+      return TestResult(false, "LCD Register I/O Error");
+    }
+  }
+  Serial.print("Performed ");
+  Serial.print(total_reg_writes);
+  Serial.println(" successful register writes");
 
-    PHNDisplayHW::setCursor(0, 0, DIR_RIGHT);
-    color_write = 0x5555;
-    for (uint16_t x = 0; x < PHNDisplayHW::WIDTH; x++) {
-      PHNDisplay16Bit::writePixel(color_write);
-      color_write ^= 0xFFFF;
-      color_write++;
+  // Perform test to see if this is an alternative color mode
+  Serial.print("  Testing pixel CGRAM reading mode... ");
+  PHNDisplayHW::setCursor(0, 0);
+  PHNDisplay16Bit::writePixel(0x1234);
+  uint16_t pixtest_read = PHNDisplay16Bit::readPixel(0, 0);
+  if (pixtest_read != 0x1234) {
+    Serial.println("Could not read back color");
+    Serial.print("  Written: 0x");
+    Serial.print(0x1234, HEX);
+    Serial.print("  Receive: 0x");
+    Serial.print(pixtest_read, HEX);
+    Serial.println("  Screen will have to be replaced.");
+    return TestResult(false, "LCD CGRAM I/O Read Error");
+  }
+  Serial.println("OK");
+
+  // Perform test to see if writing all BLACK works as expected
+  Serial.print("  Testing pixel CGRAM write-to-black... ");
+  for (int i = 0; i < 200; i++) {
+    PHNDisplayHW::setCursor(0, 0);
+    PHNDisplay8Bit::writePixels(0xFF, PHNDisplayHW::WIDTH*2);
+    PHNDisplayHW::setCursor(0, 0);
+    PHNDisplay8Bit::writePixels(0x00, PHNDisplayHW::WIDTH);
+    for (int x = 0; x < PHNDisplayHW::WIDTH; x++) {
+      color_t pixtest_read = PHNDisplay16Bit::readPixel(x, 0);
+      if (pixtest_read != BLACK) {
+        Serial.println("Could not read back color");
+        Serial.print("  Written: 0x0000");
+        Serial.print("  Receive: 0x");
+        Serial.print(pixtest_read, HEX);
+        Serial.print("  X: ");
+        Serial.println(x);
+        Serial.println("  Screen will have to be replaced.");
+        return TestResult(false, "LCD CGRAM I/O Write Error");
+      }
+    }
+  }
+  Serial.println("OK");
+
+  Serial.print("  Executing LCD CGRAM I/O Stress test... ");
+  PHNDisplayHW::setCursor(0, 0, DIR_RIGHT);
+  PHNDisplay16Bit::writePixels(BLACK, PHNDisplayHW::PIXELS);
+  color_t test_colors[4] = {RED, GREEN, BLUE, WHITE};
+  for (int ctr = 0; ctr < 25; ctr++) {    
+    // Draw alternating horizontal lines using alternating bit-pattern
+    uint16_t mode_bitpattern = 0x5555;
+    for (int y = 0; y < PHNDisplayHW::HEIGHT/4; y++) {
+      PHNDisplay16Bit::writePixels(mode_bitpattern, PHNDisplayHW::WIDTH);
+      mode_bitpattern = ~mode_bitpattern;
     }
 
-    // Read the line back
-    color_write = 0x5555;
-    for (uint16_t x = 0; x < PHNDisplayHW::WIDTH; x++) {
-      for (int i = 0; i < 5; i++) {
-        color_read = PHNDisplay16Bit::readPixel(x, 0);
-        if (color_read == color_write) {
-          break;
+    // Draw alternating vertical lines
+    uint8_t mode_vertbit = 0x00;
+    for (uint32_t i = 0; i < PHNDisplayHW::HEIGHT/4*PHNDisplayHW::WIDTH; i++) {
+      PHNDisplay8Bit::writePixel(mode_vertbit);
+      mode_vertbit = ~mode_vertbit;
+    }
+
+    // Draw an alternating cloth
+    uint8_t mode_cloth = 0x00;
+    for (uint32_t i = 0; i < PHNDisplayHW::HEIGHT/4; i++) {
+      mode_cloth = ~mode_cloth;
+      for (int i = 0; i < PHNDisplayHW::WIDTH; i++) {
+        PHNDisplay8Bit::writePixel(mode_cloth);
+        mode_cloth = ~mode_cloth;
+      }
+    }
+
+    // Draw alternating RED/GREEN/BLUE/WHITE colors
+    for (int y = 0; y < PHNDisplayHW::HEIGHT/4; y++) {
+      for (int c = 0; c < 4; c++) {
+        color_t color = test_colors[c];
+        for (int x = 0; x < PHNDisplayHW::WIDTH/4; x++) {
+          PHNDisplay16Bit::writePixel(color);
         }
       }
-      if (color_read != color_write) {
-        error_cnt++;
-      }
-      color_write ^= 0xFFFF;
-      color_write++;
+    }
+
+    // Verify we are still synchronized
+    color_t c_a = PHNDisplay16Bit::readPixel(PHNDisplayHW::WIDTH-1, PHNDisplayHW::HEIGHT-1);
+    color_t c_b = PHNDisplay16Bit::readPixel(0, 0);
+    if ((c_a == 0x5555) || (c_b == 0xFFFF)) {
+      Serial.println("Out of sync.");
+      display.fill(BLACK);
+      return TestResult(false, "LCD Stress test failure");
     }
   }
+  Serial.println("OK");
 
-  // Clear the top line again
-  PHNDisplay16Bit::drawLine(0, 0, PHNDisplayHW::WIDTH, DIR_RIGHT, BLACK);
+  // Initialize the screen 3 times and show a different test screen each time
+  // If initialization fails, the screen will stay white to show it
+  color_t screen_colors[3] = {RED, GREEN, BLUE};
+  for (int i = 0; i < 3; i++) {
+    Serial.print("  Displaying test screen #");
+    Serial.print((i+1));
+    Serial.println(" (check if shown correctly):");
 
-  // Log test information
-  Serial.print("  R/W Errors: ");
-  Serial.print(error_cnt);
-  Serial.print(" (");
-  Serial.print(total_writes);
-  Serial.println(" Writes)");
+    PHNDisplayHW::init();
+    PHNDisplayHW::setCursor(0, 0);
+    for (int y = 0; y < 240; y++) {
+      if (i == 2) {
+        // Horizontal lines
+        color_t c = (y & 0x1) ? screen_colors[i] : BLACK;
+        PHNDisplay16Bit::writePixels(c, PHNDisplayHW::WIDTH);
+      } else {
+        // Vertical lines OR cloth
+        boolean odd = (i == 1) && ((y & 0x1) == 0x1);
+        int x = 0;
+        if (odd) {
+          PHNDisplay16Bit::writePixel(screen_colors[i]);
+          x += 2;
+        }
+        do {
+          PHNDisplay16Bit::writePixel(BLACK);
+          PHNDisplay16Bit::writePixel(screen_colors[i]);
+        } while ((x += 2) < 320);
+        if (odd) PHNDisplay16Bit::writePixel(BLACK);
+      }
+    }
 
-  // Perform full-line write testing within a viewport
-  // This pushes out a huge amount of pixels in an attempt to get out of sync
-  Serial.print("  Sync test: ");
-  color_write = 0x55AA;
-  const uint32_t full_total_lines = 2000;
-  const uint32_t full_total_pixels = (uint32_t) full_total_lines * (uint32_t) PHNDisplayHW::WIDTH;
-  PHNDisplayHW::setViewport(0, 0, PHNDisplayHW::WIDTH-1, 0);
-  PHNDisplayHW::setCursor(0, 0);
-  for (uint32_t i = 0; i < full_total_lines; i++) {
-    color_write ^= 0xFFFF;
-    color_write++;
-    PHNDisplay16Bit::writePixels(color_write, PHNDisplayHW::WIDTH);
+    char testText[30];
+    strcpy(testText, "Test screen #");
+    itoa(i+1, testText+strlen(testText), 10);
+    display.setTextColor(WHITE);
+    display.drawStringMiddle(0, 0, 320, 240, testText);
+
+    delay(2000);
   }
-  PHNDisplayHW::setViewport(0, 0, PHNDisplayHW::WIDTH-1, PHNDisplayHW::HEIGHT-1);
-  color_read = PHNDisplay16Bit::readPixel(PHNDisplayHW::WIDTH-1, 0);
 
-  // Clear the top line again
-  PHNDisplay16Bit::drawLine(0, 0, PHNDisplayHW::WIDTH, DIR_RIGHT, BLACK);
-
-  if (color_write != color_read) {
-    Serial.print("Out of sync after ");
-    Serial.print(full_total_pixels);
-    Serial.print(" pixel writes");
-  } else {
-    Serial.print("All ");
-    Serial.print(full_total_pixels);
-    Serial.println(" pixels written while staying synchronized");
-  }
-
-  if (error_cnt) {
-    char respText[50];
-    itoa(error_cnt, respText, 10);
-    strcat(respText, " data read/write errors");
-    return TestResult(false, respText);
-  }
-  if (color_write != color_read) {
-    return TestResult(false, "Pixel writing out of sync");
-  }
-  
+  display.fill(BLACK);
   return SUCCESS_RESULT;
 }
 
