@@ -75,7 +75,7 @@ void PHN_Scrollbar::updateBar(bool redrawing) {
   // Scroll limits and scroll reverse state from scroll range
   bool scrollReversed = (scrollMax < scrollMin);
   int scrollStart = scrollReversed ? scrollMax : scrollMin;
-  int scrollDiff = scrollReversed ? scrollMin : scrollMax;
+  int scrollDiff = max(scrollMin, scrollMax) - scrollStart;
   char scrollIncr = 0;
   bool scrollVisible = (barSize > 10);
   int barHandleSize = (barSize / (scrollDiff+1));
