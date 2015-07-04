@@ -31,7 +31,6 @@ void PHN_TextBox::setDimension(int columns, int rows) {
   // Use the known column/row/scrollbar states to calculate the bounds
   int width = columns*chr_w+2*_textSize+2;
   int height = rows*chr_h+2*_textSize+2;
-  
   // Adjust width for a visible scrollbar
   if (scroll.isVisible()) {
     if (rows > 1) {
@@ -283,7 +282,7 @@ void PHN_TextBox::update() {
   // Update scrollbar layout changes
   if (invalidated) {
     // Update row count
-    rows = (height-2) / (chr_h+_textSize);
+    rows = (height-2*_textSize-2) / chr_h;
 
     // Update width and column count, applying this to the UI
     int scrollWidth = 0;

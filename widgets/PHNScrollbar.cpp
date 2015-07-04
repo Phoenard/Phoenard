@@ -92,8 +92,12 @@ void PHN_Scrollbar::updateBar(bool redrawing) {
   // Half-size for scroll buttons that are tiny
   if (barSize <= 0) btnHeight >>= 1;
 
+  // If we touched the scroll buttons earlier, increase touch bounds
+  // This makes it easier to control small bars
+  int tgrow = (prevScroll == 0) ? 0 : 5;
+  
   // Update touch input
-  barIsTouched = display.isTouched(x, y, width, height);
+  barIsTouched = display.isTouched(x-tgrow, y-tgrow, width+2*tgrow, height+2*tgrow);
   barPressChanged = (barWasPressed != barIsTouched);
   barWasPressed = barIsTouched;
   if (barIsTouched) {
@@ -108,7 +112,13 @@ void PHN_Scrollbar::updateBar(bool redrawing) {
     if (longLayout == scrollReversed) {
       pos_v = pos_a+pos_b-pos_v;
     }
-    if (pos_v < pos_a) {
+    if ((prevScroll > 0) && ((pos_v-10) < pos_a)) {
+      // Allow a little more range here
+      scrollIncr = 1;
+    } else if ((prevScroll < 0) && ((pos_v+10) > pos_b)) {
+      // Allow a little more range here
+      scrollIncr = -1;
+    } else if (pos_v < pos_a) {
       scrollIncr = -1;
     } else if (pos_v > pos_b) {
       scrollIncr = 1;
