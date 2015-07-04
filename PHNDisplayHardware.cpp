@@ -25,7 +25,6 @@ THE SOFTWARE.
 
 #include "PHNDisplayHardware.h"
 #include "PHNSettings.h"
-#include "PHNDisplayFont.c"
 
 /* Splits a 16-bit argument into two 8-bit bytes in memory */
 #define ARG(value)   ((value) & 0xFF), ((value) >> 8)
@@ -122,7 +121,6 @@ namespace PHNDisplayHW {
     /* Initialize the LCD registers */
     const uint8_t *data = LCD_REG_DATA;
     const uint8_t *data_end = LCD_REG_DATA + sizeof(LCD_REG_DATA);
-    int i = 0;
     do {
       writeRegister(data[0], data[1] | (data[2] << 8));
     } while ((data += 3) != data_end);
@@ -630,7 +628,7 @@ namespace PHNDisplay16Bit {
   }
 
   void writeChar(uint16_t x, uint16_t y, uint8_t scale, char c, uint16_t color0, uint16_t color1) {
-    writeFont_1bit(x, y, scale, font_5x7+(c*5), color0, color1);
+    writeFont_1bit(x, y, scale, phn_font_5x7+(c*5), color0, color1);
   }
 
   void writeFont_1bit(uint16_t x, uint16_t y, uint8_t scale, const uint8_t* data, uint16_t color0, uint16_t color1) {

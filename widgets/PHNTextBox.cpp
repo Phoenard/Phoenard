@@ -77,7 +77,7 @@ void PHN_TextBox::showBackspace(bool visible) {
 void PHN_TextBox::setTextRaw(const char* text, int textLen) {
   length = min(textBuff.dataSize-1, textLen);
   memcpy(textBuff.data, text, sizeof(char) * length);
-  textBuff.text()[length] = 0;
+  ((char*) textBuff.data)[length] = 0;
   updateScrollLimit();
   setSelectionRange(length, 0);
   invalidate();
@@ -235,7 +235,7 @@ void PHN_TextBox::setSelection(const char* selectionText) {
 
   // Now enter the actual text
   int len = min((int) strlen(selectionText), (int) (textBuff.dataSize-length+selLength));
-  char* text = textBuff.text();
+  char* text = (char*) textBuff.data;
   bool appended = (selLength == 0 && selStart == length);
 
   // If nothing is set, do nothing

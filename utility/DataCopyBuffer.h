@@ -59,7 +59,7 @@ public:
   DataCopyBuffer& operator=( const DataCopyBuffer& other );
 
   // Implementation for PHN_TextContainer
-  virtual char* text() { return (char*) data; }
+  virtual const char* text() { return (char*) data; }
   virtual void setTextRaw(const char* text, int textLen);
   
   void* data;

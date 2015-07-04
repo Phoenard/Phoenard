@@ -25,13 +25,10 @@ THE SOFTWARE.
 
 #include <avr/io.h>
 #include <avr/pgmspace.h> 
+#include "PHNDisplayHardware.h"
  
-#ifndef FONT5X7_H
-#define FONT5X7_H
-
 // standard ascii 5x7 font
-
-static const unsigned char font_5x7[] PROGMEM = {
+const unsigned char phn_font_5x7[] PROGMEM = {
   0x00, 0x00, 0x00, 0x00, 0x00, 
   0x3E, 0x5B, 0x4F, 0x5B, 0x3E, 
   0x3E, 0x6B, 0x4F, 0x6B, 0x3E, 
@@ -288,4 +285,3 @@ static const unsigned char font_5x7[] PROGMEM = {
   0x00, 0x3C, 0x3C, 0x3C, 0x3C, 
   0x00, 0x00, 0x00, 0x00, 0x00, 
 };
-#endif

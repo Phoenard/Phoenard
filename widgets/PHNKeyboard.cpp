@@ -77,7 +77,7 @@ void PHN_Keyboard::addKeys(const char* formatName, const char* keyChars) {
   char* charBuff;
   this->formatCnt++;
   this->formatChars.resize(this->formatCnt * txtLen);
-  charBuff = this->formatChars.text()+(this->formatCnt-1)*txtLen;
+  charBuff = (char*) this->formatChars.data+(this->formatCnt-1)*txtLen;
   memcpy(charBuff, keyChars, txtLen);
 
   // Pad end of the String with '\r' characters to show an empty space there
@@ -94,7 +94,7 @@ void PHN_Keyboard::addKeys(const char* formatName, const char* keyChars) {
   memcpy(fmtName, formatName, fmtLen-1);
   fmtName[fmtLen-1] = 0;
   this->formatNames.resize(this->formatCnt * fmtLen);
-  memcpy(this->formatNames.text() + (this->formatCnt-1)*fmtLen, formatName, fmtLen);
+  memcpy((char*) this->formatNames.data + (this->formatCnt-1)*fmtLen, formatName, fmtLen);
 
   // Redraw later
   invalidate();

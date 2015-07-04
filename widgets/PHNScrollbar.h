@@ -47,7 +47,7 @@ THE SOFTWARE.
 class PHN_Scrollbar : public PHN_Widget {
  public:
   /// Initializes the value to the pure minimum
-  PHN_Scrollbar(void) : scrollMin(0), scrollMax(0), scrollPos(0) {}
+  PHN_Scrollbar(void) : scrollPos(0), scrollMin(0), scrollMax(0) {}
   /// Sets the minimum and maximum scrolling range
   void setRange(int minValue, int maxValue);
   /// Gets the range minimum value

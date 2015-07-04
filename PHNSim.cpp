@@ -511,6 +511,7 @@ bool PHN_Sim::setContactBook(const char* bookName) {
   bookSize = atoi(recordMid+1) - bookOffset + 1;
   bookNameLength = atoi(args[1]);
   bookAddressLength = atoi(args[2]);
+  return true;
 }
 
 int PHN_Sim::getContactCount() {

@@ -24,7 +24,6 @@ THE SOFTWARE.
 */
 
 #include "PHNDisplay.h"
-#include "PHNDisplayFont.c"
 
 static const uint8_t DIR_TRANSFORM[] = {DIR_RIGHT_WRAP_DOWN, DIR_DOWN_WRAP_DOWN,
                                           DIR_LEFT_WRAP_DOWN, DIR_UP_WRAP_DOWN,
@@ -877,7 +876,7 @@ void PHN_Display::drawString(uint16_t x, uint16_t y, const char *c, uint8_t size
 
 // draw a character
 void PHN_Display::drawChar(uint16_t x, uint16_t y, char c, uint8_t size) {
-  drawCharMem(x, y, font_5x7+(c*5), size);
+  drawCharMem(x, y, phn_font_5x7+(c*5), size);
 }
 
 void PHN_Display::drawCharMem(uint16_t x, uint16_t y, const uint8_t* font_char, uint8_t size) {
@@ -899,7 +898,7 @@ void PHN_Display::drawCharRAM(uint16_t x, uint16_t y, const uint8_t* font_data, 
     // Draw the read pixel data
     const uint8_t width = 8;
     const uint8_t height = 5;
-    uint8_t pix_dat = 0, dy, dx, si = 0, d = 0;
+    uint8_t pix_dat = 0, dy, dx, si = 0;
     uint8_t l = height * size;
     for (dy = 0; dy < l; dy++) {
       goTo(x, y, 1);

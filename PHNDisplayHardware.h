@@ -201,6 +201,9 @@ typedef uint16_t color_t;
 /// Macro to turn 8-bit color into 16-bit color
 #define COLOR8TO16(color)    ((uint16_t) ((color & 0xFF) | ((color) << 8)))
 
+/// The default 5x7 font that is stored in program memory
+extern const unsigned char phn_font_5x7[] PROGMEM;
+
 /// Main display hardware functions are contained here
 namespace PHNDisplayHW {
 
