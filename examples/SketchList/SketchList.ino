@@ -13,6 +13,7 @@
 /* Swipe settings and calibration */
 #define SWIPE_FADE          0.05
 #define SWIPE_THRESHOLD     2.0
+#define SWIPE_MIN_DIST      30
 
 /* Sketches list settings */
 #define SKETCHES_CNT_X      4
@@ -95,6 +96,7 @@ uint16_t touch_x, touch_y; /* Touch x/y coordinates, is 0xFFFF when not pressed 
 boolean touch_waitup;      /* Whether we are waiting a cycle */
 uint32_t swipe_last_time;  /* Last known time while swiping */
 uint16_t swipe_last_pos;   /* Last known position while swiping */
+uint16_t swipe_start_pos;  /* Start position of a swipe */
 float swipe_speed;         /* Speed of swiping in pixels/ms */
 
 /* Sketch information buffer */
@@ -332,13 +334,16 @@ void loop() {
   /* Update the swipe measurements, on release perform action */
   if (!LCD_isTouchedAny()) {
     /* Handle releases, evaluate previously measured swipe speed */
-    if (swipe_speed > SWIPE_THRESHOLD) {
-      sketch_icon_dirty[touchedIndex] = 1;
-      touchedIndex = MENU_IDX_DOWN;
-    }
-    if (swipe_speed < -SWIPE_THRESHOLD) {
-      sketch_icon_dirty[touchedIndex] = 1;
-      touchedIndex = MENU_IDX_UP;
+    /* First check if the swipe distance is long enough */
+    if (abs(swipe_last_pos-swipe_start_pos) > SWIPE_MIN_DIST) {
+      if (swipe_speed > SWIPE_THRESHOLD) {
+        sketch_icon_dirty[touchedIndex] = 1;
+        touchedIndex = MENU_IDX_DOWN;
+      }
+      if (swipe_speed < -SWIPE_THRESHOLD) {
+        sketch_icon_dirty[touchedIndex] = 1;
+        touchedIndex = MENU_IDX_UP;
+      }
     }
     swipe_speed = 0.0F;
   } else if (swipe_last_pos != 0xFFFF) {
@@ -351,6 +356,8 @@ void loop() {
     } else {
       swipe_speed += SWIPE_FADE * (curr_speed - swipe_speed);
     }
+  } else {
+    swipe_start_pos = touch_y;
   }
 
   /* Update last known swipe position and time */
