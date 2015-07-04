@@ -1,4 +1,13 @@
 #include "Phoenard.h"
+#include <Wire.h>
+#include "I2Cdev.h"
+#include "MPU6050_6Axis_MotionApps20.h"
+#include "HMC5883L.h"
+#include <SPI.h>
+#include <SD.h>
+#include <Adafruit_VS1053.h>
+#include <SFE_BMP180.h>
+#include "TestResult.h"
 
 /* All the BAUD rates to probe at */
 long baud_rates[] = {9600, 115200, 19200, 38400, 57600, 4800, 2400, 1200, 230400};
@@ -34,37 +43,12 @@ void print_sensor_info(int32_t *mean, int32_t *deviation, int count) {
   Serial.println("]");
 }
 
-typedef struct TestResult {
-  boolean success;
-  char device[20];
-  char status[50];
-  
-  TestResult() {
-    success = false;
-  }
-  TestResult(const TestResult& result) {
-    this->success = result.success;
-    memcpy(this->status, result.status, sizeof(status));
-    memcpy(this->device, result.device, sizeof(device));
-  }
-  TestResult(boolean success, char* status) {
-    this->success = success;
-    memcpy(this->status, status, strlen(status) + 1);
-  }
-  TestResult(boolean success, String status) {
-    this->success = success;
-    status.toCharArray(this->status, sizeof(this->status));
-  }
-} TestResult;
-
 TestResult SUCCESS_RESULT(true, "No problems found");
 TestResult NOCONN_RESULT(false, "No connection with device");
 
-boolean isStationConnected = false;
-
-boolean readToken(Stream &serial, char *token, long timeoutMS) {
+boolean readToken(Stream &serial, const char *token, unsigned long timeoutMS) {
   uint16_t i = 0;
-  long startTime = millis();
+  unsigned long startTime = millis();
   while (token[i]) {
     if ((millis() - startTime) >= timeoutMS) {
       // Timeout
@@ -75,7 +59,7 @@ boolean readToken(Stream &serial, char *token, long timeoutMS) {
   return true;
 }
 
-boolean writeATCommand(Stream &serial, char *command, char* response, long timeoutMS) {
+boolean writeATCommand(Stream &serial, const char *command, const char* response, long timeoutMS) {
   for (int i = 0; i < 3; i++) {
     serial.print(command);
     if (readToken(serial, response, timeoutMS)) return true;
@@ -227,7 +211,7 @@ TestResult testScreen() {
     PHNDisplay8Bit::writePixels(0xFF, PHNDisplayHW::WIDTH*2);
     PHNDisplayHW::setCursor(0, 0);
     PHNDisplay8Bit::writePixels(0x00, PHNDisplayHW::WIDTH);
-    for (int x = 0; x < PHNDisplayHW::WIDTH; x++) {
+    for (unsigned int x = 0; x < PHNDisplayHW::WIDTH; x++) {
       color_t pixtest_read = PHNDisplay16Bit::readPixel(x, 0);
       if (pixtest_read != BLACK) {
         Serial.println("Could not read back color");
@@ -250,7 +234,7 @@ TestResult testScreen() {
   for (int ctr = 0; ctr < 25; ctr++) {    
     // Draw alternating horizontal lines using alternating bit-pattern
     uint16_t mode_bitpattern = 0x5555;
-    for (int y = 0; y < PHNDisplayHW::HEIGHT/4; y++) {
+    for (unsigned int y = 0; y < PHNDisplayHW::HEIGHT/4; y++) {
       PHNDisplay16Bit::writePixels(mode_bitpattern, PHNDisplayHW::WIDTH);
       mode_bitpattern = ~mode_bitpattern;
     }
@@ -266,17 +250,17 @@ TestResult testScreen() {
     uint8_t mode_cloth = 0x00;
     for (uint32_t i = 0; i < PHNDisplayHW::HEIGHT/4; i++) {
       mode_cloth = ~mode_cloth;
-      for (int i = 0; i < PHNDisplayHW::WIDTH; i++) {
+      for (unsigned int i = 0; i < PHNDisplayHW::WIDTH; i++) {
         PHNDisplay8Bit::writePixel(mode_cloth);
         mode_cloth = ~mode_cloth;
       }
     }
 
     // Draw alternating RED/GREEN/BLUE/WHITE colors
-    for (int y = 0; y < PHNDisplayHW::HEIGHT/4; y++) {
+    for (unsigned int y = 0; y < PHNDisplayHW::HEIGHT/4; y++) {
       for (int c = 0; c < 4; c++) {
         color_t color = test_colors[c];
-        for (int x = 0; x < PHNDisplayHW::WIDTH/4; x++) {
+        for (unsigned int x = 0; x < PHNDisplayHW::WIDTH/4; x++) {
           PHNDisplay16Bit::writePixel(color);
         }
       }
@@ -808,7 +792,8 @@ TestResult testMP3() {
   }
 
   // Check if the test sound file exists
-  if (!SD.exists("Sounds/beep.mp3")) {
+  char testSoundFile[100] = "Sounds/beep.mp3";
+  if (!SD.exists(testSoundFile)) {
     return TestResult(false, "Micro-SD has no Sounds/beep.mp3");
   }
 
@@ -819,7 +804,7 @@ TestResult testMP3() {
   for (int i = 5; i >= 1; i--) {
     showCounter(i);
 
-    musicPlayer.startPlayingFile("Sounds/beep.mp3");
+    musicPlayer.startPlayingFile(testSoundFile);
 
     long t = millis();
     while ((millis() - t) < 900) {
@@ -832,3 +817,4 @@ TestResult testMP3() {
   // Failure - no SELECT pressed
   return TestResult(false, "User indicated no sound");
 }
+

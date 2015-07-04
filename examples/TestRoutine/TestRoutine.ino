@@ -12,22 +12,15 @@
  * All tests are located in the tests.h file.
  */
 #include "Phoenard.h"
-#include <Wire.h>
-#include "I2Cdev.h"
-#include "MPU6050_6Axis_MotionApps20.h"
-#include "HMC5883L.h"
-#include <SPI.h>
-#include <SD.h>
-#include <Adafruit_VS1053.h>
-#include <SFE_BMP180.h>
-#include "Tests.h"
+#include "TestResult.h"
 
 int testCnt = 0;
+boolean isStationConnected = false;
 
 // Create a test result buffer of sufficient size
 TestResult test_results[15];
 
-TestResult doTest(char* what, TestResult(*testFunc)(void)) {
+TestResult doTest(const char* what, TestResult(*testFunc)(void)) {
   // Check if pressed - if pressed for longer than 1 second, show message
   long sel_start = millis();
   while(isSelectPressed() && (millis() - sel_start) < 1000);
@@ -65,7 +58,7 @@ TestResult doTest(char* what, TestResult(*testFunc)(void)) {
   return result;
 }
 
-void showStatus(int index, color_t color, char* what, char* text) {
+void showStatus(int index, color_t color, const char* what, const char* text) {
   const int w = 310;
   const int h = 13;
   int x = 5;
