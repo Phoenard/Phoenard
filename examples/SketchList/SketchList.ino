@@ -399,7 +399,7 @@ void loop() {
           break;
         default:
           /* Clicked a sketch, load it */
-          loadSketchReset(sketch_icon_text[touchedIndex]);
+          PHN_loadSketch(sketch_icon_text[touchedIndex]);
           break;
       }
     }
@@ -417,9 +417,6 @@ void loop() {
 void editSketch(char filename[9], boolean runWhenExit) {
   /* Make sure to re-initialize the SD volume to prevent corruption */
   updateVolume();
-
-  /* Mark sketch for loading */
-  setLoadOptions(filename, SETTINGS_LOAD | SETTINGS_LOADWIPE);
 
   /* Open or create the hex/ski files and store their locations on the Micro-SD */
   uint32_t ski_data_block = 0;
@@ -696,10 +693,7 @@ void editSketch(char filename[9], boolean runWhenExit) {
 
   if (runWhenExit) {
     /* Request to load the sketch - do so */
-    loadSketchReset(filename);
-  } else {
-    /* Undo the setting of loading the sketch */
-    setLoadOptions(NULL, 0);
+    PHN_loadSketch(filename);
   }
 }
 
@@ -988,29 +982,6 @@ void updateVolume() {
       }
     }
   }
-}
-
-void setLoadOptions(const char* sketchName, unsigned char options) {
-  PHN_Settings settings;
-  PHN_Settings_Load(settings);
-  if (sketchName) {
-    memcpy(settings.sketch_toload, sketchName, 8);
-  } else {
-    memcpy(settings.sketch_toload, settings.sketch_current, 8);
-  }
-  settings.flags &= ~(SETTINGS_LOAD | SETTINGS_LOADWIPE);
-  settings.flags |= options;
-  PHN_Settings_Save(settings);
-}
-
-void loadSketchReset(char* filename) {
-  /* Clicked a sketch, load it */
-  setLoadOptions(filename, SETTINGS_LOAD);
-
-  /* Software reset using watchdog */
-  WDTCSR=(1<<WDE) | (1<<WDCE);
-  WDTCSR= (1<<WDE);
-  for(;;);
 }
 
 /*
