@@ -67,7 +67,6 @@ void slideshowGen() {
   uint16_t x, y;
   if (header.bpp == 16) {
     // Fast method
-    uint32_t i;
     for (y = 0; y < header.height; y++) {
       for (x = 0; x < header.width; x++) {
         f.readBytes((char*) &c565, sizeof(c565));
@@ -79,7 +78,6 @@ void slideshowGen() {
     int tmpbuff = 0;
     int tmpbuff_len = 0;
     int pixelmask = (1 << header.bpp) - 1;
-    uint32_t i;
     for (y = 0; y < header.height; y++) {
       for (x = 0; x < header.width; x++) {
         if (!tmpbuff_len) {

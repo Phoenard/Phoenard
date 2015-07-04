@@ -6,10 +6,10 @@
  */
 #include "Phoenard.h"
 
-typedef struct TouchData {
+typedef struct {
   int x;
   int y;
-};
+} TouchData;
 
 #define BOX_COLOR_IDLE     WHITE_8BIT   // Color of selectable boxes when not pressed
 #define BOX_COLOR_ACTIVE   GREEN_8BIT   // Color of selectable boxes when pressed down
@@ -94,10 +94,10 @@ TouchData getData(int x, int y) {
 
   // Wait until the touchscreen is pressed down and up again
   boolean pressed = false;
-  TouchData touch;
+  TouchData touch = {0, 0};
   unsigned int analogX, analogY, analogZ, analogZ2;
-  const int Z_THRES_START = 50;
-  const int Z_THRES_STOP = 0;
+  const unsigned int Z_THRES_START = 50;
+  const unsigned int Z_THRES_STOP = 0;
   for (;;) {
     // Track analog x/y
     PHNDisplayHW::readTouch(&analogX, &analogY, &analogZ, &analogZ2);

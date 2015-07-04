@@ -26,7 +26,7 @@ unsigned long terrainLastDraw = 0;     // Time stamp of last terrain line drawn
 void setup() {
   // Run a main rendering/updating loop here
   for (;;) {
-    for (int i = 0; i < (sizeof(functions) / sizeof(functions[0])); i++) {
+    for (unsigned int i = 0; i < (sizeof(functions) / sizeof(functions[0])); i++) {
       randomSeed(analogRead(0));
       functions[i]();
       
@@ -85,7 +85,6 @@ void fillLine(color_t color) {
   for (int i = 0; i < TERRAIN_LENGTH; i++) {
     terrainBuffer[i] = color;
   }
-  //memset(terrainBuffer, color, sizeof(terrainBuffer));
 }
 
 /* Sets a single pixel to a certain color */
@@ -113,7 +112,6 @@ void fillRange(int x, int width, color_t color) {
 
 /* Fills a part of the line with a color, x being center */
 void fillHole(int x, int width, color_t color) {
-  int width_half = (width >> 1);
   fillRange(x - (width >> 1), width, color);
 }
 

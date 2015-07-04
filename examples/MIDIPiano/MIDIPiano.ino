@@ -168,7 +168,7 @@ boolean updateKey(int key, boolean was_pressed, boolean forceRedraw) {
   // widx  | 0       1       2   3       4       5       6
   // bidx  |     0       1           3       4       5
 
-  char k = (char) (key % 12);
+  int k = (key % 12);
   const char w_indices[] = { 0, -1,  1, -1,  2,  3, -1,  4, -1,  5, -1,  6};
   const char b_indices[] = {-1,  0, -1,  1, -1, -1,  3, -1,  4, -1,  5, -1};
   boolean pressed = false;

@@ -8,7 +8,7 @@
 
 void setup() {
   // For each analog input print labels
-  char* names[6] = {"A0:", "A1:", "A2:", "A3:", "A4:", "A5:"};
+  const char* names[6] = {"A0:", "A1:", "A2:", "A3:", "A4:", "A5:"};
   for (int i = 0; i < 6; i++) {
     // Display using the text debug print function
     display.debugPrint(10, 10 + SPACING * i, TEXTSIZE, names[i]);

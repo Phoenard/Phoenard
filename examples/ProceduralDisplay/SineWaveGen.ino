@@ -1,6 +1,6 @@
 /* Generates a whole lot of sine waves */
 
-typedef struct SineInfo {
+typedef struct {
   int pos;
   int amplitude;
   float time;

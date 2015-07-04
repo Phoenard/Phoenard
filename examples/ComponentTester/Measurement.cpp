@@ -166,6 +166,9 @@ ADCData measureData(Pins probe_a, Pins probe_b, long counter_resistor) {
   } else if (counter_resistor == 100000) {
     resistor_pin = probe_b.res_100k;
     strcpy(data.mode, "C100K");
+  } else {
+    resistor_pin = probe_b.res_100k;
+    strcpy(data.mode, "CUNK");
   }
 
   // First measure at the maximum rate of every 200 microseconds with no delays (use delay to calibrate)
@@ -173,9 +176,7 @@ ADCData measureData(Pins probe_a, Pins probe_b, long counter_resistor) {
   const int delay_time_min2 = 4;
   const int delay_time_self = 130;
   int delay_time = delay_time_min;
-  int adc_value;
-  int adc_value_fast;
-  float adc_slope = 0.0F;
+  int adc_value = 0;
   boolean do_delay = true;
   boolean use_slow_measurement = true;
 
@@ -296,7 +297,7 @@ void calcCapacitance(ADCData &data) {
   }
 
   // Figure out how much time it took to achieve 75% of the maximum voltage
-  float charge_time;
+  float charge_time = 0.0F;
   int max_voltage = data.data[MAX_DATA_LENGTH - 1];
   int limit = (int) (0.75 * (float) max_voltage);
   for (int i = 0; i < MAX_DATA_LENGTH; i++) {

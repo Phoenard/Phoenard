@@ -11,9 +11,9 @@ void tunnelGen() {
   float colorF = 0.0F;
   
   // Random dots
-  int dotPos;
-  color_t dotColor;
-  int dotWidth;
+  int dotPos = 0;
+  color_t dotColor = BLACK;
+  int dotWidth = 0;
   int dotWidthRem = 0;
 
   renderTunnel(TERRAIN_MID, TERRAIN_LENGTH, trackPos, holeWidth, 50, BLACK, colorA);

@@ -243,7 +243,9 @@ void loop() {
   // Perform measurements to see if there is a transistor and the kind of pin configuration
   int trans_gain = 0;
   int trans_gain_new;
-  char trans_a, trans_b, trans_c;
+  char trans_a = 'A';
+  char trans_b = 'B';
+  char trans_c = 'C';
   for (int i_collector = 0; i_collector < 3; i_collector++) {
     for (int i_base = 0; i_base < 3; i_base++) {
       for (int i_emitter = 0; i_emitter < 3; i_emitter++) {

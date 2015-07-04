@@ -1,6 +1,6 @@
 /* Generates a bunch of bouncing lines, as if raining colorful pixels! */
 
-typedef struct BouncingLineInfo {
+typedef struct {
   int decline;
   int declineCtr;
   int fact;

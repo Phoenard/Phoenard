@@ -9,9 +9,10 @@ const int led_count = 6;
 const int led_pins[led_count] = {A0,A1,A2,A3,A4,A5};
 boolean   led_output_set[led_count];
 boolean   led_output[led_count];
-int       chaser_delay = 150;
-int       chaser_width = 1;
-int       animation_mode = 0;
+
+unsigned long chaser_delay = 150;
+int chaser_width = 1;
+int animation_mode = 0;
 
 // Widgets
 PHN_Scrollbar speedBar;
@@ -160,7 +161,7 @@ void setAnimationMode(int mode) {
 /* Updates the LED state and refreshes UI */
 void updateAnimation() {
   // Update LED pins and perform UI for the entire animation delay
-  long startTime = millis();
+  unsigned long startTime = millis();
   for (int i = 0; i < led_count; i++) {
     boolean on = led_output[i];
     if (led_output_set[i] != on) {

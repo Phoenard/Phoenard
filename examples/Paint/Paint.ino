@@ -8,12 +8,12 @@
 // The top-offset of the color selectable boxes
 #define BOXOFFSET 10
 
-int oldcolor;        // Old color selected, used for detecting color change
-int currentcolor;    // Current color to use for drawing
-int box_x;           // X-coordinate of the color selection boxes
-int width, height;   // Width and height of the screen
-PressPoint last;     // Last point pressed down on the screen
-boolean hasLast;     // Whether the use has pressed down before
+color_t oldcolor;     // Old color selected, used for detecting color change
+color_t currentcolor; // Current color to use for drawing
+int box_x;            // X-coordinate of the color selection boxes
+int width, height;    // Width and height of the screen
+PressPoint last;      // Last point pressed down on the screen
+boolean hasLast;      // Whether the use has pressed down before
 
 void setup() {
   hasLast = false;
