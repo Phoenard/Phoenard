@@ -565,7 +565,7 @@ bool PHN_Sim::setContact(int contactIndex, SimContact contact) {
   // Generate a list of Strings to concatenate
   const int parts_count = 9;
   const char* parts[parts_count];
-  parts[0] = "AT+CPBW=,";
+  parts[0] = "AT+CPBW=";
   parts[1] = idxPart;
   parts[2] = ",\"";
   parts[3] = contact.number;
@@ -577,6 +577,7 @@ bool PHN_Sim::setContact(int contactIndex, SimContact contact) {
 
   // Concatenate into a single command and send
   char command[100];
+  command[0] = 0;
   for (int i = 0; i < parts_count; i++) {
     strcat(command, parts[i]);
   }

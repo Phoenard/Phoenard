@@ -43,6 +43,10 @@ PHN_ItemList::PHN_ItemList() {
 
 void PHN_ItemList::setItemCount(int itemCount) {
   _itemCount = itemCount;
+  if (_selectedIndex >= itemCount) {
+    _selectedIndex = itemCount-1;
+    _selectedChanged = true;
+  }
   invalidate();
 }
 

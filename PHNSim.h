@@ -181,6 +181,10 @@ public:
   int getContactCount();
   /// Gets how many contacts can possibly be stored in the current book
   int getContactLimit() const { return this->bookSize; }
+  /// Gets the maximum length of a contact number field
+  int getContactNumberLimit() const { return this->bookAddressLength; }
+  /// Gets the maximum length of a contact text field
+  int getContactTextLimit() const { return this->bookNameLength; }
   /// Reads the contact stored at the index in the current book
   SimContact getContact(int contactIndex);
   /// Adds new contact information to the current book
