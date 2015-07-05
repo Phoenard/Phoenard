@@ -26,6 +26,7 @@ void sleepNow() {
     display.update();
     if (display.isTouched() || isSelectPressed()) {
       display.setBacklight(256);
+      resetSleep();
       return;
     }
   }
