@@ -310,6 +310,7 @@ void handlePin() {
 
     // Header is used here
     PHN_PhoneHeader header;
+    header.refreshInfo();
     header.setNavigation(" Exit ", "Accept");
     display.addWidget(header);
 
