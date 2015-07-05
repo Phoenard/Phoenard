@@ -80,6 +80,8 @@ class PHN_ItemList : public PHN_Widget {
   void setPageSize(int itemsPerPage);
   /// Gets the amount of items displayed per page
   int pageSize() const { return _pageSize; }
+  /// Forces a certain width of the scroll-portion of the list
+  void setScrollWidth(int scrollWidth);
   /// Sets the draw function to use for the items
   void setDrawFunction(void (*drawFunction)(ItemParam&));
   /// Sets the index of the selected item
@@ -107,6 +109,7 @@ class PHN_ItemList : public PHN_Widget {
   int _itemCount, _pageSize;
   int _selectedIndex, _drawnSelIndex;
   int _itemW, _itemH;
+  int _scrollWidth;
   int _prevScroll, _currScroll;
   bool _selectedChanged;
   bool _invalidateLater;

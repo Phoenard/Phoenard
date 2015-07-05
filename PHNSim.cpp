@@ -348,6 +348,39 @@ void PHN_Sim::sendDTMF(char character) {
   }
 }
 
+bool PHN_Sim::setVolume(int level) {
+  char command[20];
+  memcpy(command, "AT+CLVL=", 8);
+  itoa(level, command+8, 10);
+  return sendATCommand(command);
+}
+
+int PHN_Sim::getMessageCount() {
+  // Response: +CPMS: <used_space>,<max_space>
+  char resp[50];
+  if (!sendATCommand("AT+CPMS=\"SM\"", resp, sizeof(resp))) {
+    return 0;
+  }
+  char* args[2];
+  if (getSimTextArgs(resp, args, 2) != 2) {
+    return false;
+  }
+  return atoi(args[0]);
+}
+
+int PHN_Sim::getMessageLimit() {
+  // Response: +CPMS: <used_space>,<max_space>
+  char resp[50];
+  if (!sendATCommand("AT+CPMS=\"SM\"", resp, sizeof(resp))) {
+    return 0;
+  }
+  char* args[2];
+  if (getSimTextArgs(resp, args, 2) != 2) {
+    return false;
+  }
+  return atoi(args[1]);
+}
+
 bool PHN_Sim::hasNewMessage() {
   update();
   return latestInbox != -1;
@@ -362,10 +395,7 @@ SimMessage PHN_Sim::getNewMessage() {
 void PHN_Sim::deleteMessage(int messageIndex) {
   char command[15] = "AT+CMGD=";
   itoa(messageIndex+1, command+8, 10);
-  int offset = ((messageIndex+1) < 10) ? 1 : 2;
-  command[8+offset] = ',';
-  command[8+offset+1] = '0';
-  command[8+offset+2] = 0;
+  strcat(command, ",0");
   sendATCommand(command, 0, 0);
 }
 
@@ -493,7 +523,6 @@ bool PHN_Sim::setContactBook(const char* bookName) {
   if (!sendATCommand("AT+CPBR=?", resp, sizeof(resp))) {
     return false;
   }
-  Serial.println(resp);
   char* args[3];
   if (getSimTextArgs(resp, args, 3) != 3) {
     return false;

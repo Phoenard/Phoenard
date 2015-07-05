@@ -48,8 +48,12 @@ class PHN_SRAM {
 
   /// Reads a block of data
   void readBlock(uint16_t address, char* data, uint16_t length);
+  /// Reads a segment block of data; useful for reading structures
+  void readSegment(uint16_t index, void* ptr, uint16_t segmentSize);
   /// Writes a block of data
   void writeBlock(uint16_t address, const char* data, uint16_t length);
+  /// Writes a segment block of data; useful for storing structures
+  void writeSegment(uint16_t index, const void* ptr, uint16_t segmentSize);
   /// Reads the byte of data stored at an address specified
   char read(uint16_t address);
   /// Writes a byte of data at an address specified

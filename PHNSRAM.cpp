@@ -104,6 +104,14 @@ void PHN_SRAM::writeBlock(uint16_t address, const char* data, uint16_t length) {
   SRAM_Disable();
 }
 
+void PHN_SRAM::readSegment(uint16_t index, void* ptr, uint16_t segmentSize) {
+  readBlock(index*segmentSize, (char*) ptr, segmentSize);
+}
+
+void PHN_SRAM::writeSegment(uint16_t index, const void* ptr, uint16_t segmentSize) {
+  writeBlock(index*segmentSize, (const char*) ptr, segmentSize);
+}
+
 uint8_t PHN_SRAM::writeBlockVerify(uint16_t address, const char* data, uint16_t length) {
   writeBlock(address, data, length);
   return verifyBlock(address, data, length);

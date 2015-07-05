@@ -161,8 +161,14 @@ public:
   const char* getIncomingNumber();
   /// Sends a DTMF tone number, does nothing when character is NULL
   void sendDTMF(char character);
+  /// Sets the volume of the loudspeaker using a level 0 - 100
+  bool setVolume(int level);
 
   // Text messages
+  /// Gets the amount of messages stored in memory
+  int getMessageCount();
+  /// Gets the total limit amount of messages that can be stored in memory
+  int getMessageLimit();
   /// Checks whether a new message is available
   bool hasNewMessage();
   /// Reads the message received last

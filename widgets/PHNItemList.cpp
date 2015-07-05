@@ -37,6 +37,7 @@ PHN_ItemList::PHN_ItemList() {
   _drawFunc = itemlist_default_draw_func;
   _prevScroll = 0;
   _currScroll = 0;
+  _scrollWidth = -1;
   scroll.setRange(0, 0);
   addWidget(scroll);
 }
@@ -52,6 +53,11 @@ void PHN_ItemList::setItemCount(int itemCount) {
 
 void PHN_ItemList::setPageSize(int itemsPerPage) {
   _pageSize = itemsPerPage;
+  invalidate();
+}
+
+void PHN_ItemList::setScrollWidth(int scrollWidth) {
+  _scrollWidth = scrollWidth;
   invalidate();
 }
 
@@ -95,8 +101,9 @@ void PHN_ItemList::drawItem(int index) {
 void PHN_ItemList::update() {
   if (invalidated) {
     _itemH = (height-2) / _pageSize;
-    _itemW = (width-_itemH);
-    scroll.setBounds(x+_itemW-1, y, _itemH+1, 1+_pageSize*_itemH);
+    int scroll_width = (_scrollWidth == -1) ? _itemH : _scrollWidth;
+    _itemW = (width-scroll_width);
+    scroll.setBounds(x+_itemW-1, y, scroll_width+1, 1+_pageSize*_itemH);
     scroll.setRange(max(0, _itemCount-_pageSize), 0);
   } else if (_invalidateLater) {
     invalidate();
@@ -138,7 +145,9 @@ void PHN_ItemList::update() {
   // Invalidate when scroll changes
   // Do so the next update so the user can prepare the items first
   if (scroll.isValueChanged()) {
-    _invalidateLater = true;
+    if (!invalidated) {
+      _invalidateLater = true;
+    }
   } else {
     // Perform partial redraws when selection changes here
     if (!invalidated && _drawnSelIndex != _selectedIndex) {
@@ -161,7 +170,7 @@ void PHN_ItemList::draw() {
   int lastY = y + 1;
   for (int i = 1; i < min(_pageSize, _itemCount+1); i++) {
     lastY += _itemH;
-    display.drawHorizontalLine(x+1, lastY-1, _itemW, frameColor);
+    display.drawHorizontalLine(x+1, lastY-1, _itemW-1, frameColor);
   }
   if (_itemCount < _pageSize) {
     display.fillRect(x+1, lastY, _itemW-2, (_pageSize-_itemCount)*_itemH-1, color(BACKGROUND));
