@@ -1,6 +1,21 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 
+const unsigned long SLEEP_TIME = 20000;
+unsigned long sleep_start;
+
+/* Resets the sleep timer, waiting to sleep again */
+void resetSleep() {
+  sleep_start = millis();
+}
+
+/* Checks whether sufficient time has passed, and sleeps after some time */
+void updateSleep() {
+  if ((millis() - sleep_start) >= SLEEP_TIME) {
+    sleepNow();
+  }
+}
+
 /* Puts the device into sleep mode, waking up when an interrupt fires resuming code execution */
 void sleepNow() {
   // First dim the display for some time, regularly checking if the user does something
@@ -38,6 +53,9 @@ void sleepNow() {
     display.setBacklight(i);
     delay(2);
   }
+
+  // Reset sleep mode
+  resetSleep();
 }
 
 void disInt(){

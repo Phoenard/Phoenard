@@ -108,6 +108,9 @@ int showMainMenu() {
   // Disable the navigation buttons
   header.setNavigation(NULL, NULL);
   
+  // Reset sleeping
+  resetSleep();
+  
   // Initialize the main menu grid of buttons
   PHN_ButtonGrid menuGrid;
   menuGrid.setDimension(3, 3);
@@ -137,11 +140,8 @@ int showMainMenu() {
     display.update();
     clickedIdx = menuGrid.getClickedIndex();
 
-    // Sleep when pressing SELECT
-    if (false && isSelectPressed()) {
-      while (isSelectPressed());
-      sleepNow();
-    }
+    // Handle sleeping
+    updateSleep();
 
     // Handle incoming calls by showing the user a dialog with options
     boolean isCalled = sim.isCalled();
@@ -160,6 +160,9 @@ int showMainMenu() {
       menuGrid.setDrawingEnabled(true);
       header.setNavigation(NULL, NULL);
       display.invalidate();
+
+      // Delay before sleeping again
+      resetSleep();
     }
   } while (clickedIdx == -1);
 
