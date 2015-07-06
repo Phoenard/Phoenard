@@ -7,7 +7,6 @@ void showSerial() {
   // Clear Serial and initialize at the baud rate set
   delay(50);
   flushRead(Serial2);
-  Serial2.begin(baud_rates[currentBaud]);
 
   // Label that shows the device address
   PHN_Label addrLabel;

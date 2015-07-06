@@ -59,6 +59,12 @@ void showDiscovery() {
   baudBox.setValue(currentBaud);
   display.addWidget(baudBox);
 
+  // Button to confirm baud selection
+  PHN_Button baudBtn;
+  baudBtn.setBounds(240, 5, 70, 22);
+  baudBtn.setText("Set");
+  display.addWidget(baudBtn);
+
   // Clear buffer
   setSearchBufferLength(0);
 
@@ -69,18 +75,28 @@ void showDiscovery() {
     // Update the widgets
     display.update();
 
-    // Update baud
+    // Update displayed label in number box
     if (baudBox.isValueChanged()) {
-      // Update displayed label
+      baudBox.setText(baud_rates[baudBox.value()]);
+    }
+    
+    // Confirm baud selection - set in module
+    if (baudBtn.isClicked()) {
       currentBaud = baudBox.value();
-      baudBox.setText(baud_rates[currentBaud]);
-
-      // Update baud setting of module
-      // Note: changes take effect after connecting
-      // We should not change baud rate of the Serial
+      
       String command = "AT+BAUD";
       command += currentBaud;
-      if (!sendCommand(command)) {
+      if (sendCommand(command)) {
+        resetModule();
+        display.update();
+        delay(800);
+
+        Serial2.flush();
+        Serial2.end();
+        Serial2.begin(baud_rates[currentBaud]);
+        isSearchRunning = false;
+        showSearchStatus("Baud rate set");
+      } else {
         showSearchStatus("Failed to switch baud rates");
       }
     }

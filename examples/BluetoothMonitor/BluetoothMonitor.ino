@@ -41,25 +41,40 @@ void initializeBluetooth() {
   // Setup the Bluetooth registers for first use as a master (discovery mode)
   display.fill(BLACK);
   display.setCursor(3, 3);
-  
-  writeDisplayLog("Turning on module", WHITE);
-  enableBluetooth();
-  delay(500);
-  writeDisplayLog("  OK\n", GREEN);
-  
-  // Figure out what baud rate the device runs at
-  writeDisplayLog("Detecting used Baud rate", WHITE);
-  currentBaud = 0;
-  do {
-    Serial2.begin(baud_rates[currentBaud]);
-    if (sendCommand("AT")) {
-      break;
-    }
-    
-    currentBaud++;
-  } while (currentBaud != 9);
 
-  // Failed?
+  writeDisplayLog("Turning on module", WHITE);
+  disableBluetoothWiFi();
+  delay(50);
+  enableBluetooth();
+  delay(300);
+  writeDisplayLog("  OK\n", GREEN);
+
+  for (int i = 0; i < 2; i++) {
+    if (i == 1) {
+      writeDisplayLog("\nWaking up device\n", WHITE);
+      pinMode(BLUETOOTH_KEY_PIN, OUTPUT);
+      digitalWrite(BLUETOOTH_KEY_PIN, LOW);
+      delay(2000);
+      digitalWrite(BLUETOOTH_KEY_PIN, HIGH);
+      delay(300);
+      writeDisplayLog("  OK\n", GREEN);
+    }
+
+    // Figure out what baud rate the device runs at
+    writeDisplayLog("Detecting Baud rate and resetting", WHITE);
+    currentBaud = 0;
+    do {
+      delay(100);
+      Serial2.begin(baud_rates[currentBaud]);
+      if (sendCommand("AT")) {
+        break;
+      }
+      currentBaud++;
+    } while (currentBaud != 9);
+    
+    if (currentBaud != 9) break;
+  }
+
   if (currentBaud == 9) {
     writeDisplayLog("  ERROR\n", RED);
     for (;;);
@@ -90,6 +105,15 @@ void initializeBluetooth() {
   delay(1000);
   flushRead(Serial2);
   display.fill(BLACK);
+}
+
+/* Resets the module */
+void resetModule() {
+  if (sendCommand("AT+RESET")) {
+    do {
+      delay(100);
+    } while (!sendCommand("AT"));
+  }
 }
 
 /* Sends an AT Command to the Bluetooth module, logging it and checking for errors */
