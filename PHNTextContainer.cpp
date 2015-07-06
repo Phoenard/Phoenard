@@ -49,6 +49,10 @@ void PHN_TextContainer::setText(const char* text) {
   setTextRaw(text, (int) strlen(text));
 }
 
+void PHN_TextContainer::clearText() {
+  setTextRaw("", 0);
+}
+
 int PHN_TextContainer::textLength() {
   return (int) strlen(text());
 }

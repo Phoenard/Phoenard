@@ -50,6 +50,8 @@ class PHN_TextContainer {
    void setText(double valueText);
    /// Sets the new text to display using a null-terminated String
    void setText(const char* text);
+   /// Clears all the text, setting it to an Empty String
+   void clearText();
 
    /// Sets the new text to display using a buffer and length
    virtual void setTextRaw(const char* text, int textLen);

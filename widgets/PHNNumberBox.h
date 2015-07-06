@@ -90,6 +90,7 @@ private:
   void drawText(TextBounds bounds);
 
   int _minValue, _maxValue;
+  bool _firstUpdate;
   bool _valueChanged;
   char _lastWrapAround;
   int scrollWidth;

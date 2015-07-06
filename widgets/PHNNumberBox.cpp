@@ -28,6 +28,7 @@ THE SOFTWARE.
 PHN_NumberBox::PHN_NumberBox() {
   wrapAround = false;
   _valueChanged = true;
+  _firstUpdate = true;
   setRange(-0x7FFE, 0x7FFE);
   display.addWidget(scroll);
 }
@@ -109,8 +110,13 @@ void PHN_NumberBox::update() {
   // As well, it handles wrap-around logic
   setValue(scroll.value());
 
+  // Value is always changed during the first update
+  if (_firstUpdate) {
+    _valueChanged = true;
+  }
+
   // Redraw text only
-  if (textDirty) {
+  if (!invalidated && textDirty) {
     TextBounds bounds = getTextBounds();
     if (lastTextBounds == bounds) {
       drawText(bounds);
@@ -129,5 +135,14 @@ void PHN_NumberBox::drawText(TextBounds bounds) {
   this->lastTextBounds = bounds;
   this->textDirty = false;
   display.setTextColor(color(CONTENT), color(FOREGROUND));
-  display.drawString(bounds.x, bounds.y, text(), bounds.size);
+
+  // Do not draw anything during the first update
+  // Reason for this is that the widget might be
+  // meant to display something in place of numbers
+  // This requires at least one full update to be done.
+  if (_firstUpdate) {
+    _firstUpdate = false;
+  } else {
+    display.drawString(bounds.x, bounds.y, text(), bounds.size);
+  }
 }
