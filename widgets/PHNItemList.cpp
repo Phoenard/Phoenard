@@ -150,7 +150,7 @@ void PHN_ItemList::update() {
     }
   } else {
     // Perform partial redraws when selection changes here
-    if (!invalidated && _drawnSelIndex != _selectedIndex) {
+    if (!invalidated && (_itemCount > 0) && (_drawnSelIndex != _selectedIndex)) {
       drawItem(_drawnSelIndex);
       drawItem(_selectedIndex);
     }

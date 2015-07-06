@@ -30,7 +30,7 @@ PHN_NumberBox::PHN_NumberBox() {
   _valueChanged = true;
   _firstUpdate = true;
   setRange(-0x7FFE, 0x7FFE);
-  display.addWidget(scroll);
+  addWidget(scroll);
 }
 
 void PHN_NumberBox::setTextRaw(const char* text, int textLen) {
