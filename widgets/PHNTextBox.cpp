@@ -54,6 +54,7 @@ void PHN_TextBox::setMaxLength(int length) {
      this->length = length;
   }
   textBuff.resize(length + 1);
+  ((char*) textBuff.data)[length] = 0;
 }
 
 void PHN_TextBox::setTextSize(int size) {

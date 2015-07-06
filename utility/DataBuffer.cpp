@@ -23,41 +23,41 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include "DataCopyBuffer.h"
+#include "DataBuffer.h"
 
-DataCopyBuffer::DataCopyBuffer(const void* data, int dataSize) {
+DataBuffer::DataBuffer(const void* data, int dataSize) {
   this->data = NULL;
   set(data, dataSize);
 }
 
-DataCopyBuffer::~DataCopyBuffer() {
+DataBuffer::~DataBuffer() {
   free(data);
 }
 
-void DataCopyBuffer::growToFit(int newDataSize) {
+void DataBuffer::growToFit(int newDataSize) {
   if (this->dataSize >= newDataSize) return;
   this->dataSize = newDataSize;
   this->data = realloc(this->data, this->dataSize);
 }
 
-void DataCopyBuffer::resize(int newDataSize) {
+void DataBuffer::resize(int newDataSize) {
   if (this->dataSize == newDataSize) return;
   this->dataSize = newDataSize;
   this->data = realloc(this->data, this->dataSize);
 }
 
-void DataCopyBuffer::set(const void* data, int dataSize) {
+void DataBuffer::set(const void* data, int dataSize) {
   free(this->data);
   this->dataSize = dataSize;
   this->data = malloc(dataSize);
   memcpy(this->data, data, dataSize);
 }
 
-void DataCopyBuffer::setTextRaw(const char* text, int textLen) {
+void DataBuffer::setTextRaw(const char* text, int textLen) {
   set(text, textLen+1);
 }
 
-DataCopyBuffer& DataCopyBuffer::operator=( const DataCopyBuffer& other ) {
+DataBuffer& DataBuffer::operator=( const DataBuffer& other ) {
   set(other.data, other.dataSize);
   return *this;
 }

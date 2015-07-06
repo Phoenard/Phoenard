@@ -25,14 +25,14 @@ THE SOFTWARE.
 
 /**
  * @file
- * @brief Contains the DataCopyBuffer class for safely storing dynamic memory on the heap
+ * @brief Contains the DataBuffer class for safely storing dynamic memory on the heap
  */
 
 #include <Arduino.h>
 #include "PHNTextContainer.h"
 
-#ifndef _DATA_COPY_BUFFER_H_
-#define _DATA_COPY_BUFFER_H_
+#ifndef _DATA_BUFFER_H_
+#define _DATA_BUFFER_H_
 
 /**
  * @brief Maintains data stored on the heap and frees it when the class is destructed
@@ -41,14 +41,14 @@ THE SOFTWARE.
  * memory the size and freeing all has to be maintained. That is what this class solves.
  * Memory can be easily allocated/resized and destroyed as the class is used.
  */
-class DataCopyBuffer : public PHN_TextContainer {
+class DataBuffer : public PHN_TextContainer {
 public:
   /// Creates a new buffer without any data
-  DataCopyBuffer() : data(NULL), dataSize(0) {}
+  DataBuffer() : data(NULL), dataSize(0) {}
   /// Creates a new buffer, copying the initial data into the buffer
-  DataCopyBuffer(const void* data, int dataSize);
+  DataBuffer(const void* data, int dataSize);
   /// Destructor frees the memory
-  ~DataCopyBuffer();
+  ~DataBuffer();
   /// Resizes the buffer preserving contents to newDataSize, shrinking if needed
   void resize(int newDataSize);
   /// Resizes the buffer preserving contents to fit newDataSize
@@ -56,7 +56,7 @@ public:
   /// Sets new data to be stored, the data is copied into this buffer
   void set(const void* data, int dataSize);
   /// Assigns data from one buffer to another
-  DataCopyBuffer& operator=( const DataCopyBuffer& other );
+  DataBuffer& operator=( const DataBuffer& other );
 
   // Implementation for PHN_TextContainer
   virtual const char* text() { return (char*) data; }

@@ -90,8 +90,8 @@ class PHN_Keyboard : public PHN_Widget {
   void setupCells();
   char fmt_key(int fmtIndex, int index);
   void updateCell(int idx, bool drawCell, bool eraseCell);
-  DataCopyBuffer formatChars;
-  DataCopyBuffer formatNames;
+  DataBuffer formatChars;
+  DataBuffer formatNames;
   unsigned char cols, rows;
   unsigned char cellW, cellH, spacW, spacH;
   int count;

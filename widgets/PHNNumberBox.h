@@ -96,7 +96,7 @@ private:
   bool wrapAround;
   bool textDirty;
   TextBounds lastTextBounds;
-  DataCopyBuffer textBuff;
+  DataBuffer textBuff;
   PHN_Scrollbar scroll;
 };
 

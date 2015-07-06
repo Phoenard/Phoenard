@@ -123,7 +123,7 @@ class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
   bool cursor_visible;
   bool cursor_blinkVisible;
   unsigned long cursor_blinkLast;
-  DataCopyBuffer textBuff;
+  DataBuffer textBuff;
 };
 
 #endif

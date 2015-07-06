@@ -51,7 +51,7 @@ class PHN_Label : public PHN_Widget, public PHN_TextContainer {
   virtual void update(void);
   virtual void draw(void);
  private:
-  DataCopyBuffer textBuff;
+  DataBuffer textBuff;
   bool drawFrame;
   bool quickDraw;
 };

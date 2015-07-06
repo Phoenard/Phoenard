@@ -11,7 +11,7 @@
 PHN_Settings	KEYWORD1
 Date	KEYWORD1
 BufferedReadStream	KEYWORD1
-DataCopyBuffer	KEYWORD1
+DataBuffer	KEYWORD1
 FlashMemoryStream	KEYWORD1
 MemoryStream	KEYWORD1
 color_t	KEYWORD1

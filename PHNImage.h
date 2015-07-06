@@ -84,7 +84,7 @@ public:
 
 private:
   PHN_Palette _palette;
-  DataCopyBuffer _data;
+  DataBuffer _data;
   void (*_drawFunc)(int, int, int, int, PHN_Image&);
 };
 

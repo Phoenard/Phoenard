@@ -81,6 +81,6 @@ void shiftElements(void* ptr, int blockSize, int blockCount, int shiftCount);
 #include "BufferedReadStream.h"
 #include "FlashMemoryStream.h"
 #include "MemoryStream.h"
-#include "DataCopyBuffer.h"
+#include "DataBuffer.h"
 
 #endif

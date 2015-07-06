@@ -58,7 +58,7 @@ public:
   color_t* data() const { return (color_t*) _colorData.data; }
 
 private:
-  DataCopyBuffer _colorData;
+  DataBuffer _colorData;
  
 };
 
