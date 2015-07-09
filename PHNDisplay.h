@@ -301,6 +301,8 @@ class PHN_Display : public PHN_WidgetContainer {
   void drawCircle(uint16_t x, uint16_t y, uint16_t r, color_t color);
   /// Fills a circle at [x, y] of radius [r]
   void fillCircle(uint16_t x, uint16_t y, uint16_t r, color_t color);
+  /// Fills a circle at [x, y] of radius [r] with a 1-pixel wide border
+  void fillBorderCircle(uint16_t x, uint16_t y, uint16_t r, color_t color, color_t borderColor);
 
   /* ====================================== TEXT DRAWING ======================================== */
 
@@ -372,6 +374,8 @@ class PHN_Display : public PHN_WidgetContainer {
   void printDate(Date date);
   /// Prints a character stored in memory in 7x5 size format
   void printMem(const uint8_t* font_char);
+  /// Pads the space up until some amount of characters with white spaces
+  void printPadding(int nrChars);
 
   /// Prints out text in a convenient short way
   void debugPrint(uint16_t x, uint16_t y, uint8_t size, const char* text, uint8_t padding = 0);

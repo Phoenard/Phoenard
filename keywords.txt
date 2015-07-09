@@ -87,6 +87,7 @@ drawTriangle	KEYWORD2
 fillTriangle	KEYWORD2
 drawCircle	KEYWORD2
 fillCircle	KEYWORD2
+fillCircleBorder	KEYWORD2
 drawRoundRect	KEYWORD2
 fillRoundRect	KEYWORD2
 fill	KEYWORD2
@@ -111,6 +112,7 @@ writeImage_1bit	KEYWORD2
 writeFont_1bit	KEYWORD2
 writeString	KEYWORD2
 writeChar	KEYWORD2
+printPadding	KEYWORD2
 addWidget	KEYWORD2
 removeWidget	KEYWORD2
 setTextBackground	KEYWORD2

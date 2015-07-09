@@ -316,6 +316,12 @@ void PHN_Display::fillCircle(uint16_t x0, uint16_t y0, uint16_t r, color_t color
   fillCircleHelper(x0, y0, r, 3, 0, color);
 }
 
+// fill circle with a border
+void PHN_Display::fillBorderCircle(uint16_t x, uint16_t y, uint16_t r, color_t color, color_t borderColor) {
+  fillCircle(x, y, r, color);
+  drawCircle(x, y, r, borderColor);
+}
+
 // used to do circles and roundrects!
 void PHN_Display::fillCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t cornername, uint16_t delta,
       color_t color) {
@@ -807,6 +813,14 @@ void PHN_Display::printDate(Date date) {
   if (date.year < 10)
     print('0');
   print(date.year);
+}
+
+void PHN_Display::printPadding(int nrChars) {
+  nrChars -= (textOpt.cursor_x - textOpt.cursor_x_start) / (6 * textOpt.textsize);
+  while (nrChars > 0) {
+    print(' ');
+    nrChars--;
+  }
 }
 
 void PHN_Display::printMem(const uint8_t* font_char) {
