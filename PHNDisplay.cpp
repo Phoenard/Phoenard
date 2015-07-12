@@ -1020,15 +1020,15 @@ void PHN_Display::drawImage(Stream &imageStream, int x, int y, float cr, float c
   ImgMultColor_r = cr; ImgMultColor_g = cg; ImgMultColor_b = cb;
   drawImageMain(imageStream, x, y, ImgMultColor, NULL);
 }
-void PHN_Display::drawImageColorFunc(Stream &imageStream, int x, int y, void (*color)(uint8_t*, uint8_t*, uint8_t*)) {
+void PHN_Display::drawImage(Stream &imageStream, int x, int y, void (*color)(uint8_t*, uint8_t*, uint8_t*)) {
   drawImageMain(imageStream, x, y, color, NULL);
 }
 
-void PHN_Display::drawImageColorMap(Stream &imageStream, int x, int y, color_t *colorMapInput) {
+void PHN_Display::drawImage(Stream &imageStream, int x, int y, const color_t *colorMapInput) {
   drawImageMain(imageStream, x, y, NULL, colorMapInput);
 }
 
-void PHN_Display::drawImageMain(Stream &imageStream, int x, int y, void (*color)(uint8_t*, uint8_t*, uint8_t*), color_t *colorMapInput) {
+void PHN_Display::drawImageMain(Stream &imageStream, int x, int y, void (*color)(uint8_t*, uint8_t*, uint8_t*), const color_t *colorMapInput) {
   // Store old viewport for later restoring
   Viewport oldViewport = getViewport();
 

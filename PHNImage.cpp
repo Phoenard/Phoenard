@@ -64,5 +64,5 @@ void flash_image_draw_func(int x, int y, int width, int height, PHN_Image &img) 
 
 void flash_indexed_image_draw_func(int x, int y, int width, int height, PHN_Image &img) {
   FlashMemoryStream stream(img.data_ptr(), 0xFFFFFFFF);
-  display.drawImageColorMap(stream, x, y, img.palette().data());
+  display.drawImage(stream, x, y, img.palette().data());
 }

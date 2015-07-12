@@ -448,11 +448,11 @@ class PHN_Display : public PHN_WidgetContainer {
   void drawImage(Stream &imageStream, int x, int y);
   void drawImage(Stream &imageStream, int x, int y, float brightness);
   void drawImage(Stream &imageStream, int x, int y, float cr, float cg, float cb);
-  void drawImageColorFunc(Stream &imageStream, int x, int y, void (*color)(uint8_t*, uint8_t*, uint8_t*));
-  void drawImageColorMap(Stream &imageStream, int x, int y, color_t *colorMapInput);
+  void drawImage(Stream &imageStream, int x, int y, void (*color)(uint8_t*, uint8_t*, uint8_t*));
+  void drawImage(Stream &imageStream, int x, int y, const color_t *colorMapInput);
   //@}
  private:
-  void drawImageMain(Stream &imageStream, int x, int y, void (*color)(uint8_t*, uint8_t*, uint8_t*), color_t *colorMapInput);
+  void drawImageMain(Stream &imageStream, int x, int y, void (*color)(uint8_t*, uint8_t*, uint8_t*), const color_t *colorMapInput);
   void drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t corner, color_t color);
   void fillCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t corner, uint16_t delta, color_t color);
 
