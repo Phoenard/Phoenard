@@ -55,6 +55,12 @@ void PHN_LineGraph::addValues(const float* values) {
     }
   }
 
+  // If not auto-clearing, wipe the next column first
+  // Also clear the column when drawing for the first time
+  if (autoClearDisabled || !isDrawn()) {
+    display.drawVerticalLine(x+_pos+1, y+1, height-2, this->color(BACKGROUND));
+  }
+
   // Draw the line
   for (unsigned char i = 0; i < _dim; i++) {
     color_t color = _lineColors.get(i);
@@ -72,11 +78,9 @@ void PHN_LineGraph::addValues(const float* values) {
     // Reverse the y-value
     y_new = height - y_new - 1;
 
-    // If not auto-clearing, wipe the next future column first
-    if (autoClearDisabled) {
-      int x_next = x_new+1;
-      if (x_next >= (width-1)) x_next = 1;
-      display.drawVerticalLine(x+x_next, y+1, height-2, this->color(BACKGROUND));
+    // Use same old and new value if first value of graph
+    if (_pos == 0) {
+      *y_old_ptr = y_new;
     }
 
     // Draw a line connecting old with new
@@ -103,8 +107,9 @@ void PHN_LineGraph::draw() {
   display.drawRect(x, y, width, height, color(FRAME));
 
   // Fill the background by drawing from left to right
+  // Do this starting at the current position to the end
   color_t bg = color(BACKGROUND);
-  for (int dx = 1; dx < (width - 1); dx++) {
-    display.drawVerticalLine(x + dx, y + 1, height - 2, bg);
+  for (int dx = _pos; dx < (width - 2); dx++) {
+    display.drawVerticalLine(x + dx + 1, y + 1, height - 2, bg);
   }
 }

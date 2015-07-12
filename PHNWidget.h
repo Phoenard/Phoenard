@@ -193,6 +193,9 @@ class PHN_Widget : public PHN_WidgetContainer {
   /// Gets whether the widget is displayed and updated
   bool isVisible(void);
 
+  /// Gets whether the widget has been drawn
+  bool isDrawn(void);
+  
   /// Sets whether the widget is drawn and undrawn
   void setDrawingEnabled(bool drawing);
   /// Gets whether the widget is drawn and undrawn

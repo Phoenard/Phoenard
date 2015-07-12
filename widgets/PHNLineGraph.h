@@ -43,6 +43,8 @@ THE SOFTWARE.
  */
 class PHN_LineGraph : public PHN_Widget {
  public:
+  /// Initializes a new line graph widget
+  PHN_LineGraph() : _pos(0), autoClearDisabled(false) {}
   /// Sets how many lines are displayed
   void setLineCount(int nrLines);
   /// Sets the color of a line

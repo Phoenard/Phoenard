@@ -88,6 +88,10 @@ bool PHN_Widget::isVisible() {
   return (visible & 0x1) == 0x1;
 }
 
+bool PHN_Widget::isDrawn() {
+  return (visible & 0x2) == 0x2;
+}
+
 void PHN_Widget::setColor(int colorId, color_t color) {
   colors.set(colorId, color);
   for (int i = 0; i < widgetCount(); i++) {
