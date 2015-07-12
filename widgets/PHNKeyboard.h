@@ -43,7 +43,7 @@ THE SOFTWARE.
  *
  * This keyboard supports multiple formats. You can add multiple
  * key layout using addKeys() also specifying the name of the format.
- * By adding '\f' keys to the layout, the user can switch layouts using
+ * By adding '\\f' keys to the layout, the user can switch layouts using
  * the keyboard. In place of these keys, the next format to switch to
  * is displayed. For simple operation it is sufficient to use setKeys()
  * with the character mapping to use, ignoring the multi-format support.

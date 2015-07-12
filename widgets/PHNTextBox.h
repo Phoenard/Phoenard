@@ -42,7 +42,7 @@ THE SOFTWARE.
 /**
  * @brief Shows an area of text that allows selections and dynamic editing
  *
- * Call setScrollbarVisible(bool), setTextSize(int) before use.
+ * Call showScrollbar(bool), setTextSize(int) before use.
  * This makes sure all the styling is set up correctly. You can then proceed to set the
  * text and display it. You can make use of setSelection(const char*) to insert or replace the selections
  * the user has set in the field.
@@ -50,7 +50,7 @@ THE SOFTWARE.
  * The amount of columns and rows displayed is automatically calculated from the bounds.
  * To make it easier to specify the bounds to fit the text, you can make use of setDimension(int, int).
  * It automatically calculates the width and height to fit the text. Make sure you have set the text size
- * earlier, otherwise the results are unexpected.
+ * earlier, otherwise the results are unpredictable.
  */
 class PHN_TextBox : public PHN_Widget, public PHN_TextContainer {
  public:

@@ -34,9 +34,10 @@ THE SOFTWARE.
 #define _PHN_LABEL_H_
 
 /**
- * @brief The label widget shows text on a borderless background
+ * @brief The label widget shows text or numeric data
  *
- * Set the text size using setTextSize(int) before use.
+ * The text is automatically sized centred inside the bounds,
+ * with an optional frame around the text set using setDrawFrame().
  */
 class PHN_Label : public PHN_Widget, public PHN_TextContainer {
  public:
