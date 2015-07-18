@@ -3,6 +3,7 @@
  * Make sure the images are vertically-aligned and stored in LCD format!
  */
 
+#include <SPI.h>
 #include "SD.h"
 
 File slideFolder;

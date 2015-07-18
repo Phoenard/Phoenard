@@ -2,6 +2,7 @@
  * Displays .BMP and .LCD images saved inside the Images subdirectory
  */
 #include "Phoenard.h"
+#include <SPI.h>
 #include <SD.h>
 
 void setup() {
