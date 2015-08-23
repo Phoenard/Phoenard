@@ -183,6 +183,9 @@ void loop() {
       break;
     }
 
+    /* Make sure hidden (OS) files are not displayed */
+    if (p->attributes & SDMINFAT::DIR_ATT_HIDDEN) continue;
+
     /* Check if not deleted / main sketch */
     if (p->name[0] == SDMINFAT::DIR_NAME_DELETED) continue;
     if (!memcmp("SKETCHES", p->name, 8)) continue;

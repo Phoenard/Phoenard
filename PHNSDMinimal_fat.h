@@ -318,6 +318,10 @@ uint8_t const DIR_NAME_DELETED = 0XE5;
 uint8_t const DIR_NAME_FREE = 0X00;
 /** file is read-only */
 uint8_t const DIR_ATT_READ_ONLY = 0X01;
+/** File should be hidden in directory listings */
+uint8_t const DIR_ATT_HIDDEN = 0X02;
+/** Entry is for a system file */
+uint8_t const DIR_ATT_SYSTEM = 0X04;
 /** Directory entry contains the volume label */
 uint8_t const DIR_ATT_VOLUME_ID = 0X08;
 /** Entry is for a directory */
