@@ -13,6 +13,10 @@
  * This example acquires an analog signal from A0 and displays it on the screen
  * Analog signal is captured at 9.6 KHz, 64 spectrum bands each 150Hz which can be changed in adcInit()
  */
+
+// Definition needed to make sure ffft library works
+#define prog_int16_t int16_t
+
 #include "Phoenard.h"
 #include <ffft.h>
 

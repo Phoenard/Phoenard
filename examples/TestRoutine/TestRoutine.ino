@@ -94,7 +94,8 @@ void setup() {
     settings.touch_hor_b = SETTINGS_DEFAULT_TOUCH_HOR_B;
     settings.touch_ver_a = SETTINGS_DEFAULT_TOUCH_VER_A;
     settings.touch_ver_b = SETTINGS_DEFAULT_TOUCH_VER_B;
-    memcpy(settings.sketch_toload, (char[]) SETTINGS_DEFAULT_SKETCH, 8);
+    char defaultSketch[] = SETTINGS_DEFAULT_SKETCH;
+    memcpy(settings.sketch_toload, defaultSketch, 8);
     PHN_Settings_Save(settings);
   }
 
