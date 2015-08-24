@@ -98,6 +98,11 @@ namespace PHNDisplayHW {
   /* Stores the last-set Entry mod for optimization purposes */
   uint8_t last_entry_dir = 0xFF;
 
+  /* Automatic screen initialization logic */
+#if LCD_AUTO_INITIALIZE
+  uint8_t screen_initialized = 0;
+#endif
+
   void init() {
     /* 
      * Initialize backlight and data pin to output high
@@ -121,8 +126,12 @@ namespace PHNDisplayHW {
     /* Initialize the LCD registers */
     const uint8_t *data = LCD_REG_DATA;
     const uint8_t *data_end = LCD_REG_DATA + sizeof(LCD_REG_DATA);
+    uint8_t index = 0;
     do {
+      if (index == 1) delay(50);
+      if (index == 15) delay(200);
       writeRegister(data[0], data[1] | (data[2] << 8));
+      index++;
     } while ((data += 3) != data_end);
 
     last_entry_dir = 0xFF;
@@ -148,6 +157,14 @@ namespace PHNDisplayHW {
   }
 
   void writeCommand(uint8_t cmd) {
+    // Automatic screen initialization up front
+#if LCD_AUTO_INITIALIZE
+    if (!screen_initialized) {
+      screen_initialized = 1;
+      init();
+    }
+#endif
+
     // Write the LOW byte as 0, only set HIGH byte as requested
     TFTLCD_WR_PORT = WR_COMMAND_WRITE_A;
     TFTLCD_DATA_PORT = 0;

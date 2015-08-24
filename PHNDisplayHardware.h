@@ -79,6 +79,20 @@ THE SOFTWARE.
 #ifndef PHN_DISPLAY_HARDWARE_H_
 #define PHN_DISPLAY_HARDWARE_H_
 
+/**
+ * When set to 1, the screen will be re-initialized every time the sketch
+ * makes first use of the screen. If the firmware of the device fails to
+ * initialize the screen, or non-standard firmware is used, this option
+ * is used to resolve such problems.
+ */
+#define LCD_AUTO_INITIALIZE 0
+
+/**
+ * When set to 1, will output screen updates through Serial at BAUD 115200
+ * With the toolkit the screen output can then be monitored
+ */
+#define LCD_OUTPUT_SERIAL 0
+
 /// Definition of the 16-bit 565 color type
 typedef uint16_t color_t;
 
@@ -191,12 +205,6 @@ typedef uint16_t color_t;
 #define DIR_LEFT             DIR_LEFT_WRAP_DOWN
 #define DIR_UP               DIR_UP_WRAP_DOWN
 //@}
-
-/**
- * When set to 1, will output screen updates through Serial at BAUD 115200
- * With the toolkit the screen output can then be monitored
- */
-#define LCD_OUTPUT_SERIAL 0
 
 /// Macro to turn 8-bit color into 16-bit color
 #define COLOR8TO16(color)    ((uint16_t) ((color & 0xFF) | ((color) << 8)))
