@@ -190,6 +190,9 @@ void loop() {
     if (p->name[0] == SDMINFAT::DIR_NAME_DELETED) continue;
     if (!memcmp("SKETCHES", p->name, 8)) continue;
 
+    /* Do not display files starting with _ (Mac OSx meta files) */
+    if (p->name[0] == '_') continue;
+
     /* Check file extension for SKI/HEX */
     boolean is_ski = !memcmp("SKI", p->name+8, 3);
     if (!is_ski && memcmp("HEX", p->name+8, 3)) continue;
@@ -847,8 +850,13 @@ boolean askSketchName(char name[8]) {
             } else {
               // Keyboard pressed
               if (index_selChar < 8) {
+
+                // Disallow names starting with _ (Mac OSx Meta files)
+                char c = NAME_MAP[index];
+                if ((index_selChar == 0) && (c == '_')) c = '-';
+   
                 index_dirty_c = index_selChar;
-                resultFilename[index_selChar++] = NAME_MAP[index];
+                resultFilename[index_selChar++] = c;
                 index_dirty_d = index_selChar;
               }
             }
