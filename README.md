@@ -77,7 +77,7 @@ software, always make sure your code won't loop rapidly (use delays) or provide 
 * [View our website](http://phoenard.com)
 * [GitHub repository](https://github.com/Phoenard/Phoenard)
 * [View Doxygen documentation](http://docs.phoenard.com)
-* [Download Doxygen documentation (zip-file)](http://phoenard.com/phoenard_docs_doxygen.zip)
+* [Download Doxygen documentation (zip-file)](http://builds.phoenard.com/phoenard_docs_doxygen.zip)
 
 ## License
 
