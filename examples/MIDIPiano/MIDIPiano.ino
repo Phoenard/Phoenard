@@ -33,30 +33,36 @@ int  midi_instrument_idx;
 // Store a set of instruments here
 // Others are only accessible by index
 typedef struct {
-  char id;
+  int id;
   char name[20];
 } InstrumentInfo;
 
 // Instrument presets for quick switching
 InstrumentInfo instruments[] = {
-  {1, "Piano"},
+  {1, "Acoustic Piano"},
   {5, "Electric Piano"},
+  {7, "Harpsichord"},
   {8, "Clavi"},
   {10, "Glockenspiel"},
   {13, "Marimba"},
   {14, "Xylophone"},
   {18, "Organ"},
+  {20, "Church Organ"},
   {23, "Harmonica"},
   {41, "Violin"},
+  {47, "Harp"},
   {49, "String Ensembles"},
   {51, "Synth Strings"},
   {54, "Voice Oohs"},
   {63, "Synth Brass"},
   {74, "Flute"},
   {96, "Sweep"},
+  {98, "Sound Track"},
   {107, "Shamisen"},
   {115, "Percussion"},
-  {117, "Taiko Drum"}
+  {117, "Taiko Drum"},
+  {125, "Telephone"},
+  {128, "Gunshot"}
 };
 
 // Define some widgets for altering the instrument
@@ -120,7 +126,9 @@ void loop() {
 void setInstrument(int index) {
   // Update the index, looping around
   const int instruments_cnt = sizeof(instruments) / sizeof(InstrumentInfo);
-  const int IDX_MAX = instruments_cnt + 125;
+  // There are 128 instruments.  The index of the first one is instruments_cnt + 0,
+  //  so the index of the last one is instruments_cnt + 127.
+  const int IDX_MAX = instruments_cnt + 127;
   if (index < 0) {
     index = IDX_MAX;
   } else if (index > IDX_MAX) {
@@ -129,22 +137,28 @@ void setInstrument(int index) {
   midi_instrument_idx = index;
   
   // Calculate the instrument ID and name
-  char id;
+  // Using instrument numbers 1 to 128.
+  //  With id of type char (8 bits), instrument 128 is reported as -128.
+  //  Need id to be type int so instrument 128 is reported as 128.
+  int id;
   String fullName;
   if (index >= instruments_cnt) {
     id = index-instruments_cnt+1;
-    fullName += "Unknown";
+    fullName += "Instrument #";
+    fullName += id;
   } else {
     id = instruments[index].id;
     fullName += instruments[index].name;
+    fullName += " (#";
+    fullName += id;
+    fullName += ")";
   }
-  fullName += " (#";
-  fullName += (int) id;
-  fullName += ")";
 
   // Update information in MIDI/label widget
   instrument_name.setText(fullName);
-  midi.setInstrument(id);
+  // Using instrument numbers 1 to 128 in this sketch,
+  //  but MIDI instruments are numbered 0 to 127, so subtract 1 when setting the instrument
+  midi.setInstrument(id-1);
 }
 
 /* Tells the MIDI component to press or release a key */
