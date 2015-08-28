@@ -138,8 +138,8 @@ void setInstrument(int index) {
   
   // Calculate the instrument ID and name
   // Using instrument numbers 1 to 128.
-  //  With id of type char (8 bits), instrument 128 is reported as -128.
-  //  Need id to be type int so instrument 128 is reported as 128.
+  //  With id of type char (8 bits), instrument 128 is displayed as -128.
+  //  Need id to be type int so instrument 128 is displayed as 128.
   int id;
   String fullName;
   if (index >= instruments_cnt) {
