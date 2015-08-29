@@ -50,8 +50,8 @@ void PHN_Midi::setBank(byte bank) {
 }
 
 void PHN_Midi::setInstrument(byte instrument) {
-  //Set instrument number. 0xC0 is a 1 data byte command
-  talkMIDI(0xC0, instrument+1, 0);
+  //Set instrument number (0 to 127). 0xC0 is a 1 data byte command
+  talkMIDI(0xC0, instrument, 0);
 }
 
 //Send a MIDI note-on message.  Like pressing a piano key
