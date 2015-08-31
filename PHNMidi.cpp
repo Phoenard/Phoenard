@@ -42,7 +42,7 @@ void PHN_Midi::begin() {
 
   // Set default instrument bank and instrument ID
   talkMIDI(0xB0, 0x07, 125); //0xB0 is channel message, set channel volume to near max (127)
-  setInstrument(8); // Default instrument #8 - Clavi
+  setInstrument(7); // Default instrument #8 - Clavi (subtract 1 for setInstrument)
 }
 
 void PHN_Midi::setBank(byte bank) {

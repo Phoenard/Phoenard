@@ -744,6 +744,7 @@ TestResult testMIDI() {
 
   PHN_Midi midi;
   midi.begin();
+  midi.setInstrument(9); // Glockenspiel (was default with older PHNMidi library) 
   
   for (int i = 5; i >= 1; i--) {
     showCounter(i);
