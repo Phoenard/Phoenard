@@ -45,30 +45,49 @@ void PHN_Sim::init() {
   this->gpsReady = false;
 }
 
-void PHN_Sim::begin() {
+void PHN_Sim::begin(bool resetRegisters) {
   // Probe the SIM module, turn it on if needed
   // The on check already initializes everything
+  init();
+  powerOnStart();
+  powerOnEnd();
+
+  // Reset common registers to guarantee proper operation
+  if (resetRegisters) {
+    reset();
+  }
+}
+
+void PHN_Sim::powerOnStart() {
   if (!isOn()) {
-    togglePower();
+    digitalWrite(SIM_PWRKEY_PIN, HIGH);
+  }
+}
 
-    // Wait until the sim turns on
-    while (!sim.isOn());
+void PHN_Sim::powerOnEnd() {
+  for (char c = 150; c && !sim.isOn(); c--) delay(10);
+  digitalWrite(SIM_PWRKEY_PIN, LOW);
+}
 
-    // Wait until SIM responds
-    while (!sendATCommand("AT"));
+void PHN_Sim::togglePower() {
+  if (isOn()) {
+    end();
+  } else {
+    powerOnStart();
+    powerOnEnd();
   }
 }
 
 void PHN_Sim::end() {
-  // Turn the SIM off of it is currently on
+  // Turn the SIM off if it is currently on
   if (isOn()) {
-    togglePower();
-    // Wait until the sim is no longer on
-    while (sim.isOn());
+    sendATCommand("AT+CPOWD=0");
   }
 }
 
 void PHN_Sim::reset() {
+  //TODO: Does this preserve options such as volume?
+  
   // Reset to factory defaults
   sendATCommand("AT&F");
   // Turn on extended +CRING information
@@ -80,14 +99,7 @@ void PHN_Sim::reset() {
 }
 
 bool PHN_Sim::isOn() {
-  return digitalRead(SIM_DTRS_PIN);
-}
-
-void PHN_Sim::togglePower() {
-  init();
-  digitalWrite(SIM_PWRKEY_PIN,HIGH);
-  delay(SIM_PWR_DELAY);
-  digitalWrite(SIM_PWRKEY_PIN,LOW);
+  return digitalRead(SIM_STATUS_PIN);
 }
 
 void PHN_Sim::update() {

@@ -37,7 +37,6 @@ THE SOFTWARE.
 #include "PHNCore.h"
 
 #define SIM_BAUDRATE 57600
-#define SIM_PWR_DELAY 1500
 
 // AT Command timeout in MS.
 #define SIM_ATCOMMAND_TIMEOUT 500
@@ -106,7 +105,7 @@ public:
   /// Ensures the SIM logic is initalized
   void init();
   /// Sets up the SIM for first use
-  void begin();
+  void begin(bool resetRegisters = true);
   /// Shuts off the SIM
   void end();
   /// Resets all SIM AT parameters to the factory defaults
@@ -115,7 +114,12 @@ public:
   void update();
   /// Checks if the SIM is currently turned on
   bool isOn();
-  /// Toggles power on or off - for async toggling
+  
+  /// Begins the initialization of the SIM and returns immediately
+  void powerOnStart();
+  /// Waits until initialization of the SIM has completed
+  void powerOnEnd();
+  /// Toggles the on/off power state
   void togglePower();
 
   // Read SIM general information
