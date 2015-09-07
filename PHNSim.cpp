@@ -36,6 +36,8 @@ void PHN_Sim::init() {
   // Initialize the SIM fields
   Serial1.begin(SIM_BAUDRATE);
   pinMode(SIM_PWRKEY_PIN, OUTPUT);
+  pinMode(SIM_DTRS_PIN, INPUT);
+  digitalWrite(SIM_DTRS_PIN, HIGH);
   this->callStatus = SIM_CALL_STATUS_NONE;
   this->latestInbox = -1;
   this->bookOffset = 1;
@@ -48,7 +50,6 @@ void PHN_Sim::init() {
 void PHN_Sim::begin(bool resetRegisters) {
   // Probe the SIM module, turn it on if needed
   // The on check already initializes everything
-  init();
   powerOnStart();
   powerOnEnd();
 
@@ -65,7 +66,7 @@ void PHN_Sim::powerOnStart() {
 }
 
 void PHN_Sim::powerOnEnd() {
-  for (char c = 150; c && !sim.isOn(); c--) delay(10);
+  for (char c = 150; c && !digitalRead(SIM_STATUS_PIN); c--) delay(10);
   digitalWrite(SIM_PWRKEY_PIN, LOW);
 }
 
@@ -99,7 +100,9 @@ void PHN_Sim::reset() {
 }
 
 bool PHN_Sim::isOn() {
-  return digitalRead(SIM_STATUS_PIN);
+  /* Note: status pin can be LOW while on sometimes, DTRS stays useful */
+  init();
+  return digitalRead(SIM_STATUS_PIN) || digitalRead(SIM_DTRS_PIN);
 }
 
 void PHN_Sim::update() {
