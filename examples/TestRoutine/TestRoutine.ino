@@ -111,13 +111,7 @@ void setup() {
 
   // Turn on SIM module as needed
   // Do this in two steps to save time
-  sim.init();
-  long sim_on_time = millis();
-  if (sim.isOn()) {
-    sim_on_time -= SIM_PWR_DELAY;
-  } else {
-    digitalWrite(SIM_PWRKEY_PIN, HIGH);
-  }
+  sim.powerOnStart();
 
   doTest("LCD Screen", testScreen);
   doTest("Connector", testConnector);
@@ -132,9 +126,8 @@ void setup() {
   doTest("WiFi", testWiFi);
   doTest("Bluetooth", testBluetooth);
 
-  // Wait until delay has elapsed
-  while ((millis() - sim_on_time) < SIM_PWR_DELAY);
-  digitalWrite(SIM_PWRKEY_PIN, LOW);
+  // Wait until sim is powered on fully
+  sim.powerOnEnd();
 
   // Perform testing of SIM908
   doTest("SIM908", testSIM);
