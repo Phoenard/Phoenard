@@ -1,5 +1,21 @@
-/*
- * Sketch list - the default program that runs to display, edit and load sketches from the SD-card
+/******************************************************************
+ ********************* Phoenard Sketch List ***********************
+ ******************************************************************
+ *
+ * Sketch list - the default program that runs to display, edit and
+ * load sketches from the SD-card. Makes use of EEPROM instructions
+ * to tell the bootloader to load sketches on demand. Includes all
+ * that is needed to manage sketches, including ways to list, add,
+ * rename, delete and edit all the sketch contents on the Micro-SD
+ * card.
+ * 
+ * In addition, a battery indicator slides into view after around
+ * 20 seconds of (touch) inactivity. This makes the sketch list
+ * suitable as a default sketch to run while charging the Phoenard.
+ * The charge state is also detected and displayed.
+ * 
+ * Written by the Phoenard Team.
+ * http://phoenard.com
  */
 
 #include "icons.c"
@@ -9,6 +25,7 @@
 /* General defines */
 #define LCD_RIGHT_BORDER    32
 #define HOLD_ACTIVATE_DELAY 1000
+#define SHOW_BATLEV_DELAY   20000
 
 /* Swipe settings and calibration */
 #define SWIPE_FADE          0.05
@@ -98,6 +115,7 @@ uint32_t swipe_last_time;  /* Last known time while swiping */
 uint16_t swipe_last_pos;   /* Last known position while swiping */
 uint16_t swipe_start_pos;  /* Start position of a swipe */
 float swipe_speed;         /* Speed of swiping in pixels/ms */
+uint32_t press_last_time;  /* Time since the last moment screen was touched */
 
 /* Sketch information buffer */
 typedef struct {
@@ -126,18 +144,18 @@ long pressed_time_start;
 void setup() {
   /* Initialize SRAM for buffering >100 sketches */
   sram.begin();
-
-  /* Set pin 13 (LED) to output */
-  pinMode(13, OUTPUT);
 }
 
 void loop() {
   /* In case the Micro-SD library fails, attempt to re-initialize */
   if (reloadAll || !volume.isInitialized) {
-    digitalWrite(13, LOW);
-    updateVolume();
-    digitalWrite(13, HIGH);
     reloadAll = true;
+
+    /* Turn on LED_13 while updating volume */
+    DDRB |= _BV(PB7);
+    PORTB &= ~_BV(PB7);
+    updateVolume();
+    PORTB |= _BV(PB7);
   }
 
   /* When reloading, initialize all fields to the defaults */
@@ -154,6 +172,7 @@ void loop() {
 
   /* Clear the sketch icon area and redraw all icons */
   if (redrawIcons) {
+    press_last_time = millis();
     redrawIcons = false;
     PHNDisplay8Bit::fillRect(SKETCHES_OFF_X, SKETCHES_OFF_Y, SKETCHES_FULLW, SKETCHES_FULLH, COLOR_MENU_BG);
     memset(sketch_icon_dirty, 1, sizeof(sketch_icon_dirty));
@@ -354,8 +373,9 @@ void loop() {
     swipe_speed = 0.0F;
   } else if (swipe_last_pos != 0xFFFF) {
     /* Handle swipe speed measurement */
+    press_last_time = millis();
     float diff = (float) ((int) touch_y - (int) swipe_last_pos);
-    float time = (float) (millis() - swipe_last_time);
+    float time = (float) (press_last_time - swipe_last_time);
     float curr_speed = diff / time;
     if (abs(curr_speed) > abs(swipe_speed)) {
       swipe_speed = curr_speed;
@@ -369,6 +389,13 @@ void loop() {
   /* Update last known swipe position and time */
   swipe_last_pos = (touch_x <= (SKETCHES_FULLW+SKETCHES_OFF_X)) ? touch_y : 0xFFFF;
   swipe_last_time = millis();
+
+  /* Show battery level after some time idle */
+  if ((swipe_last_time-press_last_time) > SHOW_BATLEV_DELAY) {
+    showBatteryLevel();
+    redrawIcons = true;
+    return;
+  }
 
   /* Handle button presses here */
   if (touchedIndex != MENU_IDX_NONE) {
@@ -993,6 +1020,172 @@ void updateVolume() {
       }
     }
   }
+}
+
+/*
+ * Uses the SIM908 in low-power operation mode to display the current battery level
+ */
+void showBatteryLevel() {
+  /* Bar display configuration */
+  const uint16_t scroll_offset = 10;
+  const uint16_t line_width = 8;
+  const uint16_t cap_width = 8;
+  const uint16_t cap_height = 24;
+  const uint16_t bar_width = 152;
+  const uint16_t bar_height = 50;
+  const uint16_t prog_height = bar_height - 2;
+
+  /* Generated constants */
+  const uint16_t bar_x = (320-bar_width-cap_width)/2-line_width;
+  const uint16_t bar_y = (240-bar_height)/2;
+  const uint16_t prog_x = bar_x + line_width + 2;
+  const uint16_t prog_y = (240-prog_height)/2;
+  const uint16_t x_a = bar_x;
+  const uint16_t x_b = x_a + line_width;
+  const uint16_t x_c = x_b + bar_width;
+  const uint16_t x_d = x_c + line_width;
+  const uint16_t x_e = x_d + line_width;
+
+  /* Required for charge indicator to function */
+  UCSR0B |= _BV(RXEN0);
+
+  /*
+   * Scroll animation clears the screen and draws the battery indicator
+   * Animation time is also used to turn on the Sim908 if needed
+   */
+  sim.powerOnStart();
+  for (uint16_t scroll = 320; scroll > 0; scroll--) {
+    PHNDisplayHW::writeRegister(LCD_CMD_GATE_SCAN_CTRL3, scroll);
+    writeLineDown(320-scroll, 0, 240, BLACK_8BIT);
+
+    /* Draw a battery indicator horizontally left-to-right */
+    uint16_t x = 320 - scroll - scroll_offset;
+    if (x >= x_a && x <= x_e) {
+      if (x > x_d) {
+        /* Battery icon cap */
+        writeLineDown(x, (240-cap_height)/2, cap_height, WHITE_8BIT);
+      } else if (x > x_b && x < x_c) {
+        /* Straight horizontal line area */
+        writeLineDown(x, bar_y-line_width, line_width, WHITE_8BIT);
+        writeLineDown(x, bar_y+bar_height, line_width, WHITE_8BIT);
+
+        /* Default gray progress area */
+        if ((x % 3) == 1) {
+          drawBatteryLine(x, GRAY_8BIT);
+        }
+      } else {
+        /* Start and end vertical line */
+        uint16_t h;
+        if (x <= x_b) {
+          h = bar_height+((x-x_a)*2);
+        } else {
+          h = bar_height+2*line_width-((x-x_c)*2);
+        }
+        writeLineDown(x, (240-h)/2, h, WHITE_8BIT);
+      }
+    }
+
+    delay(2);
+  }
+  sim.powerOnEnd();
+
+  /* Initialize SIM908 into low power mode */
+  sim.sendATCommand("AT+CFUN=0");
+  sim.sendATCommand("AT+CSCLK=2");
+
+  /* Routinely refresh battery level display */
+  uint8_t charging = 0;
+  uint8_t flashLCD = 1;
+  do {
+    /* Update battery indicator */
+    float level = sim.readBatteryLevel();
+    const uint16_t max_count = bar_width - 2;
+    uint16_t count = (uint16_t) (level * (float) max_count);
+    uint16_t last_bar_x = 0;
+    uint8_t barColor;
+    if (count >= (max_count/2)) {
+      barColor = GREEN_8BIT;
+    } else if (count >= (max_count/3)) {
+      barColor = YELLOW_8BIT;
+    } else {
+      barColor = RED_8BIT;
+    }
+    for (uint16_t x = 0; x < max_count; x += 3) {
+      uint8_t color;
+      if (x > count) {
+        color = GRAY_8BIT;
+      } else {
+        color = barColor;
+        last_bar_x = x;
+      }
+      drawBatteryLine(prog_x+x, color);
+    }
+
+    /* Probe RX Pin to check shortly if FTDI chip (and USB) is receiving power */
+    DDRE |= _BV(0);
+    delayMicroseconds(200);
+    DDRE &= ~_BV(0);
+    if (((PINE &  _BV(0)) == _BV(0)) != charging) {
+
+      /* RX Pin (FTDI TX) changed state */
+      charging = !charging;
+      flashLCD = charging;
+
+    } else {
+
+      /* Delay: if touch is detected, immediately stop. Blink while charging. */
+      for (unsigned char c = 0; c <= 128; c++) {
+        if (charging && (c & 0x8)) {
+          uint8_t m = (count >= (max_count-3)) ? 0x00 : (c&0x10);
+          drawBatteryLine(prog_x+last_bar_x, m ? barColor : WHITE_8BIT);
+          PHNDisplay8Bit::writeImage_1bit((320-32)/2, 30, 32, 32, 1, bat_icon_power, DIR_RIGHT, BLACK, m ? BLACK : WHITE);
+        }
+
+        /* Break free if touched */
+        LCD_updateTouch();
+        if (LCD_isTouchedAny()) {
+          flashLCD = 1;
+          break;
+        }
+        delay(30);
+      }
+    }
+
+    /* Control state of LCD backlight usingTIMER5A, which is hooked up to TFTLCD_BL_PIN */
+    if (flashLCD) {
+      flashLCD = 0;
+      TCCR5A &= ~_BV(COM5C1);
+      TFTLCD_BL_PORT |= TFTLCD_BL_MASK;
+    } else {
+      TCCR5A |= _BV(COM5C1);
+      OCR5C = 16;
+    }
+
+  } while (!LCD_isTouchedAny());
+
+  /* Fully turn off sim908 */
+  sim.end();
+
+  /* Scroll out screen */
+  for (uint16_t scroll = 0; scroll <= 320; scroll++) {
+    PHNDisplayHW::writeRegister(LCD_CMD_GATE_SCAN_CTRL3, scroll);
+    writeLineDown(320-scroll, 0, 240, BLACK_8BIT);
+    delay(1);
+  }
+}
+
+void drawBatteryLine(uint16_t x, uint8_t color) {
+  const uint16_t prog_height = 48;
+  const uint16_t prog_y = (240-prog_height)/2;
+  for (char dx = 0; dx < 2; dx++) {
+    writeLineDown(x+dx, prog_y, prog_height, color);
+  }
+}
+
+/* Generic function to draw a vertical line down */
+void writeLineDown(uint16_t x, uint16_t y, uint16_t height, uint8_t color) {
+  PHNDisplayHW::setCursor(x, y, DIR_DOWN);
+  PHNDisplay8Bit::writePixels(color, height);
 }
 
 /*
