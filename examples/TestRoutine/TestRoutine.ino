@@ -163,9 +163,6 @@ void loop() {
 }
 
 void startLCDTest() {
-  // Show message to serial to indicate testing can be started
-  Serial.println("Press SELECT to continue...");
-
   // As a first test, show RGB colors on the screen to verify readout works as expected
   display.fillRect(0, 0, 107, 120, RED);
   display.fillRect(107, 0, 106, 120, GREEN);
@@ -179,7 +176,13 @@ void startLCDTest() {
   display.print("Press SELECT to");
   display.setCursor(70, 100);
   display.print("start the test");
-  
+
+  // Firmware information
+  showFirmwareInfo();
+
+  // Show message to serial to indicate testing can be started
+  Serial.println("Press SELECT to continue...");
+
   // Black-White color gradient
   color_t bw_gradient[320];
   for (int i = 0; i <= 319; i++) {
@@ -216,4 +219,42 @@ void startLCDTest() {
   
   // Wipe screen
   display.fill(BLACK);
+}
+
+void showFirmwareInfo() {
+  // Read the firmware information
+  uint32_t address, crc, service_crc;
+  uint32_t end_address = 0x40000;
+  do {
+    if (pgm_read_word_far(end_address-2) != 0xFFFF) {
+      break;
+    }
+    end_address -= 2;
+  } while (end_address != 0x3E000);
+  crc = ~0;
+  service_crc = ~0;
+  address = 0x3E000;
+  do {
+    crc ^= pgm_read_byte_far(address);
+    for (unsigned char k = 8; k; k--) {
+      unsigned char m = (crc & 0x1);
+      crc >>= 1;
+      if (m) crc ^= 0xEDB88320;
+    }
+    if (++address == 0x3E100) service_crc = ~crc;
+  } while (address != end_address);
+  crc = ~crc;
+
+  // Firmware self-update support token
+  const char *service_token = (service_crc == 0xBBC8FBD5) ? "-Y" : "-N";
+
+  // Display it on the screen and through Serial
+  Serial.print("Firmware code: ");
+  Serial.print(crc, HEX);
+  Serial.println(service_token);
+  display.setCursor(5, 5);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.print(crc, HEX);
+  display.print(service_token);
 }
