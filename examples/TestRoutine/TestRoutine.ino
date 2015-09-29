@@ -36,6 +36,7 @@ TestResult doTest(const char* what, TestResult(*testFunc)(void)) {
   
   Serial.print(what);
   Serial.print(" Testing...");
+  Serial.flush();
   
   // Show testing state
   showMessage("");
@@ -51,6 +52,7 @@ TestResult doTest(const char* what, TestResult(*testFunc)(void)) {
   Serial.print(result.success ? "  SUCCESS" : "  FAILURE");
   Serial.print(" - ");
   Serial.println(result.status);
+  Serial.flush();
 
   // Next test
   testCnt++;
@@ -131,7 +133,6 @@ void setup() {
 
   // Perform testing of SIM908
   doTest("SIM908", testSIM);
-  sim.end();
 
   // Newline for spacing
   Serial.println();

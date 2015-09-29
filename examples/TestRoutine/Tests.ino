@@ -130,6 +130,13 @@ void showMessage(const char* message) {
   }
 }
 
+boolean doPinPullHighTest(int pin) {
+  pinMode(pin, INPUT);
+  digitalWrite(pin, HIGH);
+  delay(50);
+  return (digitalRead(pin) == LOW);
+}
+
 boolean isScreenTouched() {
   uint16_t x, y;
   float pressure;
@@ -140,6 +147,22 @@ boolean isScreenTouched() {
 /** ========================================================== **/
 
 TestResult testScreen() {
+  // Put LCD YP/XM pins output LOW
+  // The pins with pullup HIGH YM and XP should be LOW as well, otherwise is disconnected
+  // This does a basic connection test of several LCD pins
+  digitalWrite(TFTLCD_YP_PIN, LOW);
+  digitalWrite(TFTLCD_XM_PIN, LOW);
+  if (!doPinPullHighTest(TFTLCD_YM_PIN)) {
+    return TestResult(false, "Disconnected pins: Data[7] - WR");
+  }
+  if (!doPinPullHighTest(TFTLCD_XM_PIN)) {
+    return TestResult(false, "Disconnected pins: Data[6] - RS");
+  }
+  digitalWrite(TFTLCD_YP_PIN, HIGH);
+  digitalWrite(TFTLCD_XM_PIN, HIGH);
+  pinMode(TFTLCD_YM_PIN, OUTPUT);
+  pinMode(TFTLCD_XM_PIN, OUTPUT);
+  
   // First try to read the LCD version ID
   // This provides a basic check for the RS/WR/data pins
   uint16_t lcd_version = PHNDisplayHW::readRegister(0);
@@ -640,12 +663,26 @@ TestResult testRAM() {
 TestResult testSIM() {
   // Test whether the SIM908 powered on
   if (!sim.isOn()) {
-    return TestResult(false, "Failed to turn on SIM");
+    return TestResult(false, "Failed to turn on SIM (PWR pin?)");
   }
   // Try to send an AT command with several retry attempts
+  // Turn off SIM when done
   for (int i = 0; i < 2 && !sim.writeATCommand("AT"); i++);
-  if (!sim.writeATCommand("AT")) {
+  bool atSucc = sim.writeATCommand("AT");
+  sim.end();
+  if (!atSucc) {
     return TestResult(false, "No response to AT-Command");
+  }
+
+  // Test out some of the control pins
+  if (!doPinPullHighTest(SIM_STATUS_PIN)) {
+    return TestResult(false, "Status pin disconnected.");
+  }
+  if (!doPinPullHighTest(SIM_DTRS_PIN)) {
+    return TestResult(false, "DTRS pin disconnected.");
+  }
+  if (!doPinPullHighTest(SIM_RI_PIN)) {
+    return TestResult(false, "RI pin disconnected.");
   }
   return SUCCESS_RESULT;
 }
@@ -780,7 +817,9 @@ TestResult testMP3() {
   digitalWrite(VS1053_DCS_PIN, LOW);
 
   // Initialize the VS1053 library
-  musicPlayer.begin();
+  if (!musicPlayer.begin()) {
+    return TestResult(false, "Failed to initialize VS1053 chip");
+  }
 
   // Make sure to use the pin interrupt
   musicPlayer.useInterrupt(VS1053_FILEPLAYER_PIN_INT);
@@ -801,7 +840,8 @@ TestResult testMP3() {
               "Press SELECT if you hear sound");
 
   // Play the test 'beep' file on repeat
-  for (int i = 5; i >= 1; i--) {
+  bool success = false;
+  for (int i = 5; i >= 1 && !success; i--) {
     showCounter(i);
 
     musicPlayer.startPlayingFile(testSoundFile);
@@ -809,12 +849,25 @@ TestResult testMP3() {
     long t = millis();
     while ((millis() - t) < 900) {
       if (isSelectPressed()) {
-        return TestResult(true, "User indicated successful");
+        success = true;
+        break;
       }
     }
   }
 
-  // Failure - no SELECT pressed
-  return TestResult(false, "User indicated no sound");
+  // Stop music player before exiting (!)
+  musicPlayer.stopPlaying();
+  delay(200);
+
+  // Exit with success state
+  if (success) {
+    return TestResult(true, "User indicated successful");
+  } else {
+    return TestResult(false, "User indicated no sound");
+  }
+}
+
+TestResult testNone() {
+  return TestResult(true, "No Test Performed");
 }
 
