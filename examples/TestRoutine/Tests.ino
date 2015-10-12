@@ -392,6 +392,30 @@ TestResult testTouchscreen() {
   return TestResult(false, "Touch is never detected");
 }
 
+TestResult testFlash() {
+  // Checks if the test routine flash is read back correctly by comparing CRC values
+  // The CRC to check against is stored outside of the checked area so this can be changed
+  // without affecting the generated CRC.
+  String txt_crc_a(testroutine_crc, HEX);
+  String txt_crc_b(testroutine_crc_check, HEX);
+  txt_crc_a.toUpperCase();
+  txt_crc_b.toUpperCase();
+  if (testroutine_crc != testroutine_crc_check) {
+    String errorStr;
+    errorStr += "Verification error: CRC ";
+    errorStr += txt_crc_a;
+    errorStr += " != ";
+    errorStr += txt_crc_b;
+    return TestResult(false, errorStr);
+  }
+
+  // All good!
+  String succStr;
+  succStr += "Verification OK: CRC ";
+  succStr += txt_crc_a;
+  return TestResult(true, succStr);
+}
+
 TestResult testConnector() {
   // Wait with timeout for a token response to be read back
   if (!isStationConnected) {

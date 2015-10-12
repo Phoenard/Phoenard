@@ -14,8 +14,17 @@
 #include "Phoenard.h"
 #include "TestResult.h"
 
+/*
+ * CRC Code compared against generated value from program flash memory.
+ * Update the CRC code every time the test routine is changed.
+ * This CRC check is used to validate program flash reading function.
+ * On some boards, the microcontroller fails when run on 3v3.
+ */
+const uint32_t testroutine_crc_check = 0x8B7DEF56;
+
 int testCnt = 0;
 boolean isStationConnected = false;
+uint32_t testroutine_crc;
 
 // Create a test result buffer of sufficient size
 TestResult test_results[15];
@@ -64,7 +73,7 @@ void showStatus(int index, color_t color, const char* what, const char* text) {
   const int w = 310;
   const int h = 13;
   int x = 5;
-  int y = 5 + index * (h + 5);
+  int y = 5 + index * (h + 3);
   display.fillRect(x, y, w, h, color);
   display.setTextSize(1);
   display.setTextColor(BLACK);
@@ -72,6 +81,38 @@ void showStatus(int index, color_t color, const char* what, const char* text) {
   display.print(what);
   display.print(": ");
   display.print(text);
+}
+
+/* Calculates the 32-bit CRC for a region of flash memory */
+uint32_t calcCRCFlash(uint32_t start_addr, uint32_t end_addr, uint32_t start_crc = 0) {
+  uint32_t crc = ~start_crc;
+  uint32_t address = start_addr;
+  uint32_t address_ctr = (end_addr - start_addr) / 2;
+  uint16_t w = 0x0000;
+  uint16_t buff[64];
+  const uint16_t buff_len = sizeof(buff)/sizeof(buff[0]);
+  uint16_t *p = buff+buff_len;
+  do {
+    if (p == (buff+buff_len)) {
+      for (uint8_t k = 0; k < buff_len; k++) {
+        buff[k] = pgm_read_word_far(address);
+        address += 2;
+      }
+      p = buff;
+    }
+    w = *(p++);
+    for (unsigned char k = 16; k; k--) {
+      if (!(k & 0x7)) {
+        crc ^= (w & 0xFF);
+        w >>= 8;
+      }
+      unsigned char m = (crc & 0x1);
+      crc >>= 1;
+      if (m) crc ^= 0xEDB88320;
+    }
+  } while (--address_ctr);
+  crc = ~crc;
+  return crc;
 }
 
 void setup() {
@@ -117,6 +158,7 @@ void setup() {
 
   doTest("LCD Screen", testScreen);
   doTest("Connector", testConnector);
+  doTest("Flash", testFlash);
   doTest("BMP180", testBMP180);
   doTest("MPU6050", testMPU6050);
   doTest("HMC5883L", testHMC5883L);
@@ -164,8 +206,7 @@ void loop() {
 }
 
 void startLCDTest() {
-  // Read the firmware information
-  uint32_t address, crc, service_crc;
+  uint32_t crc, service_crc;
   uint32_t end_address = 0x40000;
   do {
     if (pgm_read_word_far(end_address-2) != 0xFFFF) {
@@ -173,19 +214,11 @@ void startLCDTest() {
     }
     end_address -= 2;
   } while (end_address != 0x3E000);
-  crc = ~0;
-  service_crc = ~0;
-  address = 0x3E000;
-  do {
-    crc ^= pgm_read_byte_far(address);
-    for (unsigned char k = 8; k; k--) {
-      unsigned char m = (crc & 0x1);
-      crc >>= 1;
-      if (m) crc ^= 0xEDB88320;
-    }
-    if (++address == 0x3E100) service_crc = ~crc;
-  } while (address != end_address);
-  crc = ~crc;
+
+  // Read the firmware and flash information
+  service_crc = calcCRCFlash(0x3E000, 0x3E100);
+  crc = calcCRCFlash(0x3E100, end_address, service_crc);
+  testroutine_crc = calcCRCFlash(8000, 40000);
 
   // As a first test, show RGB colors on the screen to verify readout works as expected
   display.fillRect(0, 0, 107, 120, RED);
@@ -202,8 +235,8 @@ void startLCDTest() {
   display.print("start the test");
 
   // Show Firmware information
-  const char *service_token = (service_crc == 0xBBC8FBD5) ? "-Y" : "-N";
-  Serial.print("Firmware code: ");
+  const char *service_token = (service_crc == 0xBBC8FBD5) ? "-Y" : "-S";
+  Serial.print("Firmware crc: ");
   Serial.print(crc, HEX);
   Serial.println(service_token);
   display.setCursor(5, 5);
@@ -211,6 +244,12 @@ void startLCDTest() {
   display.setTextColor(WHITE);
   display.print(crc, HEX);
   display.print(service_token);
+
+  // Show testroutine flash CRC information for integrity check
+  Serial.print("Test Routine crc: ");
+  Serial.println(testroutine_crc, HEX);
+  display.setCursor(264, 5);
+  display.print(testroutine_crc, HEX);
 
   // Show message to serial to indicate testing can be started
   Serial.println("Press SELECT to continue...");
@@ -221,7 +260,7 @@ void startLCDTest() {
     uint8_t component = (uint8_t) ((float) i / 319.0 * 255.0);
     bw_gradient[i] = PHNDisplayHW::color565(component, component, component);
   }
-  
+
   // Wait for SELECT pressed
   PHNDisplayHW::setViewport(0, 120, PHNDisplayHW::WIDTH-1, PHNDisplayHW::HEIGHT-1);
   PHNDisplayHW::setCursor(0, 120, DIR_RIGHT);
@@ -248,7 +287,7 @@ void startLCDTest() {
     }
   }
   PHNDisplayHW::setViewport(0, 0, PHNDisplayHW::WIDTH-1, PHNDisplayHW::HEIGHT-1);
-  
+
   // Wipe screen
   display.fill(BLACK);
 }
