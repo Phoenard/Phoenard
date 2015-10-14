@@ -14,17 +14,10 @@
 #include "Phoenard.h"
 #include "TestResult.h"
 
-/*
- * CRC Code compared against generated value from program flash memory.
- * Update the CRC code every time the test routine is changed.
- * This CRC check is used to validate program flash reading function.
- * On some boards, the microcontroller fails when run on 3v3.
- */
-const uint32_t testroutine_crc_check = 0x8B7DEF56;
-
 int testCnt = 0;
 boolean isStationConnected = false;
 uint32_t testroutine_crc;
+const uint32_t testroutine_length = 20000;
 
 // Create a test result buffer of sufficient size
 TestResult test_results[15];
@@ -83,13 +76,34 @@ void showStatus(int index, color_t color, const char* what, const char* text) {
   display.print(text);
 }
 
-/* Calculates the 32-bit CRC for a region of flash memory */
+void printHex(uint8_t val) {
+  Serial.print("0x");
+  if (val < 16) Serial.print('0');
+  Serial.print(val, HEX);
+  Serial.print(", ");
+  Serial.flush();
+}
+
+/* Calculates the 32-bit CRC for a region of flash memory by reading word-by-word */
 uint32_t calcCRCFlash(uint32_t start_addr, uint32_t end_addr, uint32_t start_crc = 0) {
   uint32_t crc = ~start_crc;
   uint32_t address = start_addr;
   uint32_t address_ctr = (end_addr - start_addr) / 2;
-  uint16_t w = 0x0000;
-  uint16_t buff[64];
+  do {
+    runCRCWord(pgm_read_word_far(address), &crc);
+    address += 2;
+  } while (--address_ctr);
+  crc = ~crc;
+  return crc;
+}
+
+/* Calculates the 32-bit CRC for a region of flash memory by reading rapidly in bursts of 16 bytes 
+ * The result of this reading is that flash is more heavily loaded, increasing the likelyhood of errors */
+uint32_t calcCRCFlashBurst(uint32_t start_addr, uint32_t end_addr, uint32_t start_crc = 0) {
+  uint32_t crc = ~start_crc;
+  uint32_t address = start_addr;
+  uint32_t address_ctr = (end_addr - start_addr) / 2;
+  uint16_t buff[8];
   const uint16_t buff_len = sizeof(buff)/sizeof(buff[0]);
   uint16_t *p = buff+buff_len;
   do {
@@ -100,19 +114,22 @@ uint32_t calcCRCFlash(uint32_t start_addr, uint32_t end_addr, uint32_t start_crc
       }
       p = buff;
     }
-    w = *(p++);
-    for (unsigned char k = 16; k; k--) {
-      if (!(k & 0x7)) {
-        crc ^= (w & 0xFF);
-        w >>= 8;
-      }
-      unsigned char m = (crc & 0x1);
-      crc >>= 1;
-      if (m) crc ^= 0xEDB88320;
-    }
+    runCRCWord(*(p++), &crc);
   } while (--address_ctr);
   crc = ~crc;
   return crc;
+}
+
+void runCRCWord(uint16_t wordValue, uint32_t* crc) {
+  for (unsigned char k = 16; k; k--) {
+    if (!(k & 0x7)) {
+      *crc ^= (wordValue & 0xFF);
+      wordValue >>= 8;
+    }
+    unsigned char m = (*crc & 0x1);
+    *crc >>= 1;
+    if (m) *crc ^= 0xEDB88320;
+  }
 }
 
 void setup() {
@@ -218,7 +235,7 @@ void startLCDTest() {
   // Read the firmware and flash information
   service_crc = calcCRCFlash(0x3E000, 0x3E100);
   crc = calcCRCFlash(0x3E100, end_address, service_crc);
-  testroutine_crc = calcCRCFlash(8000, 40000);
+  testroutine_crc = calcCRCFlashBurst(0, testroutine_length);
 
   // As a first test, show RGB colors on the screen to verify readout works as expected
   display.fillRect(0, 0, 107, 120, RED);
