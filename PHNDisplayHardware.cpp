@@ -110,16 +110,18 @@ namespace PHNDisplayHW {
      */
     /* Initialize backlight and data pin to output high */
     TFTLCD_DATA_DDR = 0xFF;
+    TFTLCD_DATA_PORT = 0x00;
     TFTLCD_BL_DDR  = TFTLCD_BL_MASK;
     TFTLCD_BL_PORT = TFTLCD_BL_MASK;
 
     /* Initialize LCD control port register */
     DDRK  = INIT_DDR_MASK;
-    PORTK = INIT_PORT_MASK;
 
     /* Reset screen */
     TFTLCD_RESET_PORT = RESET_A;
     delay(2);
+    TFTLCD_RESET_PORT = RESET_B & ~TFTLCD_RD_MASK;
+    delay(1);
     TFTLCD_RESET_PORT = RESET_B;
     delay(40);
 
