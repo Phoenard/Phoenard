@@ -85,7 +85,7 @@ void printHex(uint8_t val) {
 }
 
 /* Calculates the 32-bit CRC for a region of flash memory by reading word-by-word */
-uint32_t calcCRCFlash(uint32_t start_addr, uint32_t end_addr, uint32_t start_crc = 0) {
+uint32_t calcCRCFlash(uint32_t start_addr, uint32_t end_addr, uint32_t start_crc) {
   uint32_t crc = ~start_crc;
   uint32_t address = start_addr;
   uint32_t address_ctr = (end_addr - start_addr) / 2;
@@ -99,7 +99,7 @@ uint32_t calcCRCFlash(uint32_t start_addr, uint32_t end_addr, uint32_t start_crc
 
 /* Calculates the 32-bit CRC for a region of flash memory by reading rapidly in bursts of 16 bytes 
  * The result of this reading is that flash is more heavily loaded, increasing the likelyhood of errors */
-uint32_t calcCRCFlashBurst(uint32_t start_addr, uint32_t end_addr, uint32_t start_crc = 0) {
+uint32_t calcCRCFlashBurst(uint32_t start_addr, uint32_t end_addr, uint32_t start_crc) {
   uint32_t crc = ~start_crc;
   uint32_t address = start_addr;
   uint32_t address_ctr = (end_addr - start_addr) / 2;
@@ -233,9 +233,9 @@ void startLCDTest() {
   } while (end_address != 0x3E000);
 
   // Read the firmware and flash information
-  service_crc = calcCRCFlash(0x3E000, 0x3E100);
+  service_crc = calcCRCFlash(0x3E000, 0x3E100, 0);
   crc = calcCRCFlash(0x3E100, end_address, service_crc);
-  testroutine_crc = calcCRCFlashBurst(0, testroutine_length);
+  testroutine_crc = calcCRCFlashBurst(0, testroutine_length, 0);
 
   // As a first test, show RGB colors on the screen to verify readout works as expected
   display.fillRect(0, 0, 107, 120, RED);

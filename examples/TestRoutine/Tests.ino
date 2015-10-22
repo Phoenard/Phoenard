@@ -394,7 +394,7 @@ TestResult testTouchscreen() {
 
 TestResult testFlash() {
   // Checks if the test routine flash is read back correctly by comparing CRC values of test routine flash
-  uint32_t testroutine_crc_check = calcCRCFlash(0, testroutine_length);
+  uint32_t testroutine_crc_check = calcCRCFlash(0, testroutine_length, 0);
   String txt_crc_a(testroutine_crc, HEX);
   String txt_crc_b(testroutine_crc_check, HEX);
   txt_crc_a.toUpperCase();
