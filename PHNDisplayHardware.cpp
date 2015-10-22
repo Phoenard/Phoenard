@@ -196,9 +196,11 @@ namespace PHNDisplayHW {
     TFTLCD_RD_PORT = WR_READ_A;
     asm volatile ("nop\n");
     asm volatile ("nop\n");
+    asm volatile ("nop\n");
     data = TFTLCD_DATA_IN << 8;
     TFTLCD_RD_PORT = WR_READ_B;
     TFTLCD_RD_PORT = WR_READ_A;
+    asm volatile ("nop\n");
     asm volatile ("nop\n");
     asm volatile ("nop\n");
     data |= TFTLCD_DATA_IN;
@@ -540,8 +542,30 @@ namespace PHNDisplay16Bit {
     /* Read the actual pixel data */
     uint16_t data = PHNDisplayHW::readData();
 
-    /* For some reason 565 bit fields are used (color format?) */
-    return (data >> 11) | (data & 0x7E0) | ((data & 0x1F) << 11);
+    /*
+     * Some screens use the BGR format instead of RGB when reading.
+     * The fields have to be reordered in these cases. For the first
+     * time reading, check whether color conversion is needed.
+     */
+    static char reading_mode = 0;
+    if (!reading_mode) {
+      reading_mode |= 0x1; /* Only do this once */
+      PHNDisplayHW::setCursor(x, y);
+      PHNDisplay16Bit::writePixel(0x1234);
+      if (readPixel(x, y) == 0xA222) {
+        reading_mode |= 0x2; /* Conversion needed */
+      }
+      reading_mode |= 0x4; /* Restore pixel later */
+    }
+    if (reading_mode & 0x2) {
+      data = ((data >> 11) | (data & 0x7E0) | (data << 11));
+    }
+    if (reading_mode & 0x4) {
+      reading_mode &= ~0x4;
+      PHNDisplayHW::setCursor(x, y);
+      PHNDisplay16Bit::writePixel(data);
+    }
+    return data;
   }
 
   void writePixels(uint16_t color, uint32_t length) {
