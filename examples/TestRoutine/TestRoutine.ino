@@ -138,7 +138,7 @@ void setup() {
   delay(20);
 
   // Send out a token indicating we request a test station
-  Serial.println("Ready");
+  Serial.println(F("Ready"));
 
   // Wait for a very short time for a response back to initiate test station mode
   isStationConnected = readToken(Serial, "Station OK", 200);
@@ -167,7 +167,7 @@ void setup() {
   startLCDTest();
 
   // Indicate testing has started
-  Serial.println("Testing started.");
+  Serial.println(F("Testing started."));
 
   // Turn on SIM module as needed
   // Do this in two steps to save time
@@ -203,8 +203,8 @@ void setup() {
       // Indicate the test was not successful
       if (test_success) {
         test_success = false;
-        Serial.println("Testing completed with errors.");
-        Serial.println("Please check the following components:");
+        Serial.println(F("Testing completed with errors."));
+        Serial.println(F("Please check the following components:"));
       }
       // Proceed to print all components that failed the test
       Serial.print("- ");
@@ -215,7 +215,7 @@ void setup() {
     }
   }
   if (test_success) {
-    Serial.println("Testing completed: no problems found.");
+    Serial.println(F("Testing completed: no problems found."));
   }
 }
 
@@ -244,16 +244,16 @@ void startLCDTest() {
   display.setCursor(30, 30);
   display.setTextColor(WHITE);
   display.setTextSize(3);
-  display.print("LCD Test Screen");
+  display.print(F("LCD Test Screen"));
   display.setTextSize(2);
   display.setCursor(70, 80);
-  display.print("Press SELECT to");
+  display.print(F("Press SELECT to"));
   display.setCursor(70, 100);
-  display.print("start the test");
+  display.print(F("start the test"));
 
   // Show Firmware information
   const char *service_token = (service_crc == 0xBBC8FBD5) ? "-Y" : "-S";
-  Serial.print("Firmware crc: ");
+  Serial.print(F("Firmware crc: "));
   Serial.print(crc, HEX);
   Serial.println(service_token);
   display.setCursor(5, 5);
@@ -263,13 +263,13 @@ void startLCDTest() {
   display.print(service_token);
 
   // Show testroutine flash CRC information for integrity check
-  Serial.print("Test Routine crc: ");
+  Serial.print(F("Test Routine crc: "));
   Serial.println(testroutine_crc, HEX);
   display.setCursor(264, 5);
   display.print(testroutine_crc, HEX);
 
   // Show message to serial to indicate testing can be started
-  Serial.println("Press SELECT to continue...");
+  Serial.println(F("Press SELECT to continue..."));
 
   // Black-White color gradient
   color_t bw_gradient[320];

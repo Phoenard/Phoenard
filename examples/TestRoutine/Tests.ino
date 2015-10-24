@@ -69,9 +69,9 @@ boolean writeATCommand(Stream &serial, const char *command, const char* response
 
 void set_BlueWifi_baud(long baud) {
   Serial.println();
-  Serial.print("  SETTING BAUD=");
+  Serial.print(F("  SETTING BAUD="));
   Serial.print(baud);
-  Serial.print(" | ");
+  Serial.print(F(" | "));
   Serial2.begin(baud);
 }
 
@@ -80,13 +80,13 @@ bool SpiRAMTest(uint16_t address, char data_byte) {
   char result = sram.read(address);
   if (result == data_byte) return true;
 
-  Serial.print("Data Error at address [");
+  Serial.print(F("Data Error at address ["));
   Serial.print(address);
-  Serial.print("]: ");
+  Serial.print(F("]: "));
   Serial.print(result);
-  Serial.print(" != ");
+  Serial.print(F(" != "));
   Serial.print((uint8_t) data_byte);
-  Serial.print(" ");
+  Serial.print(' ');
   return false;
 }
 
@@ -153,10 +153,10 @@ TestResult testScreen() {
   digitalWrite(TFTLCD_YP_PIN, LOW);
   digitalWrite(TFTLCD_XM_PIN, LOW);
   if (!doPinPullHighTest(TFTLCD_YM_PIN)) {
-    return TestResult(false, "Disconnected pins: Data[7] - WR");
+    return TestResult(false, F("Disconnected pins: Data[7] - WR"));
   }
   if (!doPinPullHighTest(TFTLCD_XM_PIN)) {
-    return TestResult(false, "Disconnected pins: Data[6] - RS");
+    return TestResult(false, F("Disconnected pins: Data[6] - RS"));
   }
   digitalWrite(TFTLCD_YP_PIN, HIGH);
   digitalWrite(TFTLCD_XM_PIN, HIGH);
@@ -170,65 +170,65 @@ TestResult testScreen() {
   Serial.print("  LCD Version ID: ");
   Serial.println(lcd_version, HEX);
   if (lcd_version == 0x0000) {
-    Serial.println("  No LCD version could be read out: no connection");
+    Serial.println(F("  No LCD version could be read out: no connection"));
     return NOCONN_RESULT;
   }
   if (lcd_version != 0x9325 && lcd_version != 0x9328) {
     // Diagnose the version ID
     if ((lcd_version & 0xFF) == (lcd_version >> 8)) {
-      Serial.print("  Both version bytes are the same value (0x");
+      Serial.print(F("  Both version bytes are the same value (0x"));
       Serial.print(lcd_version & 0xFF, HEX);
-      Serial.println(")");
-      Serial.println("  This indicates a possibility that 16-bit data mode is used");
-      Serial.println("  Please verify that the 8-bit jumper resistor is in place");
+      Serial.println(F(")\r\n"
+                       "  This indicates a possibility that 16-bit data mode is used\r\n"
+                       "  Please verify that the 8-bit jumper resistor is in place"));
     }
     // This can be true too...
-    Serial.println("  Please also check if all control pins are soldered correctly");
+    Serial.println(F("  Please also check if all control pins are soldered correctly"));
 
-    return TestResult(false, "Unsupported screen or data pin error");
+    return TestResult(false, F("Unsupported screen or data pin error"));
   }
 
   // Perform a register I/O Test using harmless LCD_CMD_GRAM_VER_AD
-  Serial.print("  Testing LCD register I/O... ");
+  Serial.print(F("  Testing LCD register I/O... "));
   const uint32_t total_reg_writes = 100000L;
   for (uint32_t c = 0; c < total_reg_writes; c++) {
     uint16_t w = c & 511;
     PHNDisplayHW::writeRegister(LCD_CMD_GRAM_VER_AD, w);
     uint16_t r = PHNDisplayHW::readRegister(LCD_CMD_GRAM_VER_AD);
     if (w != r) {
-      Serial.print("Encountered LCD register I/O error after ");
+      Serial.print(F("Encountered LCD register I/O error after "));
       Serial.print(c);
-      Serial.println(" register writes");
-      Serial.print("  Written: 0x");
+      Serial.println(F(" register writes"));
+      Serial.print(F("  Written: 0x"));
       Serial.print(w, HEX);
-      Serial.print("  Receive: 0x");
+      Serial.print(F("  Receive: 0x"));
       Serial.print(r, HEX);
-      Serial.println("  Screen will have to be replaced.");
-      return TestResult(false, "LCD Register I/O Error");
+      Serial.println(F("  Screen will have to be replaced."));
+      return TestResult(false, F("LCD Register I/O Error"));
     }
   }
-  Serial.print("Performed ");
+  Serial.print(F("Performed "));
   Serial.print(total_reg_writes);
-  Serial.println(" successful register writes");
+  Serial.println(F(" successful register writes"));
 
   // Perform test to see if this is an alternative color mode
-  Serial.print("  Testing pixel CGRAM reading mode... ");
+  Serial.print(F("  Testing pixel CGRAM reading mode... "));
   PHNDisplayHW::setCursor(0, 0);
   PHNDisplay16Bit::writePixel(0x1234);
   uint16_t pixtest_read = PHNDisplay16Bit::readPixel(0, 0);
   if (pixtest_read != 0x1234) {
-    Serial.println("Could not read back color");
-    Serial.print("  Written: 0x");
+    Serial.println(F("Could not read back color"));
+    Serial.print(F("  Written: 0x"));
     Serial.print(0x1234, HEX);
-    Serial.print("  Receive: 0x");
+    Serial.print(F("  Receive: 0x"));
     Serial.print(pixtest_read, HEX);
-    Serial.println("  Screen will have to be replaced.");
-    return TestResult(false, "LCD CGRAM I/O Read Error");
+    Serial.println(F("  Screen will have to be replaced."));
+    return TestResult(false, F("LCD CGRAM I/O Read Error"));
   }
   Serial.println("OK");
 
   // Perform test to see if writing all BLACK works as expected
-  Serial.print("  Testing pixel CGRAM write-to-black... ");
+  Serial.print(F("  Testing pixel CGRAM write-to-black..."));
   for (int i = 0; i < 200; i++) {
     PHNDisplayHW::setCursor(0, 0);
     PHNDisplay8Bit::writePixels(0xFF, PHNDisplayHW::WIDTH*2);
@@ -237,20 +237,20 @@ TestResult testScreen() {
     for (unsigned int x = 0; x < PHNDisplayHW::WIDTH; x++) {
       color_t pixtest_read = PHNDisplay16Bit::readPixel(x, 0);
       if (pixtest_read != BLACK) {
-        Serial.println("Could not read back color");
-        Serial.print("  Written: 0x0000");
-        Serial.print("  Receive: 0x");
+        Serial.println(F("Could not read back color"));
+        Serial.print(F("  Written: 0x0000"));
+        Serial.print(F("  Receive: 0x"));
         Serial.print(pixtest_read, HEX);
-        Serial.print("  X: ");
+        Serial.print(F("  X: "));
         Serial.println(x);
-        Serial.println("  Screen will have to be replaced.");
-        return TestResult(false, "LCD CGRAM I/O Write Error");
+        Serial.println(F("  Screen will have to be replaced."));
+        return TestResult(false, F("LCD CGRAM I/O Write Error"));
       }
     }
   }
   Serial.println("OK");
 
-  Serial.print("  Executing LCD CGRAM I/O Stress test... ");
+  Serial.print(F("  Executing LCD CGRAM I/O Stress test... "));
   PHNDisplayHW::setCursor(0, 0, DIR_RIGHT);
   PHNDisplay16Bit::writePixels(BLACK, PHNDisplayHW::PIXELS);
   color_t test_colors[4] = {RED, GREEN, BLUE, WHITE};
@@ -293,9 +293,9 @@ TestResult testScreen() {
     color_t c_a = PHNDisplay16Bit::readPixel(PHNDisplayHW::WIDTH-1, PHNDisplayHW::HEIGHT-1);
     color_t c_b = PHNDisplay16Bit::readPixel(0, 0);
     if ((c_a == 0x5555) || (c_b == 0xFFFF)) {
-      Serial.println("Out of sync.");
+      Serial.println(F("Out of sync."));
       display.fill(BLACK);
-      return TestResult(false, "LCD Stress test failure");
+      return TestResult(false, F("LCD Stress test failure"));
     }
   }
   Serial.println("OK");
@@ -304,9 +304,9 @@ TestResult testScreen() {
   // If initialization fails, the screen will stay white to show it
   color_t screen_colors[3] = {RED, GREEN, BLUE};
   for (int i = 0; i < 3; i++) {
-    Serial.print("  Displaying test screen #");
+    Serial.print(F("  Displaying test screen #"));
     Serial.print((i+1));
-    Serial.println(" (check if shown correctly):");
+    Serial.println(F(" (check if shown correctly):"));
 
     PHNDisplayHW::init();
     PHNDisplayHW::setCursor(0, 0);
@@ -356,7 +356,7 @@ TestResult testTouchscreen() {
       while (isScreenTouched() && (millis() - t) < 1000);
     }
     if (isScreenTouched()) {
-      return TestResult(false, "Touch is always detected");
+      return TestResult(false, F("Touch is always detected"));
     }
   }
 
@@ -374,14 +374,14 @@ TestResult testTouchscreen() {
         continue;
       }
 
-      Serial.print("  TOUCH: [");
+      Serial.print(F("  TOUCH: ["));
       Serial.print(x); Serial.print(", ");
       Serial.print(y); Serial.print(", ");
       Serial.print(z1); Serial.print(", ");
       Serial.print(z2); Serial.println("]");
 
       if (x <= 200 || x >= 800 || y <= 200 || y >= 800) {
-        return TestResult(false, "Read touch was out of bounds");
+        return TestResult(false, F("Read touch was out of bounds"));
       }
 
       return SUCCESS_RESULT;
@@ -389,7 +389,7 @@ TestResult testTouchscreen() {
   }
 
   // Timeout - fail
-  return TestResult(false, "Touch is never detected");
+  return TestResult(false, F("Touch is never detected"));
 }
 
 TestResult testFlash() {
@@ -430,7 +430,7 @@ TestResult testConnector() {
     // Wait for data with a timeout
     while (!Serial.available()) {
       if ((millis() - timeout_start) > 500) {
-        return TestResult(false, "Test station Serial timeout");
+        return TestResult(false, F("Test station Serial timeout"));
       }
     }
     timeout_start = millis();
@@ -498,20 +498,20 @@ TestResult testBMP180() {
     // Measure and validate the temperature
     double temperature;
     status = barometer.startTemperature();
-    if (!status) return TestResult(false, "Failed to measure temperature");
+    if (!status) return TestResult(false, F("Failed to measure temperature"));
     delay(status);
     barometer.getTemperature(temperature);
     if (temperature < -40.0 || temperature >= 85.0) {
       Serial.print("TEMP EXCEEDS: ");
       Serial.print(temperature);
-      return TestResult(false, "Temperature exceeds sensor limits");
+      return TestResult(false, F("Temperature exceeds sensor limits"));
     }
     temp_values[i] = (int16_t) temperature;
 
     // Measure and validate the pressure in millibar
     double pressure;
     status = barometer.startPressure(1);
-    if (!status) return TestResult(false, "Failed to measure pressure");
+    if (!status) return TestResult(false, F("Failed to measure pressure"));
     delay(status);
     barometer.getPressure(pressure, temperature);
     pressure *= 10.0; // Convert to Pascals
@@ -519,7 +519,7 @@ TestResult testBMP180() {
       Serial.print("PRESSURE EXCEEDS: ");
       Serial.print(pressure);
       Serial.print("Pa");
-      return TestResult(false, "Pressure exceeds sensor limits");
+      return TestResult(false, F("Pressure exceeds sensor limits"));
     }
     press_values[i] = (int16_t) pressure;
   }
@@ -531,14 +531,14 @@ TestResult testBMP180() {
   
   // Print the measurement data
   Serial.println();
-  Serial.print("  TEMPERATURE: ");
+  Serial.print(F("  TEMPERATURE: "));
   print_sensor_info(&temp_mean, &temp_dev, 1);
-  Serial.print("  PRESSURE: ");
+  Serial.print(F("  PRESSURE: "));
   print_sensor_info(&press_mean, &press_dev, 1);
 
   // Check for out of bounds data
-  if (abs(temp_dev) > 3) return TestResult(false, "Temperature readout is unstable");
-  if (abs(press_dev) > 3) return TestResult(false, "Pressure readout is unstable");
+  if (abs(temp_dev) > 3) return TestResult(false, F("Temperature readout is unstable"));
+  if (abs(press_dev) > 3) return TestResult(false, F("Pressure readout is unstable"));
 
   // All good!
   return SUCCESS_RESULT;
@@ -580,9 +580,9 @@ TestResult testMPU6050() {
 
   // Print debug information out to Serial
   Serial.println();
-  Serial.print("  ACCEL: ");
+  Serial.print(F("  ACCEL: "));
   print_sensor_info(accel_mean, accel_dev, 3);
-  Serial.print("  GYRO: ");
+  Serial.print(F("  GYRO: "));
   print_sensor_info(gyro_mean, gyro_dev, 3);
 
   // Check that the mean and deviation is within acceptable limits
@@ -590,19 +590,19 @@ TestResult testMPU6050() {
   // Accelerometer
   for (int i = 0; i < 3; i++) {
     if (accel_dev[i] == 0 || accel_dev[i] > 1000) {
-      return TestResult(false, "Accelerometer deviation out of bounds");
+      return TestResult(false, F("Accelerometer deviation out of bounds"));
     }
     if (abs(accel_mean[i]) == 16000) {
-      return TestResult(false, "Accelerometer mean indicates failure");
+      return TestResult(false, F("Accelerometer mean indicates failure"));
     }
   }
   // Gyrometer
   for (int i = 0; i < 3; i++) {
     if (gyro_dev[i] == 0 || gyro_dev[i] > 500) {
-      return TestResult(false, "Gyrometer deviation out of bounds");
+      return TestResult(false, F("Gyrometer deviation out of bounds"));
     }
     if (abs(gyro_mean[i]) >= 500) {
-      return TestResult(false, "Gyrometer mean out of bounds");
+      return TestResult(false, F("Gyrometer mean out of bounds"));
     }
   }
   return SUCCESS_RESULT;
@@ -645,10 +645,10 @@ TestResult testHMC5883L() {
   // Perform a check to see if the measured data is within range
   for (int i = 0; i < 3; i++) {
     if (mag_dev[i] >= 200) {
-      return TestResult(false, "Readings are unstable");
+      return TestResult(false, F("Readings are unstable"));
     }
     if (mag_mean[i] >= 2000 || mag_mean[i] <= -2000) {
-      return TestResult(false, "Readings out of range/magnetic influence");
+      return TestResult(false, F("Readings out of range/magnetic influence"));
     }
   }
 
@@ -686,7 +686,7 @@ TestResult testRAM() {
 TestResult testSIM() {
   // Test whether the SIM908 powered on
   if (!sim.isOn()) {
-    return TestResult(false, "Failed to turn on SIM (PWR pin?)");
+    return TestResult(false, F("Failed to turn on SIM (PWR pin?)"));
   }
   // Try to send an AT command with several retry attempts
   // Turn off SIM when done
@@ -694,18 +694,18 @@ TestResult testSIM() {
   bool atSucc = sim.writeATCommand("AT");
   sim.end();
   if (!atSucc) {
-    return TestResult(false, "No response to AT-Command");
+    return TestResult(false, F("No response to AT-Command"));
   }
 
   // Test out some of the control pins
   if (!doPinPullHighTest(SIM_STATUS_PIN)) {
-    return TestResult(false, "Status pin disconnected.");
+    return TestResult(false, F("Status pin disconnected."));
   }
   if (!doPinPullHighTest(SIM_DTRS_PIN)) {
-    return TestResult(false, "DTRS pin disconnected.");
+    return TestResult(false, F("DTRS pin disconnected."));
   }
   if (!doPinPullHighTest(SIM_RI_PIN)) {
-    return TestResult(false, "RI pin disconnected.");
+    return TestResult(false, F("RI pin disconnected."));
   }
   return SUCCESS_RESULT;
 }
@@ -725,7 +725,7 @@ TestResult testWiFi() {
     }
   }
   if (!found_baud) {
-    return TestResult(false, "No response to AT-Command");
+    return TestResult(false, F("No response to AT-Command"));
   }
   return SUCCESS_RESULT;
 }
@@ -756,18 +756,18 @@ TestResult testBluetooth() {
       }
     }
     if (!found_baud) {
-      return TestResult(false, "No response to AT-Command");
+      return TestResult(false, F("No response to AT-Command"));
     }
   }
 
   // Reset to factory defaults
   if (!writeATCommand(Serial2, "AT+RENEW", "OK+RENEW", 200)) {
-    return TestResult(false, "Failed to restore factory defaults");
+    return TestResult(false, F("Failed to restore factory defaults"));
   }
 
   // Reset the device
   if (!writeATCommand(Serial2, "AT+RESET", "OK+RESET", 200)) {
-    return TestResult(false, "Failed to reset the module");
+    return TestResult(false, F("Failed to reset the module"));
   }
 
   return SUCCESS_RESULT;
@@ -777,12 +777,12 @@ TestResult testSD() {
   // Attempt to initialize the Micro-SD
   volume.isInitialized = 0;
   if (!volume_init()) {
-    return TestResult(false, "Failed to initialize SD card");
+    return TestResult(false, F("Failed to initialize SD card"));
   }
 
   // Attempt to find the SKETCHES.HEX
   if (!file_open("SKETCHES", "HEX", SDMIN_FILE_READ)) {
-    return TestResult(false, "Unable to find main sketch");
+    return TestResult(false, F("Unable to find main sketch"));
   }
 
   // In test station mode, set sketch to read-only
@@ -824,7 +824,7 @@ TestResult testMIDI() {
   }
 
   // Failure - no SELECT pressed
-  return TestResult(false, "User indicated no sound");
+  return TestResult(false, F("User indicated no sound"));
 }
 
 TestResult testMP3() {
@@ -841,7 +841,7 @@ TestResult testMP3() {
 
   // Initialize the VS1053 library
   if (!musicPlayer.begin()) {
-    return TestResult(false, "Failed to initialize VS1053 chip");
+    return TestResult(false, F("Failed to initialize VS1053 chip"));
   }
 
   // Make sure to use the pin interrupt
@@ -850,13 +850,13 @@ TestResult testMP3() {
   // Initialize the SD library for file playback
   // [!] This has to be done AFTER the initialization of the VS1053 [!]
   if (!SD.begin(VS1053_CARDCS_PIN)) {
-    return TestResult(false, "Failed to initialize SD card");
+    return TestResult(false, F("Failed to initialize SD card"));
   }
 
   // Check if the test sound file exists
   char testSoundFile[100] = "Sounds/beep.mp3";
   if (!SD.exists(testSoundFile)) {
-    return TestResult(false, "Micro-SD has no Sounds/beep.mp3");
+    return TestResult(false, F("Micro-SD has no Sounds/beep.mp3"));
   }
 
   showMessage("Plug in headphones - hear beeps?\n"
@@ -886,7 +886,7 @@ TestResult testMP3() {
   if (success) {
     return TestResult(true, "User indicated successful");
   } else {
-    return TestResult(false, "User indicated no sound");
+    return TestResult(false, F("User indicated no sound"));
   }
 }
 
