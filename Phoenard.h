@@ -28,11 +28,31 @@ THE SOFTWARE.
  * @brief Main include file for the Phoenard library
  */
 
+#ifndef Phoenard_h
+#define Phoenard_h
+
 // Compilation architecture check to prevent impossible to understand errors
 #ifndef __AVR_ATmega2560__
   #error "The Phoenard library only supports the ATMega 2560 CPU architecture"
 #endif
  
+#if(ARDUINO < 104)
+	// These array operators are included in hardware\arduino\avr\cores\arduino\new.h and new.cpp
+	// in newer Arduino distributions (1.0.4 and above)
+	#include <stdlib.h>
+	void * operator new[](size_t size);
+	void operator delete[](void * ptr);
+	// Normally, these would go in the .cpp file:
+	void * operator new[](size_t size) 
+	{ 
+		return malloc(size); 
+	} 
+	void operator delete[](void * ptr) 
+	{ 
+		free(ptr); 
+	} 
+#endif
+
 #include "PHNSettings.h"
 #include "PHNDisplayHardware.h"
 #include "PHNDisplay.h"
@@ -44,3 +64,5 @@ THE SOFTWARE.
 
 // This includes <all> the widgets available in the Phoenard library
 #include "PHNWidgetAll.h"
+
+#endif
