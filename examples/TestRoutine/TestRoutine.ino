@@ -180,7 +180,6 @@ void setup() {
   doTest("MPU6050", testMPU6050);
   doTest("HMC5883L", testHMC5883L);
   doTest("SRAM", testRAM);
-  doTest("Touchscreen", testTouchscreen);
   doTest("Micro-SD", testSD);
   doTest("MP3", testMP3);
   doTest("MIDI", testMIDI);

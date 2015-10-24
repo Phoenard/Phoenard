@@ -195,8 +195,9 @@ namespace PHNDisplayHW {
   uint16_t readData() {
     uint16_t data;
 
-    /* Set to READ mode */
+    /* Set to READ mode with pullup */
     TFTLCD_DATA_DDR = 0x00;
+    TFTLCD_DATA_PORT = 0xFF;
 
     /* Read in both bytes to complete the data */
     TFTLCD_RD_PORT = WR_READ_A;

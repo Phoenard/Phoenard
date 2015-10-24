@@ -13,6 +13,12 @@
 long baud_rates[] = {9600, 115200, 19200, 38400, 57600, 4800, 2400, 1200, 230400};
 const int baud_rates_cnt = sizeof(baud_rates) / sizeof(int);
 
+#define TOUCH_BOX_COLOR_IDLE     WHITE_8BIT   // Color of selectable boxes when not pressed
+#define TOUCH_BOX_COLOR_ACTIVE   GREEN_8BIT   // Color of selectable boxes when pressed down
+#define TOUCH_BOX_SIZE           32           // Size (width and height) of selectable boxes
+#define TOUCH_BOX_EDGE           50           // Edge between each corner of the screen and the boxes
+#define TOUCH_MAX_DEVIATION      50           // Maximum deviation allowed in the point axis
+
 void calc_stats(int16_t *values, int cnt, int32_t *mean, int32_t *variation) {
   int32_t diff;
   *mean = 0;
@@ -116,7 +122,6 @@ void showMessage(const char* message) {
   
   // Also print to SERIAL
   if (has_message) {
-    Serial.println();
     Serial.print("  [");
     while (*message) {
       if (*message == '\n') {
@@ -144,36 +149,149 @@ boolean isScreenTouched() {
   return pressure >= PHNDisplayHW::PRESSURE_THRESHOLD;
 }
 
+typedef struct {
+  int x;
+  int y;
+  bool succ;
+} TouchData;
+
+/* Draws a cube of BOXSIZE at the coordinates and using the color specified */
+void touchDrawCube(int x, int y, char color) {
+  for (char dy = 0; dy < TOUCH_BOX_SIZE; dy++) {
+    PHNDisplay8Bit::drawLine(x, y + dy, TOUCH_BOX_SIZE, DIR_RIGHT, color);
+  }
+}
+
+/* Obtains the touch data for the rectangle drawn at the position specified */
+TouchData getTouchData(const char* name, int x, int y, bool runTest);
+TouchData getTouchData(const char* name, int x, int y, bool runTest) {
+  // If cancelled, return cancel state
+  if (!runTest) {
+    return {0, 0, false};
+  }
+
+  // Draw the white cube
+  touchDrawCube(x, y, TOUCH_BOX_COLOR_IDLE);
+
+  // Wait until the touchscreen is pressed down and up again
+  boolean pressed = false;
+  TouchData touch = {0, 0, true};
+  unsigned int analogX, analogY, analogZ, analogZ2;
+  const unsigned int Z_THRES_START = 50;
+  const unsigned int Z_THRES_STOP = 0;
+  long timeout_timer = millis();
+  int timeout_counter = 6;
+  for (;;) {
+    // Update timeout counter
+    if (millis() >= timeout_timer) {
+      timeout_timer = millis() + 1000;
+      if (!(--timeout_counter)) {
+        touch.succ = false;
+        break;
+      }
+      showCounter(timeout_counter);
+    }
+    
+    // Track analog x/y
+    PHNDisplayHW::readTouch(&analogX, &analogY, &analogZ, &analogZ2);
+
+    // Pressed down firmly - update x/y
+    if (analogZ >= Z_THRES_START) {
+      // Pressed for the first time? Change cube color
+      if (!pressed) {
+        pressed = true;
+        touchDrawCube(x, y, TOUCH_BOX_COLOR_ACTIVE);
+      }
+
+      // Touched - accept the x/y and reset timeout counter
+      touch.x = analogX;
+      touch.y = analogY;
+      timeout_counter = 6;
+    }
+
+    // Stop when no longer pressed
+    if (pressed && analogZ <= Z_THRES_STOP) {
+      break;
+    }
+    delay(10);
+  }
+
+  // Hide the cube again
+  touchDrawCube(x, y, BLACK_8BIT);
+
+  // Log the info
+  Serial.print("  Touchscreen ");
+  Serial.print(name);
+  Serial.print(": [");
+  Serial.print(touch.x);
+  Serial.print(", ");
+  Serial.print(touch.y);
+  Serial.println("]");
+
+  return touch;
+}
+
 /** ========================================================== **/
 
 TestResult testScreen() {
   // Put LCD YP/XM pins output LOW
   // The pins with pullup HIGH YM and XP should be LOW as well, otherwise is disconnected
-  // This does a basic connection test of several LCD pins
+  // This does a basic connection test of several LCD pins, as well tests touchscreen.
   digitalWrite(TFTLCD_YP_PIN, LOW);
   digitalWrite(TFTLCD_XM_PIN, LOW);
   if (!doPinPullHighTest(TFTLCD_YM_PIN)) {
+    Serial.println(F("  Touchscreen axis not detected: YM - YP"));
     return TestResult(false, F("Disconnected pins: Data[7] - WR"));
   }
   if (!doPinPullHighTest(TFTLCD_XM_PIN)) {
+    Serial.println(F("  Touchscreen axis not detected: XP - XM"));
     return TestResult(false, F("Disconnected pins: Data[6] - RS"));
   }
   digitalWrite(TFTLCD_YP_PIN, HIGH);
   digitalWrite(TFTLCD_XM_PIN, HIGH);
   pinMode(TFTLCD_YM_PIN, OUTPUT);
   pinMode(TFTLCD_XM_PIN, OUTPUT);
-  
+
   // First try to read the LCD version ID
   // This provides a basic check for the RS/WR/data pins
   uint16_t lcd_version = PHNDisplayHW::readRegister(0);
   Serial.println();
-  Serial.print("  LCD Version ID: ");
+  Serial.print(F("  LCD Version ID: "));
   Serial.println(lcd_version, HEX);
-  if (lcd_version == 0x0000) {
+
+  // If version is 0xFFFF, then it did not respond
+  if ((lcd_version == 0xFFFF) || (lcd_version == 0x0000)) {
     Serial.println(F("  No LCD version could be read out: no connection"));
+    Serial.println(F("  Please check if all control pins (CS,WR,RS) are soldered correctly"));
     return NOCONN_RESULT;
   }
+
+  // Perform a basic register write and read check
+  // This way we can easily check if any of the data pins are disconnected
+  // Try and use both registers 0x20 and 0x80 in case it involves a bit in the command
+  // Every set bit indicates a data control line that is disconnected
+  PHNDisplayHW::writeRegister(0x20, 0x00);
+  PHNDisplayHW::writeRegister(0x80, 0x00);
+  uint8_t reg_test_data = 0xFF;
+  reg_test_data &= (PHNDisplayHW::readRegister(0x20) & 0xFF);
+  reg_test_data &= (PHNDisplayHW::readRegister(0x80) & 0xFF);
+  if (reg_test_data) {
+    for (int i = 0; i < 8; i++) {
+      if (reg_test_data & (1 << i)) {
+        Serial.print(F("  Control pin Data["));
+        Serial.print(i);
+        Serial.println(F("] is not connected"));
+      }
+    }
+    return TestResult(false, F("Control data pin not connected"));
+  } else {
+    Serial.println(F("  Data pins are all connected"));
+  }
+
   if (lcd_version != 0x9325 && lcd_version != 0x9328) {
+    // Wrong version!
+    Serial.println(F("  Version ID is invalid (wrong screen driver?)"));
+
     // Diagnose the version ID
     if ((lcd_version & 0xFF) == (lcd_version >> 8)) {
       Serial.print(F("  Both version bytes are the same value (0x"));
@@ -183,7 +301,7 @@ TestResult testScreen() {
                        "  Please verify that the 8-bit jumper resistor is in place"));
     }
     // This can be true too...
-    Serial.println(F("  Please also check if all control pins are soldered correctly"));
+    Serial.println(F("  Please also check if all control pins (CS,WR,RS,Data) are soldered correctly"));
 
     return TestResult(false, F("Unsupported screen or data pin error"));
   }
@@ -191,25 +309,34 @@ TestResult testScreen() {
   // Perform a register I/O Test using harmless LCD_CMD_GRAM_VER_AD
   Serial.print(F("  Testing LCD register I/O... "));
   const uint32_t total_reg_writes = 100000L;
+  uint32_t total_reg_success = 0;
+  bool hasRegReadError = false;
   for (uint32_t c = 0; c < total_reg_writes; c++) {
     uint16_t w = c & 511;
     PHNDisplayHW::writeRegister(LCD_CMD_GRAM_VER_AD, w);
     uint16_t r = PHNDisplayHW::readRegister(LCD_CMD_GRAM_VER_AD);
-    if (w != r) {
+    if (w == r) {
+      total_reg_success++;
+    } else if (!hasRegReadError) {
+      hasRegReadError = true;
       Serial.print(F("Encountered LCD register I/O error after "));
       Serial.print(c);
       Serial.println(F(" register writes"));
       Serial.print(F("  Written: 0x"));
       Serial.print(w, HEX);
       Serial.print(F("  Receive: 0x"));
-      Serial.print(r, HEX);
-      Serial.println(F("  Screen will have to be replaced."));
-      return TestResult(false, F("LCD Register I/O Error"));
+      Serial.println(r, HEX);
     }
   }
-  Serial.print(F("Performed "));
-  Serial.print(total_reg_writes);
-  Serial.println(F(" successful register writes"));
+  if (hasRegReadError) {
+    Serial.print(total_reg_success);
+    Serial.print(" / ");
+    Serial.print(total_reg_writes);
+    Serial.println(F(" succeeded"));
+    return TestResult(false, F("LCD Register I/O Error"));
+  } else {
+    Serial.println("OK");
+  }
 
   // Perform test to see if this is an alternative color mode
   Serial.print(F("  Testing pixel CGRAM reading mode... "));
@@ -228,7 +355,7 @@ TestResult testScreen() {
   Serial.println("OK");
 
   // Perform test to see if writing all BLACK works as expected
-  Serial.print(F("  Testing pixel CGRAM write-to-black..."));
+  Serial.print(F("  Testing pixel CGRAM write-to-black... "));
   for (int i = 0; i < 200; i++) {
     PHNDisplayHW::setCursor(0, 0);
     PHNDisplay8Bit::writePixels(0xFF, PHNDisplayHW::WIDTH*2);
@@ -337,59 +464,61 @@ TestResult testScreen() {
     display.setTextColor(WHITE);
     display.drawStringMiddle(0, 0, 320, 240, testText);
 
-    delay(2000);
+    delay(1000);
   }
 
   display.fill(BLACK);
+
+  /* ============ Touchscreen testing (taken over from calibration sketch) ============== */
+  showMessage("Touchscreen testing:\n"
+              "Press the middle of each cube");
+
+  // Read and log the four points on the screen
+  TouchData data_tl = getTouchData("Top-Left", TOUCH_BOX_EDGE - TOUCH_BOX_SIZE / 2, TOUCH_BOX_EDGE - TOUCH_BOX_SIZE / 2, true);
+  TouchData data_tr = getTouchData("Top-Right", PHNDisplayHW::WIDTH - TOUCH_BOX_EDGE - TOUCH_BOX_SIZE / 2, TOUCH_BOX_EDGE - TOUCH_BOX_SIZE / 2, data_tl.succ);
+  TouchData data_bl = getTouchData("Bottom-Left", TOUCH_BOX_EDGE - TOUCH_BOX_SIZE / 2, PHNDisplayHW::HEIGHT - TOUCH_BOX_EDGE - TOUCH_BOX_SIZE / 2, data_tr.succ);
+  TouchData data_br = getTouchData("Bottom-Right", PHNDisplayHW::WIDTH - TOUCH_BOX_EDGE - TOUCH_BOX_SIZE / 2, PHNDisplayHW::HEIGHT - TOUCH_BOX_EDGE - TOUCH_BOX_SIZE / 2, data_bl.succ);
+
+  // Handle failure
+  if (!data_br.succ) {
+    return TestResult(false, F("Touchscreen was not detected."));
+  }
+
+  // Verify that the 4 axis have points with matching alignments
+  if (abs(data_tl.x - data_bl.x) > TOUCH_MAX_DEVIATION) {
+    return TestResult(false, F("Touchscreen out of bounds: tlx-blx"));
+  }
+  if (abs(data_tr.x - data_br.x) > TOUCH_MAX_DEVIATION) {
+    return TestResult(false, F("Touchscreen out of bounds: trx-brx"));
+  }
+  if (abs(data_tl.y - data_tr.y) > TOUCH_MAX_DEVIATION) {
+    return TestResult(false, F("Touchscreen out of bounds: tly-try"));
+  }
+  if (abs(data_bl.y - data_br.y) > TOUCH_MAX_DEVIATION) {
+    return TestResult(false, F("Touchscreen out of bounds: bly-bry"));
+  }
+
+  // Convert the points into the offset values
+  int hor_min = (data_tl.x + data_bl.x) >> 1;
+  int hor_max = (data_tr.x + data_br.x) >> 1;
+  int ver_min = (data_tl.y + data_tr.y) >> 1;
+  int ver_max = (data_bl.y + data_br.y) >> 1;
+
+  // Apply transform logic to make these point to the boundaries of the screen
+  int hor_off = (int) (((float) TOUCH_BOX_EDGE / (float) (PHNDisplayHW::WIDTH - (2 * TOUCH_BOX_EDGE))) * (float) (hor_max - hor_min));
+  int ver_off = (int) (((float) TOUCH_BOX_EDGE / (float) (PHNDisplayHW::HEIGHT - (2 * TOUCH_BOX_EDGE))) * (float) (ver_max - ver_min));
+  hor_min -= hor_off;
+  hor_max += hor_off;
+  ver_min -= ver_off;
+  ver_max += ver_off;
+
+  // Save updated calibration values to EEPROM
+  PHN_Settings settings;
+  PHN_Settings_Load(settings);
+  PHN_Settings_WriteCali(&settings, hor_min, hor_max, ver_min, ver_max);
+  PHN_Settings_Save(settings);
+
   return SUCCESS_RESULT;
-}
-
-TestResult testTouchscreen() {
-  // First check that the touchscreen is NOT touched right now
-  if (isScreenTouched()) {
-    showMessage("Please release the touchscreen\n"
-                "If not touching; indicates failure");
-
-    for (int i = 5; i >= 1; i--) {
-      showCounter(i);
-      long t = millis();
-      while (isScreenTouched() && (millis() - t) < 1000);
-    }
-    if (isScreenTouched()) {
-      return TestResult(false, F("Touch is always detected"));
-    }
-  }
-
-  // Wait until the screen is touched
-  showMessage("Please touch the touchscreen\n"
-              "Press in the MIDDLE of the screen");
-  for (int i = 5; i >= 1; i--) {
-    showCounter(i);
-
-    long t = millis();
-    while ((millis() - t) < 1000) {
-      uint16_t x, y, z1, z2;
-      PHNDisplayHW::readTouch(&x, &y, &z1, &z2);
-      if (z1 == 0) {
-        continue;
-      }
-
-      Serial.print(F("  TOUCH: ["));
-      Serial.print(x); Serial.print(", ");
-      Serial.print(y); Serial.print(", ");
-      Serial.print(z1); Serial.print(", ");
-      Serial.print(z2); Serial.println("]");
-
-      if (x <= 200 || x >= 800 || y <= 200 || y >= 800) {
-        return TestResult(false, F("Read touch was out of bounds"));
-      }
-
-      return SUCCESS_RESULT;
-    }
-  }
-
-  // Timeout - fail
-  return TestResult(false, F("Touch is never detected"));
 }
 
 TestResult testFlash() {
@@ -799,6 +928,7 @@ TestResult testSD() {
 }
 
 TestResult testMIDI() {
+  Serial.println();
   showMessage("Plug in headphones - hear chimes?\n"
               "Press SELECT if you hear sound");
 
@@ -864,6 +994,7 @@ TestResult testMP3() {
     return TestResult(false, F("Micro-SD has no Sounds/beep.mp3"));
   }
 
+  Serial.println();
   showMessage("Plug in headphones - hear beeps?\n"
               "Press SELECT if you hear sound");
 
