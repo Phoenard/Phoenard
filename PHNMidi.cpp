@@ -45,6 +45,13 @@ void PHN_Midi::begin() {
   setInstrument(8); // Default instrument #8 - Clavi
 }
 
+void PHN_Midi::end() {
+  pinMode(VS1053_PWR_PIN, OUTPUT);
+  digitalWrite(VS1053_PWR_PIN, LOW);
+  pinMode(VS1053_RESET_PIN, OUTPUT);
+  digitalWrite(VS1053_RESET_PIN, LOW);
+}
+
 void PHN_Midi::setBank(byte bank) {
   talkMIDI(0xB0, 0, bank);
 }

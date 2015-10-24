@@ -804,27 +804,32 @@ TestResult testMIDI() {
 
   PHN_Midi midi;
   midi.begin();
-  
-  for (int i = 5; i >= 1; i--) {
+
+  bool success = false;
+  for (int i = 5; i >= 1 && !success; i--) {
     showCounter(i);
 
     char notes[] = {40, 41, 42, 43, 44, 45, 35};
-    for (uint8_t i = 0; i < sizeof(notes); i++) {
+    for (uint8_t i = 0; i < sizeof(notes) && !success; i++) {
       midi.noteOn(0, notes[i], 120);
       
       long t = millis();
       while ((millis() - t) < 150) {
         if (isSelectPressed()) {
-          midi.noteOff(0, notes[i], 50);
-          return TestResult(true, "User indicated successful");
+          success = true;
         }
       }
       midi.noteOff(0, notes[i], 120);
     }
   }
 
-  // Failure - no SELECT pressed
-  return TestResult(false, F("User indicated no sound"));
+  midi.end();
+
+  if (success) {
+    return TestResult(true, F("User indicated successful"));
+  } else {
+    return TestResult(false, F("User indicated no sound"));
+  }
 }
 
 TestResult testMP3() {
@@ -882,15 +887,18 @@ TestResult testMP3() {
   musicPlayer.stopPlaying();
   delay(200);
 
+  // Disable interrupt before exiting (!)
+  detachInterrupt(0);
+
   // Exit with success state
   if (success) {
-    return TestResult(true, "User indicated successful");
+    return TestResult(true, F("User indicated successful"));
   } else {
     return TestResult(false, F("User indicated no sound"));
   }
 }
 
 TestResult testNone() {
-  return TestResult(true, "No Test Performed");
+  return TestResult(true, F("No Test Performed"));
 }
 

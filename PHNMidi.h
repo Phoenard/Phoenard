@@ -51,6 +51,8 @@ class PHN_Midi {
  public:
   /// Initializes the chip into MIDI mode
   void begin();
+  /// Disables the chip (and MIDI mode)
+  void end();
   /// Sets the instrument to play with
   void setInstrument(byte instrument);
   /// Sets the instrument bank to use
