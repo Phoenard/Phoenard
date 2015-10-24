@@ -97,6 +97,10 @@ const unsigned char LCD_REG_DATA[] = {
 namespace PHNDisplayHW {
   /* Stores the last-set Entry mod for optimization purposes */
   uint8_t last_entry_dir = 0xFF;
+  /* Stores the initialized pixel reading color mode (BGR/RGB) used */
+  uint8_t pixel_reading_mode = 0x00;
+  /* Stores whether the screen register has been read before */
+  uint8_t data_read_before = 0;
 
   /* Automatic screen initialization logic */
 #if LCD_AUTO_INITIALIZE
@@ -137,6 +141,8 @@ namespace PHNDisplayHW {
     } while ((data += 3) != data_end);
 
     last_entry_dir = 0xFF;
+    pixel_reading_mode = 0x00;
+    data_read_before = 0;
     
     /* Fill the screen with BLACK (0x00) */
     PHNDisplay8Bit::drawLine(0, 0, PIXELS, DIR_RIGHT, 0x00);
@@ -206,8 +212,15 @@ namespace PHNDisplayHW {
     data |= TFTLCD_DATA_IN;
     TFTLCD_RD_PORT = WR_READ_B;
 
-    // Revert back to WRITE mode, finished
+    // Revert back to WRITE mode, finished reading
     TFTLCD_DATA_DDR = 0xFF;
+
+    // If this is the first time reading data, write out a register
+    // This fixes a random read bug on a few LCD screens
+    if (!data_read_before) {
+      data_read_before = 1;
+      writeRegister(0, 0x0001);
+    }
     return data;
   }
 
@@ -547,21 +560,20 @@ namespace PHNDisplay16Bit {
      * The fields have to be reordered in these cases. For the first
      * time reading, check whether color conversion is needed.
      */
-    static char reading_mode = 0;
-    if (!reading_mode) {
-      reading_mode |= 0x1; /* Only do this once */
+    if (!PHNDisplayHW::pixel_reading_mode) {
+      PHNDisplayHW::pixel_reading_mode |= 0x1; /* Only do this once */
       PHNDisplayHW::setCursor(x, y);
       PHNDisplay16Bit::writePixel(0x1234);
       if (readPixel(x, y) == 0xA222) {
-        reading_mode |= 0x2; /* Conversion needed */
+        PHNDisplayHW::pixel_reading_mode |= 0x2; /* Conversion needed */
       }
-      reading_mode |= 0x4; /* Restore pixel later */
+      PHNDisplayHW::pixel_reading_mode |= 0x4; /* Restore pixel later */
     }
-    if (reading_mode & 0x2) {
+    if (PHNDisplayHW::pixel_reading_mode & 0x2) {
       data = ((data >> 11) | (data & 0x7E0) | (data << 11));
     }
-    if (reading_mode & 0x4) {
-      reading_mode &= ~0x4;
+    if (PHNDisplayHW::pixel_reading_mode & 0x4) {
+      PHNDisplayHW::pixel_reading_mode &= ~0x4;
       PHNDisplayHW::setCursor(x, y);
       PHNDisplay16Bit::writePixel(data);
     }
