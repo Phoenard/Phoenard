@@ -204,9 +204,11 @@ namespace PHNDisplayHW {
     asm volatile ("nop\n");
     asm volatile ("nop\n");
     asm volatile ("nop\n");
+    asm volatile ("nop\n");
     data = TFTLCD_DATA_IN << 8;
     TFTLCD_RD_PORT = WR_READ_B;
     TFTLCD_RD_PORT = WR_READ_A;
+    asm volatile ("nop\n");
     asm volatile ("nop\n");
     asm volatile ("nop\n");
     asm volatile ("nop\n");
